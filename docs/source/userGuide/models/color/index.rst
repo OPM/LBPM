@@ -66,7 +66,36 @@ Model Formulation
 ****************************
 
 
-  
+The relaxation parameters are determined from the relaxation time:
+.. math::
+   :nowrap:
+
+
+   $$
+   \\begin{eqnarray}
+     \lambda_1 =  \lambda_2=  \lambda_9 = \lambda_{10}= \lambda_{11}= \lambda_{12}= \lambda_{13}= \lambda_{14}= \lambda_{15} = s_\nu\;, \\
+     \lambda_{4}= \lambda_{6}= \lambda_{8} = \lambda_{16} = \lambda_{17} = \lambda_{18}= \frac{8(2-s_\nu)}{8-s_\nu} \;,
+   \\end{eqnarray}
+   $$
+
+The non-zero equilibrium moments are defined as
+
+.. math::
+   :nowrap:
+
+   $$
+   \\begin{eqnarray}
+     m_1^{eq} &=& (j_x^2+j_y^2+j_z^2) - \alpha |\textbf{C}|, \\
+     m_9^{eq} &=& (2j_x^2-j_y^2-j_z^2)+ \alpha \frac{|\textbf{C}|}{2}(2n_x^2-n_y^2-n_z^2), \\
+     m_{11}^{eq} &=& (j_y^2-j_z^2) + \alpha \frac{|\textbf{C}|}{2}(n_y^2-n_z^2), \\
+     m_{13}^{eq} &=& j_x j_y + \alpha \frac{|\textbf{C}|}{2} n_x n_y\;, \\
+     m_{14}^{eq} &=& j_y j_z + \alpha \frac{|\textbf{C}|}{2} n_y n_z\;, \\
+     m_{15}^{eq} &=& j_x j_z + \alpha \frac{|\textbf{C}|}{2} n_x n_z\;, 
+   \\end{eqnarray}
+   $$
+
+
+   
 ****************************
 Boundary Conditions
 ****************************
