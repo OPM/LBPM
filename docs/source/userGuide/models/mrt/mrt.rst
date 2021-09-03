@@ -30,6 +30,131 @@ The essential model parameters for the color model are
 Model Formulation
 ****************************
 
+The LBE governing momentum transport is defined based on a MRT relaxation based on the D3Q19 discrete
+velocity set, which determines the values :math:`\bm{\xi}_q`
+
+.. math::
+   :nowrap:
+
+   $$
+      f_q(\bm{x}_i + \bm{\xi}_q \delta t,t + \delta t) - f_q(\bm{x}_i,t) = \sum^{Q-1}_{k=0} M^{-1}_{qk} \lambda_{k} (m_k^{eq}-m_k) + t_q \bm{\xi}_q \cdot \frac{\bm{F}}{c_s^2} \;,
+   $$
+
+
+The moments are linearly indepdendent:
+
+.. math::
+   :nowrap:
+
+   $$
+      m_k = \sum_{q=0}^{18} M_{qk} f_q\;.
+   $$
+
+
+The non-zero equilibrium moments are
+
+.. math::
+   :nowrap:
+
+   $$
+     m_1^{eq} = 19\frac{j_x^2+j_y^2+j_z^2}{\rho} - 11\rho \;,
+   $$     
+
+.. math::
+   :nowrap:
+
+   $$
+     m_2^{eq} = 3\rho - frac{11}{2} \frac{j_x^2+j_y^2+j_z^2}{\rho} \;,
+   $$     
+
+.. math::
+   :nowrap:
+
+
+   $$
+     m_4^{eq} = -\frac 2 3 j_x \;,
+   $$
+   
+.. math::
+   :nowrap:
+
+   $$
+     m_6^{eq} = -\frac 2 3 j_y \;,
+   $$
+
+.. math::
+   :nowrap:
+
+   $$
+     m_8^{eq} = -\frac 2 3 j_z \;,
+   $$
+
+.. math::
+   :nowrap:
+
+   $$     
+     m_9^{eq} = \frac{2j_x^2-j_y^2-j_z^2}{\rho}\;,
+   $$     
+
+.. math::
+   :nowrap:
+
+   $$
+     m_{10}^{eq} = -\frac{2j_x^2-j_y^2-j_z^2)}{2\rho_0} \;,
+   $$     
+   
+.. math::
+   :nowrap:
+
+   $$     
+     m_{11}^{eq} = \frac{j_y^2-j_z^2}{\rho_0} \;, 
+   $$     
+
+.. math::
+   :nowrap:
+
+   $$
+     m_{12}^{eq} = -\frac{j_y^2-j_z^2}{2\rho_0} \;,
+   $$     
+
+   
+.. math::
+   :nowrap:
+
+   $$     
+     m_{13}^{eq} = \frac{j_x j_y}{\rho_0} \;, 
+   $$     
+
+.. math::
+   :nowrap:
+
+   $$     
+     m_{14}^{eq} = \frac{j_y j_z}{\rho_0} \;, 
+   $$     
+
+.. math::
+   :nowrap:
+
+   $$     
+     m_{15}^{eq} = \frac{j_x j_z}{\rho_0} \;, 
+   $$
+
+The relaxation parameters are determined based on the relaxation time :math:`\tau`
+.. math::
+   :nowrap:
+
+   $$
+     \lambda_1 =  \lambda_2=  \lambda_9 = \lambda_{10}= \lambda_{11}= \lambda_{12}= \lambda_{13}= \lambda_{14}= \lambda_{15} = s_\nu = \frac{1}{\tau} \;,
+   $$
+   
+.. math::
+   :nowrap:
+      
+    $$
+     \lambda_{4}= \lambda_{6}= \lambda_{8} = \lambda_{16} = \lambda_{17} = \lambda_{18}= \frac{8(2-s_\nu)}{8-s_\nu} \;,
+   $$
+
+
 
 ****************************
 Example Input File
