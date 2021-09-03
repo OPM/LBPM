@@ -39,21 +39,20 @@
 #include <algorithm>
 #include <cstring>
 #include <limits>
-#include <random>
-
+//#include <random>
 
 
 /********************************************************
  *  Random number initialization                         *
  ********************************************************/
-template<class TYPE> TYPE genRand();
+/*template<class TYPE> TYPE genRand();
 template<class TYPE, class FUN>
 inline void FunctionTable::rand( Array<TYPE, FUN> &x )
 {
     for ( size_t i = 0; i < x.length(); i++ )
         x( i ) = genRand<TYPE>();
 }
-
+*/
 
 /********************************************************
  *  Reduction                                            *

@@ -658,7 +658,7 @@ public: // Math operations
     void cat( const Array &x, int dim = 0 );
 
     //! Initialize the array with random values (defined from the function table)
-    void rand();
+    //void rand();
 
     //! Return true if NaNs are present
     bool NaNs() const;
