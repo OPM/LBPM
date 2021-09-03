@@ -118,7 +118,7 @@ The fluid density and kinematic viscosity are determined based on linear interpo
    :nowrap:
 
    $$
-    \nu = \frac{(1+\phi) \nu_n}{2}+\frac{(1-\phi) \nu_w}{2} \;,
+    s_\nu = \frac{(1+\phi)}{2\tau_n} +\frac{(1-\phi)}{2\tau_w} \;,
    $$
 
 where
@@ -160,7 +160,7 @@ The relaxation parameters are determined from the relaxation time:
    :nowrap:
 
    $$
-     \lambda_1 =  \lambda_2=  \lambda_9 = \lambda_{10}= \lambda_{11}= \lambda_{12}= \lambda_{13}= \lambda_{14}= \lambda_{15} = s_\nu\;,
+     \lambda_1 =  \lambda_2=  \lambda_9 = \lambda_{10}= \lambda_{11}= \lambda_{12}= \lambda_{13}= \lambda_{14}= \lambda_{15} = s_\nu \;,
    $$
    
 .. math::
