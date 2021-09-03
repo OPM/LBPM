@@ -40,8 +40,8 @@ velocity set, which determines the values :math:`\bm{\xi}_q`
       f_q(\bm{x}_i + \bm{\xi}_q \delta t,t + \delta t) - f_q(\bm{x}_i,t) = \sum^{Q-1}_{k=0} M^{-1}_{qk} \lambda_{k} (m_k^{eq}-m_k) + t_q \bm{\xi}_q \cdot \frac{\bm{F}}{c_s^2} \;,
    $$
 
-
-The moments are linearly indepdendent:
+Where :math:`\bm{F}` an external body force and :math:`c_s^2 = 1/3` is the speed of sound for the LB model.
+The moments are linearly indepdendent functions of the distributions:
 
 .. math::
    :nowrap:
@@ -64,7 +64,7 @@ The non-zero equilibrium moments are
    :nowrap:
 
    $$
-     m_2^{eq} = 3\rho - frac{11}{2} \frac{j_x^2+j_y^2+j_z^2}{\rho} \;,
+     m_2^{eq} = 3\rho - \frac{11}{2} \frac{j_x^2+j_y^2+j_z^2}{\rho} \;,
    $$     
 
 .. math::
@@ -100,21 +100,21 @@ The non-zero equilibrium moments are
    :nowrap:
 
    $$
-     m_{10}^{eq} = -\frac{2j_x^2-j_y^2-j_z^2)}{2\rho_0} \;,
+     m_{10}^{eq} = -\frac{2j_x^2-j_y^2-j_z^2)}{2\rho} \;,
    $$     
    
 .. math::
    :nowrap:
 
    $$     
-     m_{11}^{eq} = \frac{j_y^2-j_z^2}{\rho_0} \;, 
+     m_{11}^{eq} = \frac{j_y^2-j_z^2}{\rho} \;, 
    $$     
 
 .. math::
    :nowrap:
 
    $$
-     m_{12}^{eq} = -\frac{j_y^2-j_z^2}{2\rho_0} \;,
+     m_{12}^{eq} = -\frac{j_y^2-j_z^2}{2\rho} \;,
    $$     
 
    
@@ -122,24 +122,25 @@ The non-zero equilibrium moments are
    :nowrap:
 
    $$     
-     m_{13}^{eq} = \frac{j_x j_y}{\rho_0} \;, 
+     m_{13}^{eq} = \frac{j_x j_y}{\rho} \;, 
    $$     
 
 .. math::
    :nowrap:
 
    $$     
-     m_{14}^{eq} = \frac{j_y j_z}{\rho_0} \;, 
+     m_{14}^{eq} = \frac{j_y j_z}{\rho} \;, 
    $$     
 
 .. math::
    :nowrap:
 
    $$     
-     m_{15}^{eq} = \frac{j_x j_z}{\rho_0} \;, 
+     m_{15}^{eq} = \frac{j_x j_z}{\rho} \;, 
    $$
 
 The relaxation parameters are determined based on the relaxation time :math:`\tau`
+
 .. math::
    :nowrap:
 
