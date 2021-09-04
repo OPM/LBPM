@@ -26,6 +26,15 @@ The essential model parameters for the color model are
 
 - ``tau`` -- control the fluid viscosity -- :math:`0.7 < \tau < 1.5`
 
+The kinematic viscosity is given by
+
+.. math::
+   :nowrap:
+
+     $$
+       \nu = \frac{1}{3} \Big( \tau - \frac 12 \Big)
+     $$
+
 ****************************
 Model Formulation
 ****************************
@@ -37,10 +46,10 @@ velocity set, which determines the values :math:`\bm{\xi}_q`
    :nowrap:
 
    $$
-      f_q(\bm{x}_i + \bm{\xi}_q \delta t,t + \delta t) - f_q(\bm{x}_i,t) = \sum^{Q-1}_{k=0} M^{-1}_{qk} \lambda_{k} (m_k^{eq}-m_k) + t_q \bm{\xi}_q \cdot \frac{\bm{F}}{c_s^2} \;,
+      f_q(\bm{x}_i + \bm{\xi}_q \delta t,t + \delta t) - f_q(\bm{x}_i,t) = \sum^{Q-1}_{k=0} M^{-1}_{qk} \lambda_{k} (m_k^{eq}-m_k) + w_q \bm{\xi}_q \cdot \frac{\bm{F}}{c_s^2} \;,
    $$
 
-Where :math:`\bm{F}` an external body force and :math:`c_s^2 = 1/3` is the speed of sound for the LB model.
+Where :math:`\bm{F}` is an external body force and :math:`c_s^2 = 1/3` is the speed of sound for the LB model.
 The moments are linearly indepdendent functions of the distributions:
 
 .. math::
