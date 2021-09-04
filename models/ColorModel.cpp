@@ -198,22 +198,12 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 		domain_db->putScalar<int>( "BC", BoundaryCondition );
 	} 
 	else if (protocol == "core flooding"){
-	        if (rank == 0) printf("Using core flooding protocol \n");
+		if (rank == 0) printf("Using core flooding protocol \n");
 		if (BoundaryCondition != 4){
 			BoundaryCondition = 4;
 			if (rank==0) printf("WARNING: protocol (core flooding) supports only volumetric flux boundary condition \n");
 		}
 		domain_db->putScalar<int>( "BC", BoundaryCondition );
-		if (color_db->keyExists( "capillary_number" )){
-			double capillary_number = color_db->getScalar<double>( "capillary_number" );
-			if (rank==0) printf("   set flux to achieve Ca=%f \n", capillary_number);
-			double MuB = rhoB*(tauB - 0.5)/3.0;
-			double IFT = 6.0*alpha;
-			//double CrossSectionalArea = (double) (nprocx*(Nx-2)*nprocy*(Ny-2));
-			flux = Dm->Porosity()*nprocx*(Nx-2)*nprocy*(Ny-2)*IFT*capillary_number/MuB;
-			if (rank==0) printf("  flux=%f \n",flux);
-		}
-		color_db->putScalar<double>( "flux", flux );
 	} 
 }
 
@@ -492,6 +482,18 @@ void ScaLBL_ColorModel::Create(){
  ********************************************************/
 
 void ScaLBL_ColorModel::Initialize(){
+	
+	/* if both capillary number and flux BC are specified */
+	if (color_db->keyExists( "capillary_number" ) && BoundaryCondition == 4){
+		double capillary_number = color_db->getScalar<double>( "capillary_number" );
+		if (rank==0) printf("   set flux to achieve Ca=%f \n", capillary_number);
+		double MuB = rhoB*(tauB - 0.5)/3.0;
+		double IFT = 6.0*alpha;
+		double CrossSectionalArea = (double) (nprocx*(Nx-2)*nprocy*(Ny-2));
+		flux = Mask->Porosity()*CrossSectionalArea*(Ny-2)*IFT*capillary_number/MuB;
+		if (rank==0) printf("   flux=%f \n",flux);
+	}
+	color_db->putScalar<double>( "flux", flux );
 	
 	if (rank==0)	printf ("Initializing distributions \n");
 	ScaLBL_D3Q19_Init(fq, Np);
