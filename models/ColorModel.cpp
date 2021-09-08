@@ -595,14 +595,18 @@ double ScaLBL_ColorModel::Run(int returntime){
     auto flow_db = db->getDatabase( "FlowAdaptor" );
 	int MIN_STEADY_TIMESTEPS = flow_db->getWithDefault<int>( "min_steady_timesteps", 1000000 );
 	int MAX_STEADY_TIMESTEPS = flow_db->getWithDefault<int>( "max_steady_timesteps", 1000000 );
-
 	int RESCALE_FORCE_AFTER_TIMESTEP = MAX_STEADY_TIMESTEPS*2;
 
 	double capillary_number = 1.0e-5;
 	double Ca_previous = 0.0;
+	double minCa = 8.0e-6;
+	double maxCa = 1.0;
 	if (color_db->keyExists( "capillary_number" )){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
 		SET_CAPILLARY_NUMBER=true;
+		RESCALE_FORCE_AFTER_TIMESTEP = MIN_STEADY_TIMESTEPS;
+		maxCa = 2.0*capillary_number;
+		minCa = 0.8*capillary_number;
 	}
 	if (color_db->keyExists( "rescale_force_after_timestep" )){
 		RESCALE_FORCE_AFTER_TIMESTEP = color_db->getScalar<int>( "rescale_force_after_timestep" );
@@ -739,6 +743,12 @@ double ScaLBL_ColorModel::Run(int returntime){
 				isSteady = true;
 			if (CURRENT_TIMESTEP >= MAX_STEADY_TIMESTEPS)
 				isSteady = true;
+			
+			if (isSteady && (Ca > maxCa || Ca < minCa) ){
+				isSteady = false;
+				RESCALE_FORCE = true;
+			}
+	
 			if (RESCALE_FORCE == true && SET_CAPILLARY_NUMBER == true && CURRENT_TIMESTEP > RESCALE_FORCE_AFTER_TIMESTEP){
 				RESCALE_FORCE = false;
 				double RESCALE_FORCE_FACTOR = capillary_number / Ca;
