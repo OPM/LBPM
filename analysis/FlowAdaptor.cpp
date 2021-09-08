@@ -78,11 +78,6 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 	int Np = M.Np;
 	double dA, dB, phi;
 	double vx,vy,vz;
-	double vax,vay,vaz;
-	double vbx,vby,vbz;
-	double vax_global,vay_global,vaz_global;
-	double vbx_global,vby_global,vbz_global;
-
 	double mass_a, mass_b, mass_a_global, mass_b_global;
 
 	double *Aq_tmp, *Bq_tmp;
@@ -103,9 +98,6 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 
 	int Nx = M.Nx;  int Ny = M.Ny;  int Nz = M.Nz;
 
-	/* compute the total momentum */
-	vax = vay = vaz = 0.0;
-	vbx = vby = vbz = 0.0;
 	mass_a = mass_b = 0.0;
 	double maxSpeed = 0.0;
 	double localMaxSpeed = 0.0;
@@ -124,16 +116,9 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 					Phase[n] = phi;
 					mass_a += dA;
 					mass_b += dB;
-					if (phi > 0.0){
-						vax += Vel_x[n];
-						vay += Vel_y[n];
-						vaz += Vel_z[n];
-					}
-					else {
-						vbx += Vel_x[n];
-						vby += Vel_y[n];
-						vbz += Vel_z[n];
-					}
+					vx = Vel_x[n];
+					vy = Vel_y[n];
+					vz = Vel_z[n];
 					double local_momentum = sqrt(vx*vx+vy*vy+vz*vz);
 					double local_weight = (FRACTIONAL_FLOW_EPSILON + local_momentum);
 					if (phi > 0.0){
@@ -142,9 +127,8 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 					else {
 						sum_weights_B += local_weight*dB;						
 					}
-					double speed =  sqrt(vax*vax + vay*vay + vaz*vaz + vbx*vbx + vby*vby + vbz*vbz);
-					if ( speed > localMaxSpeed){
-						localMaxSpeed = speed;
+					if ( local_momentum > localMaxSpeed){
+						localMaxSpeed = local_momentum;
 					}
 				}
 			}
@@ -153,12 +137,6 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 	maxSpeed = M.Dm->Comm.maxReduce(localMaxSpeed);
 	mass_a_global = M.Dm->Comm.sumReduce(mass_a);
 	mass_b_global = M.Dm->Comm.sumReduce(mass_b);
-	vax_global = M.Dm->Comm.sumReduce(vax);
-	vay_global = M.Dm->Comm.sumReduce(vay);
-	vaz_global = M.Dm->Comm.sumReduce(vaz);
-	vbx_global = M.Dm->Comm.sumReduce(vbx);
-	vby_global = M.Dm->Comm.sumReduce(vby);
-	vbz_global = M.Dm->Comm.sumReduce(vbz);	 
 	double sum_weights_A_global = M.Dm->Comm.sumReduce(sum_weights_A);
 	double sum_weights_B_global = M.Dm->Comm.sumReduce(sum_weights_B);
 	sum_weights_A_global /= (FRACTIONAL_FLOW_EPSILON + maxSpeed);
