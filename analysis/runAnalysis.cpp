@@ -624,8 +624,8 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> input_db, const RankInfoStru
     d_N[1] = Dm->Ny;
     d_N[2] = Dm->Nz;
 
-    d_restart_interval           = db->getScalar<int>( "restart_interval" );
-    d_analysis_interval          = db->getScalar<int>( "analysis_interval" );
+    d_restart_interval           = db->getWithDefault<int>( "restart_interval", 100000 );
+    d_analysis_interval          = db->getWithDefault<int>( "analysis_interval", 1000 );
     d_subphase_analysis_interval = INT_MAX;
     d_visualization_interval     = INT_MAX;
     d_blobid_interval            = INT_MAX;
@@ -639,7 +639,7 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> input_db, const RankInfoStru
         d_subphase_analysis_interval = db->getScalar<int>( "subphase_analysis_interval" );
     }
 
-    auto restart_file = db->getScalar<std::string>( "restart_file" );
+    auto restart_file = db->getWithDefault<std::string>( "restart_file", "Restart");
     d_restartFile     = restart_file + "." + rankString;
 
 
@@ -765,8 +765,8 @@ runAnalysis::runAnalysis(  ScaLBL_ColorModel &ColorModel)
     d_N[1] = ColorModel.Dm->Ny;
     d_N[2] = ColorModel.Dm->Nz;
 
-    d_restart_interval           = db->getScalar<int>( "restart_interval" );
-    d_analysis_interval          = db->getScalar<int>( "analysis_interval" );
+    d_restart_interval           = db->getWithDefault<int>( "restart_interval", 100000 );
+    d_analysis_interval          = db->getWithDefault<int>( "analysis_interval", 1000 );
     d_subphase_analysis_interval = INT_MAX;
     d_visualization_interval     = INT_MAX;
     d_blobid_interval            = INT_MAX;
@@ -780,10 +780,9 @@ runAnalysis::runAnalysis(  ScaLBL_ColorModel &ColorModel)
         d_subphase_analysis_interval = db->getScalar<int>( "subphase_analysis_interval" );
     }
 
-    auto restart_file = db->getScalar<std::string>( "restart_file" );
+    auto restart_file = db->getWithDefault<std::string>( "restart_file", "Restart");
     d_restartFile     = restart_file + "." + rankString;
-
-
+    
     d_rank = d_comm.getRank();
     writeIDMap( ID_map_struct(), 0, id_map_filename );
     // Initialize IO for silo
