@@ -73,6 +73,13 @@ int main( int argc, char **argv )
 		Utilities::MPI comm( MPI_COMM_WORLD );
 		int rank   = comm.getRank();
 		int nprocs = comm.getSize();
+		
+		// Initialize compute device
+		int device = ScaLBL_SetDevice( rank );
+		NULL_USE( device );
+		ScaLBL_DeviceBarrier();
+		comm.barrier();
+		
 		Utilities::setErrorHandlers();
 		
 		if ( rank == 0 ) {
@@ -86,34 +93,42 @@ int main( int argc, char **argv )
 		auto color_db = std::make_shared<Database>();
 		auto vis_db = std::make_shared<Database>();
 		auto flow_db = std::make_shared<Database>();
+		auto analysis_db = std::make_shared<Database>();
+		auto db = std::make_shared<Database>();
 
 		domain_db->putVector<int>( "nproc", { 1, 1, 1 } );
 		domain_db->putVector<int>( "N", { 40, 40, 40 } );
 		domain_db->putVector<int>( "n", { 40, 40, 40 } );
 		domain_db->putScalar<int>( "BC", 0 );
 		
-		flow_db->putScalar<double>("mass_fraction_factor",0.0001);
-		flow_db->putScalar<int>("min_steady_timesteps",50);
-		flow_db->putScalar<int>("max_steady_timesteps",50);
+		flow_db->putScalar<double>("mass_fraction_factor",0.01);
+		flow_db->putScalar<int>("min_steady_timesteps",400);
+		flow_db->putScalar<int>("max_steady_timesteps",400);
+		flow_db->putScalar<int>("skiptimesteps",100);
 		
 		color_db->putScalar<double>("alpha",0.01);
+		color_db->putScalar<int>("timestepMax",2000);
+		color_db->putVector<int>( "ComponentLabels", { 0, -1 } );
+		color_db->putVector<double>( "ComponentAffinity", { 0.0, 0.0 } );
 
-		// Initialize compute device
-		int device = ScaLBL_SetDevice( rank );
-		NULL_USE( device );
-		ScaLBL_DeviceBarrier();
-		comm.barrier();
-		
+		db->putDatabase("Color",color_db);
+		db->putDatabase("Domain",domain_db);
+		db->putDatabase("FlowAdaptor",flow_db);
+		db->putDatabase("Visualization",vis_db);
+		db->putDatabase("Analysis",analysis_db);
+
 		ScaLBL_ColorModel ColorModel( rank, nprocs, comm );
 		ColorModel.color_db = color_db;
 		ColorModel.domain_db = domain_db;
-		//ColorModel.flow_db = flow_db;
 		ColorModel.vis_db = vis_db;
+		ColorModel.analysis_db = analysis_db;
+		ColorModel.db = db;
 		
-
 		//ColorModel.ReadParams( filename );
-		//ColorModel.SetDomain();
-		ColorModel.ReadInput();
+		ColorModel.SetDomain();
+		//ColorModel.ReadInput();
+		double radius=15.5;
+		InitializeBubble(ColorModel,radius);
 		
 		ColorModel.Create();     // creating the model will create data structure to match the pore
 		// structure and allocate variables
@@ -124,7 +139,8 @@ int main( int argc, char **argv )
 		bool ContinueSimulation = true;
 
 		/* Variables for simulation protocols */
-		auto PROTOCOL = ColorModel.color_db->getWithDefault<std::string>( "protocol", "default" );
+		//auto PROTOCOL = ColorModel.color_db->getWithDefault<std::string>( "protocol", "default" );
+		std::string PROTOCOL = "fractional flow";
 		/* image sequence protocol */
 		int IMAGE_INDEX = 0;
 		int IMAGE_COUNT = 0;
@@ -132,22 +148,19 @@ int main( int argc, char **argv )
 		/* flow adaptor keys to control behavior */			
 		int SKIP_TIMESTEPS = 0;
 		int MAX_STEADY_TIME = 1000000;
+		double SEED_WATER = 0.01;
 		double ENDPOINT_THRESHOLD = 0.1;
 		double FRACTIONAL_FLOW_INCREMENT = 0.0; // this will skip the flow adaptor if not enabled
-		double SEED_WATER = 0.0;
-		if (ColorModel.db->keyExists( "FlowAdaptor" )){
-			auto flow_db = ColorModel.db->getDatabase( "FlowAdaptor" );
-			MAX_STEADY_TIME = flow_db->getWithDefault<int>( "max_steady_timesteps", 1000000 );
-			SKIP_TIMESTEPS = flow_db->getWithDefault<int>( "skip_timesteps", 50000 );
-			ENDPOINT_THRESHOLD = flow_db->getWithDefault<double>( "endpoint_threshold", 0.1);
-			/* protocol specific key values */
-			if (PROTOCOL == "image sequence" || PROTOCOL == "core flooding")
-				SKIP_TIMESTEPS = 0;
-			if (PROTOCOL == "fractional flow")
-				FRACTIONAL_FLOW_INCREMENT = flow_db->getWithDefault<double>( "fractional_flow_increment", 0.05);
-			if (PROTOCOL == "seed water")
-				SEED_WATER = flow_db->getWithDefault<double>( "seed_water", 0.01);
-		}
+
+		MAX_STEADY_TIME = flow_db->getWithDefault<int>( "max_steady_timesteps", 1000000 );
+		SKIP_TIMESTEPS = flow_db->getWithDefault<int>( "skip_timesteps", 50000 );
+		ENDPOINT_THRESHOLD = flow_db->getWithDefault<double>( "endpoint_threshold", 0.1);
+		/* protocol specific key values */
+		if (PROTOCOL == "fractional flow")
+			FRACTIONAL_FLOW_INCREMENT = flow_db->getWithDefault<double>( "fractional_flow_increment", 0.05);
+		else if (PROTOCOL == "seed water")
+			SEED_WATER = flow_db->getWithDefault<double>( "seed_water", 0.01);
+
 		/* analysis keys*/
 		int ANALYSIS_INTERVAL = ColorModel.timestepMax;
 		if (ColorModel.analysis_db->keyExists( "analysis_interval" )){
