@@ -107,7 +107,7 @@ int main( int argc, char **argv )
 		ScaLBL_ColorModel ColorModel( rank, nprocs, comm );
 		ColorModel.color_db = color_db;
 		ColorModel.domain_db = domain_db;
-		ColorModel.flow_db = flow_db;
+		//ColorModel.flow_db = flow_db;
 		ColorModel.vis_db = vis_db;
 		
 
