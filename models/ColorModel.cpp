@@ -763,6 +763,7 @@ double ScaLBL_ColorModel::Run(int returntime){
 			
 			if (TRIGGER_FORCE_RESCALE){
 				RESCALE_FORCE = false;
+				TRIGGER_FORCE_RESCALE = false;
 				double RESCALE_FORCE_FACTOR = capillary_number / Ca;
 				if (RESCALE_FORCE_FACTOR > 2.0) RESCALE_FORCE_FACTOR = 2.0;
 				if (RESCALE_FORCE_FACTOR < 0.5) RESCALE_FORCE_FACTOR = 0.5;
