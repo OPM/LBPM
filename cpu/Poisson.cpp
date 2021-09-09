@@ -311,7 +311,7 @@ extern "C" void ScaLBL_D3Q7_PoissonResidualError(int *neighborList, int *Map, do
 		nn = ijk-strideZ+strideY;					// neighbor index (get convention)
 		m18 = Psi[nn];					// get neighbor for phi - 18
 
-		psi_Laplacian = 2.0*3.0/18.0*(m1+m2+m3+m4+m5+m6-6*phi+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*psi));//Laplacian of electric potential
+		psi_Laplacian = 2.0*3.0/18.0*(m1+m2+m3+m4+m5+m6-6*psi+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*psi));//Laplacian of electric potential
         residual_error = psi_Laplacian+rho_e/epsilon_LB;
 		ResidualError[n] = residual_error;
 	}

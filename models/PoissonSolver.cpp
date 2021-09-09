@@ -542,7 +542,7 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, int timestep_from_Study){
 
 	timestep=0;
 	double error = 1.0;
-	double psi_avg_previous = 0.0;
+	//double psi_avg_previous = 0.0;
 	while (timestep < timestepMax && error > tolerance) {
 		//************************************************************************/
 		// *************ODD TIMESTEP*************//
@@ -562,16 +562,24 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, int timestep_from_Study){
         // Check convergence of steady-state solution
         if (timestep%analysis_interval==0){
         
-            ScaLBL_D3Q7_PoissonResidualError(NeighborList,dvcMap,ResidualError,Psi,ChargeDensity,epsilon_LB,Nx,Nx*Ny,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior())
-            ScaLBL_D3Q7_PoissonResidualError(NeighborList,dvcMap,ResidualError,Psi,ChargeDensity,epsilon_LB,Nx,Nx*Ny,0, ScaLBL_Comm->LastExterior())
+            ScaLBL_D3Q7_PoissonResidualError(NeighborList,dvcMap,ResidualError,Psi,ChargeDensity,epsilon_LB,Nx,Nx*Ny,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior());
+            ScaLBL_D3Q7_PoissonResidualError(NeighborList,dvcMap,ResidualError,Psi,ChargeDensity,epsilon_LB,Nx,Nx*Ny,0, ScaLBL_Comm->LastExterior());
 
             vector<double> ResidualError_host(Np);
             double error_loc_max;
             //calculate the maximum residual error
-            ScaLBL_CopyToHost(ResidualError_host,ResidualError,sizeof(double)*Np);
-            vector<double>::iterator it_max = max_element(ResidualError_host[0],ResidualError_host[ScaLBL_Comm->LastExterior()]);
+            ScaLBL_CopyToHost(&ResidualError_host,ResidualError,sizeof(double)*Np);
+            vector<double>::iterator it_temp1,it_temp2;
+            it_temp1=ResidualError_host.begin();
+            advance(it_temp1,ScaLBL_Comm->LastExterior());
+            vector<double>::iterator it_max = max_element(ResidualError_host.begin(),it_temp1);
             unsigned int idx_max1 = distance(ResidualError_host.begin(),it_max);
-            it_max = max_element(ResidualError_host[ScaLBL_Comm->FirstInterior()], ResidualError_host[ScaLBL_Comm->LastInterior()]);
+
+            it_temp1=ResidualError_host.begin();
+            it_temp2=ResidualError_host.begin();
+            advance(it_temp1,ScaLBL_Comm->FirstInterior());
+            advance(it_temp2,ScaLBL_Comm->LastInterior());
+            it_max = max_element(it_temp1,it_temp2);
             unsigned int idx_max2 = distance(ResidualError_host.begin(),it_max);
             if (ResidualError_host[idx_max1]>ResidualError_host[idx_max2]){
                 error_loc_max=ResidualError_host[idx_max1];
