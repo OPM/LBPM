@@ -338,6 +338,7 @@ void ScaLBL_Poisson::Create(){
 	ScaLBL_AllocateDeviceMemory((void **) &fq, 7*dist_mem_size);  
 	ScaLBL_AllocateDeviceMemory((void **) &Psi, sizeof(double)*Nx*Ny*Nz);
 	ScaLBL_AllocateDeviceMemory((void **) &ElectricField, 3*sizeof(double)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &ResidualError, sizeof(double)*Np);
 	//...........................................................................
 	
 	// Update GPU data structures
@@ -561,31 +562,24 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, int timestep_from_Study){
         // Check convergence of steady-state solution
         if (timestep%analysis_interval==0){
         
-			//ScaLBL_Comm->RegularLayout(Map,Psi,Psi_host);
-            ScaLBL_CopyToHost(Psi_host.data(),Psi,sizeof(double)*Nx*Ny*Nz);
-			double count_loc=0;
-			double count;
-            double psi_avg;
-            double psi_loc=0.f;
+            ScaLBL_D3Q7_PoissonResidualError(NeighborList,dvcMap,ResidualError,Psi,ChargeDensity,epsilon_LB,Nx,Nx*Ny,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior())
+            ScaLBL_D3Q7_PoissonResidualError(NeighborList,dvcMap,ResidualError,Psi,ChargeDensity,epsilon_LB,Nx,Nx*Ny,0, ScaLBL_Comm->LastExterior())
 
-			for (int k=1; k<Nz-1; k++){
-				for (int j=1; j<Ny-1; j++){
-					for (int i=1; i<Nx-1; i++){
-						if (Distance(i,j,k) > 0){
-							psi_loc += Psi_host(i,j,k);
-							count_loc+=1.0;
-						}
-					}
-				}
-			}
-			psi_avg=Dm->Comm.sumReduce(  psi_loc);
-			count=Dm->Comm.sumReduce(  count_loc);
-
-			psi_avg /= count;
-            double psi_avg_mag=psi_avg;
-		    if (psi_avg==0.0) psi_avg_mag=1.0;
-            error = fabs(psi_avg-psi_avg_previous)/fabs(psi_avg_mag);
-			psi_avg_previous = psi_avg;
+            vector<double> ResidualError_host(Np);
+            double error_loc_max;
+            //calculate the maximum residual error
+            ScaLBL_CopyToHost(ResidualError_host,ResidualError,sizeof(double)*Np);
+            vector<double>::iterator it_max = max_element(ResidualError_host[0],ResidualError_host[ScaLBL_Comm->LastExterior()]);
+            unsigned int idx_max1 = distance(ResidualError_host.begin(),it_max);
+            it_max = max_element(ResidualError_host[ScaLBL_Comm->FirstInterior()], ResidualError_host[ScaLBL_Comm->LastInterior()]);
+            unsigned int idx_max2 = distance(ResidualError_host.begin(),it_max);
+            if (ResidualError_host[idx_max1]>ResidualError_host[idx_max2]){
+                error_loc_max=ResidualError_host[idx_max1];
+            }
+            else{
+                error_loc_max=ResidualError_host[idx_max2];
+            }
+			error = Dm->Comm.maxReduce(error_loc_max);
         }
 	}
     if(WriteLog==true){

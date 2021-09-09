@@ -85,6 +85,7 @@ public:
     double *Psi; 
     double *ElectricField;
     double *ChargeDensityDummy;// for debugging
+    double *ResidualError;
 
 private:
 	Utilities::MPI comm;
