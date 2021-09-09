@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <fstream>
 #include <cmath>
+#include <iterator>
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"

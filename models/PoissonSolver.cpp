@@ -542,12 +542,10 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, int timestep_from_Study){
 
 	timestep=0;
 	double error = 1.0;
-	//double psi_avg_previous = 0.0;
 	while (timestep < timestepMax && error > tolerance) {
 		//************************************************************************/
 		// *************ODD TIMESTEP*************//
         timestep++;
-        
         SolveElectricPotentialAAodd(timestep_from_Study);//update electric potential
         SolvePoissonAAodd(ChargeDensity);//perform collision
 		ScaLBL_Comm->Barrier(); comm.barrier();
@@ -564,11 +562,13 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, int timestep_from_Study){
         
             ScaLBL_D3Q7_PoissonResidualError(NeighborList,dvcMap,ResidualError,Psi,ChargeDensity,epsilon_LB,Nx,Nx*Ny,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior());
             ScaLBL_D3Q7_PoissonResidualError(NeighborList,dvcMap,ResidualError,Psi,ChargeDensity,epsilon_LB,Nx,Nx*Ny,0, ScaLBL_Comm->LastExterior());
+		    ScaLBL_Comm->Barrier(); comm.barrier();
 
             vector<double> ResidualError_host(Np);
             double error_loc_max;
             //calculate the maximum residual error
-            ScaLBL_CopyToHost(&ResidualError_host,ResidualError,sizeof(double)*Np);
+            ScaLBL_CopyToHost(&ResidualError_host[0],ResidualError,sizeof(double)*Np);
+
             vector<double>::iterator it_temp1,it_temp2;
             it_temp1=ResidualError_host.begin();
             advance(it_temp1,ScaLBL_Comm->LastExterior());
