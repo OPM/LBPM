@@ -181,9 +181,11 @@ int main( int argc, char **argv )
 					if (rank==0) printf("  *********************************************************************  \n");
 				}
 				/*********************************************************/
+				if (rank==0) printf("   (flatten density field)  \n");
+				if (PROTOCOL == "fractional flow")	{							
+					Adapt.Flatten(ColorModel);
+				}
 			}
-			if (rank==0) printf("   (flatten density field)  \n");
-			Adapt.Flatten(ColorModel);
 		}
 		
 		PROFILE_STOP( "Main" );
