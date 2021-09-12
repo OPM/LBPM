@@ -182,8 +182,9 @@ int main( int argc, char **argv )
 				}
 				/*********************************************************/
 			}
+			if (rank==0) printf("   (flatten density field)  \n");
+			Adapt.Flatten(ColorModel);
 		}
-		
 		
 		PROFILE_STOP( "Main" );
 		auto file  = db->getWithDefault<std::string>( "TimerFile", "lbpm_color_simulator" );
