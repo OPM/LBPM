@@ -69,8 +69,8 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	if (electric_db->keyExists( "tolerance" )){
 		tolerance = electric_db->getScalar<double>( "tolerance" );
 	}
-    //'tolerance_method' can be {"sum","max"}
-	tolerance_method = electric_db->getWithDefault<std::string>( "tolerance_method", "sum" );
+    //'tolerance_method' can be {"MSE","MSE_max"}
+	tolerance_method = electric_db->getWithDefault<std::string>( "tolerance_method", "MSE" );
 	if (electric_db->keyExists( "epsilonR" )){
 		epsilonR = electric_db->getScalar<double>( "epsilonR" );
 	}
@@ -124,10 +124,10 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	if (rank==0) printf("LB-Poisson Solver: steady-state MaxTimeStep = %i; steady-state tolerance = %.3g \n", timestepMax,tolerance);
 	if (rank==0) printf("                   LB relaxation tau = %.5g \n", tau);
 	if (rank==0) printf("***********************************************************************************\n");
-    if (tolerance_method.compare("sum")==0){
+    if (tolerance_method.compare("MSE")==0){
         if (rank==0) printf("LB-Poisson Solver: Use averaged MSE to check solution convergence.\n");
     }
-    else if (tolerance_method.compare("max")==0){
+    else if (tolerance_method.compare("MSE_max")==0){
         if (rank==0) printf("LB-Poisson Solver: Use maximum MSE to check solution convergence.\n");
     }
     else{
@@ -575,7 +575,7 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, int timestep_from_Study){
             ScaLBL_CopyToHost(Psi_previous.data(),Psi,sizeof(double)*Nx*Ny*Nz);
         }
         if (timestep%analysis_interval==0){
-            if (tolerance_method.compare("sum")==0){
+            if (tolerance_method.compare("MSE")==0){
                 double count_loc=0;
                 double count;
                 double MSE_loc=0.0;
@@ -594,7 +594,7 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, int timestep_from_Study){
                 count=Dm->Comm.sumReduce(count_loc);
                 error /= count;
             }
-            else if (tolerance_method.compare("max")==0){
+            else if (tolerance_method.compare("MSE_max")==0){
                 vector<double>MSE_loc;
                 double MSE_loc_max;
                 ScaLBL_CopyToHost(Psi_host.data(),Psi,sizeof(double)*Nx*Ny*Nz);
