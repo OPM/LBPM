@@ -598,8 +598,8 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, int timestep_from_Study){
                         }
                     }
                 }
-                vector<double>::iterator it_max = max_element(MSE_loc.begin(),MSE.end());
-                unsigned int idx_max=distance(MSE_loc.begin();it_max);
+                vector<double>::iterator it_max = max_element(MSE_loc.begin(),MSE_loc.end());
+                unsigned int idx_max=distance(MSE_loc.begin(),it_max);
                 MSE_loc_max=MSE_loc[idx_max];
                 error=Dm->Comm.maxReduce(MSE_loc_max);
             }
