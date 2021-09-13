@@ -89,7 +89,7 @@ Array<TYPE> imfilter_separable( const Array<TYPE>& A, const std::vector<Array<TY
  *    multidimensional filter H.  The result B has the same size and class as A.
  *    This version works with separable filters and is more efficient than a single filter.
  * @param[in]  A            The input array (Nx,Ny,Nz)
- * @param[in]  H            The filter [2*Nhx+1,2*Nhy+1,...]
+ * @param[in]  Nh           The filter size
  * @param[in]  boundary     The boundary conditions to apply (ndim):
  *                          fixed     - Input array values outside the bounds of the array are
  *                                      implicitly assumed to have the value X
@@ -114,6 +114,7 @@ Array<TYPE> imfilter_separable( const Array<TYPE>& A, const std::vector<int>& Nh
  *    This version works with separable filters and is more efficient than a single filter.
  * @param[in]  A            The input array (Nx,Ny,Nz)
  * @param[in]  H            The filter [2*Nhx+1,2*Nhy+1,...]
+ * @param[in]  Nh           The filter size
  * @param[in]  boundary     The boundary conditions to apply (ndim):
  *                          fixed     - Input array values outside the bounds of the array are
  *                                      implicitly assumed to have the value X

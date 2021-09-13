@@ -821,7 +821,7 @@ public: // Member functions
      * @return           Output array for allGather
      */
     template<class type>
-    std::vector<type> allGather( const std::vector<type> &x_in ) const;
+    std::vector<type> allGather( const std::vector<type> &x ) const;
 
 
     /*!

@@ -24,6 +24,7 @@ inline bool operator<(const Vec& l, const Vec& r){ return l.x*l.x+l.y*l.y+l.z*l.
  * @param[in] ID            Segmentation id
  * @param[in] Dm            Domain information
  * @param[in] periodic      Directions that are periodic
+ * @param[in] dx            Cell size
  */
 template<class TYPE>
 void CalcDist( Array<TYPE> &Distance, const Array<char> &ID, const Domain &Dm,
@@ -36,6 +37,7 @@ void CalcDist( Array<TYPE> &Distance, const Array<char> &ID, const Domain &Dm,
  * @param[in] ID            Domain id
  * @param[in] Dm            Domain information
  * @param[in] periodic      Directions that are periodic
+ * @param[in] dx            Cell size
  */
 void CalcVecDist( Array<Vec> &Distance, const Array<int> &ID, const Domain &Dm,
     const std::array<bool,3>& periodic = {true,true,true}, const std::array<double,3>& dx = {1,1,1} );
