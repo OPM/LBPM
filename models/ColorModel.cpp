@@ -590,19 +590,24 @@ double ScaLBL_ColorModel::Run(int returntime){
 	bool Regular = false;
 	bool RESCALE_FORCE = false;
 	bool SET_CAPILLARY_NUMBER = false;
+	bool TRIGGER_FORCE_RESCALE = false;
 	double tolerance = 0.01;
 	auto current_db = db->cloneDatabase();
     auto flow_db = db->getDatabase( "FlowAdaptor" );
 	int MIN_STEADY_TIMESTEPS = flow_db->getWithDefault<int>( "min_steady_timesteps", 1000000 );
 	int MAX_STEADY_TIMESTEPS = flow_db->getWithDefault<int>( "max_steady_timesteps", 1000000 );
-
 	int RESCALE_FORCE_AFTER_TIMESTEP = MAX_STEADY_TIMESTEPS*2;
+	int INITIAL_TIMESTEP = timestep;
 
 	double capillary_number = 1.0e-5;
 	double Ca_previous = 0.0;
+	double minCa = 8.0e-6;
+	double maxCa = 1.0;
 	if (color_db->keyExists( "capillary_number" )){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
 		SET_CAPILLARY_NUMBER=true;
+		maxCa = 2.0*capillary_number;
+		minCa = 0.8*capillary_number;
 	}
 	if (color_db->keyExists( "rescale_force_after_timestep" )){
 		RESCALE_FORCE_AFTER_TIMESTEP = color_db->getScalar<int>( "rescale_force_after_timestep" );
@@ -739,8 +744,26 @@ double ScaLBL_ColorModel::Run(int returntime){
 				isSteady = true;
 			if (CURRENT_TIMESTEP >= MAX_STEADY_TIMESTEPS)
 				isSteady = true;
+			
+			if (isSteady && (Ca > maxCa || Ca < minCa) && SET_CAPILLARY_NUMBER ){
+				/* re-run the point if the actual Ca is too far from the target Ca */
+				isSteady = false;
+				RESCALE_FORCE = true;
+				t1 = std::chrono::system_clock::now();
+				CURRENT_TIMESTEP = 0;
+				timestep = INITIAL_TIMESTEP;
+				TRIGGER_FORCE_RESCALE = true;
+				if (rank == 0) printf("    Capillary number missed target value = %f (measured value was Ca = %f) \n ",capillary_number, Ca);
+
+			}
+	
 			if (RESCALE_FORCE == true && SET_CAPILLARY_NUMBER == true && CURRENT_TIMESTEP > RESCALE_FORCE_AFTER_TIMESTEP){
+				TRIGGER_FORCE_RESCALE = true;
+			}
+			
+			if (TRIGGER_FORCE_RESCALE){
 				RESCALE_FORCE = false;
+				TRIGGER_FORCE_RESCALE = false;
 				double RESCALE_FORCE_FACTOR = capillary_number / Ca;
 				if (RESCALE_FORCE_FACTOR > 2.0) RESCALE_FORCE_FACTOR = 2.0;
 				if (RESCALE_FORCE_FACTOR < 0.5) RESCALE_FORCE_FACTOR = 0.5;
