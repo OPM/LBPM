@@ -124,6 +124,15 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	if (rank==0) printf("LB-Poisson Solver: steady-state MaxTimeStep = %i; steady-state tolerance = %.3g \n", timestepMax,tolerance);
 	if (rank==0) printf("                   LB relaxation tau = %.5g \n", tau);
 	if (rank==0) printf("***********************************************************************************\n");
+    if (tolerance_method.compare("sum")==0){
+        if (rank==0) printf("LB-Poisson Solver: Use averaged MSE to check solution convergence.\n");
+    }
+    else if (tolerance_method.compare("max")==0){
+        if (rank==0) printf("LB-Poisson Solver: Use maximum MSE to check solution convergence.\n");
+    }
+    else{
+        if (rank==0) printf("LB-Poisson Solver: tolerance_method=%s cannot be identified!\n",tolerance_method.c_str());
+    }
 
     switch (BoundaryConditionSolid){
         case 1:
