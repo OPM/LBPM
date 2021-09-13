@@ -69,6 +69,8 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	if (electric_db->keyExists( "tolerance" )){
 		tolerance = electric_db->getScalar<double>( "tolerance" );
 	}
+    //'tolerance_method' can be {"sum","max"}
+	auto tolerance_method = electric_db->getWithDefault<std::string>( "tolerance_method", "sum" );
 	if (electric_db->keyExists( "epsilonR" )){
 		epsilonR = electric_db->getScalar<double>( "epsilonR" );
 	}
