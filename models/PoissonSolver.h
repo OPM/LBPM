@@ -49,6 +49,7 @@ public:
     int BoundaryConditionSolid;
 	double tau;
 	double tolerance;
+    std::string tolerance_method;
     double k2_inv;
     double epsilon0,epsilon0_LB,epsilonR,epsilon_LB;
     double Vin, Vout;

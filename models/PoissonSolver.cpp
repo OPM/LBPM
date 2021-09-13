@@ -70,7 +70,7 @@ void ScaLBL_Poisson::ReadParams(string filename){
 		tolerance = electric_db->getScalar<double>( "tolerance" );
 	}
     //'tolerance_method' can be {"sum","max"}
-	auto tolerance_method = electric_db->getWithDefault<std::string>( "tolerance_method", "sum" );
+	tolerance_method = electric_db->getWithDefault<std::string>( "tolerance_method", "sum" );
 	if (electric_db->keyExists( "epsilonR" )){
 		epsilonR = electric_db->getScalar<double>( "epsilonR" );
 	}
@@ -566,25 +566,46 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, int timestep_from_Study){
             ScaLBL_CopyToHost(Psi_previous.data(),Psi,sizeof(double)*Nx*Ny*Nz);
         }
         if (timestep%analysis_interval==0){
-
-			double count_loc=0;
-			double count;
-            double MSE_loc=0.0;
-            //double MSE;
-            ScaLBL_CopyToHost(Psi_host.data(),Psi,sizeof(double)*Nx*Ny*Nz);
-			for (int k=1; k<Nz-1; k++){
-				for (int j=1; j<Ny-1; j++){
-					for (int i=1; i<Nx-1; i++){
-						if (Distance(i,j,k) > 0){
-                            MSE_loc += (Psi_host(i,j,k) - Psi_previous(i,j,k))*(Psi_host(i,j,k) - Psi_previous(i,j,k));
-							count_loc+=1.0;
-						}
-					}
-				}
-			}
-            error=Dm->Comm.sumReduce(MSE_loc);
-            count=Dm->Comm.sumReduce(count_loc);
-            error /= count;
+            if (tolerance_method.compare("sum")==0){
+                double count_loc=0;
+                double count;
+                double MSE_loc=0.0;
+                ScaLBL_CopyToHost(Psi_host.data(),Psi,sizeof(double)*Nx*Ny*Nz);
+                for (int k=1; k<Nz-1; k++){
+                    for (int j=1; j<Ny-1; j++){
+                        for (int i=1; i<Nx-1; i++){
+                            if (Distance(i,j,k) > 0){
+                                MSE_loc += (Psi_host(i,j,k) - Psi_previous(i,j,k))*(Psi_host(i,j,k) - Psi_previous(i,j,k));
+                                count_loc+=1.0;
+                            }
+                        }
+                    }
+                }
+                error=Dm->Comm.sumReduce(MSE_loc);
+                count=Dm->Comm.sumReduce(count_loc);
+                error /= count;
+            }
+            else if (tolerance_method.compare("max")==0){
+                vector<double>MSE_loc;
+                double MSE_loc_max;
+                ScaLBL_CopyToHost(Psi_host.data(),Psi,sizeof(double)*Nx*Ny*Nz);
+                for (int k=1; k<Nz-1; k++){
+                    for (int j=1; j<Ny-1; j++){
+                        for (int i=1; i<Nx-1; i++){
+                            if (Distance(i,j,k) > 0){
+                                MSE_loc.push_back((Psi_host(i,j,k) - Psi_previous(i,j,k))*(Psi_host(i,j,k) - Psi_previous(i,j,k)));
+                            }
+                        }
+                    }
+                }
+                vector<double>::iterator it_max = max_element(MSE_loc.begin(),MSE.end());
+                unsigned int idx_max=distance(MSE_loc.begin();it_max);
+                MSE_loc_max=MSE_loc[idx_max];
+                error=Dm->Comm.maxReduce(MSE_loc_max);
+            }
+            else{
+		        ERROR("Error: user-specified tolerance_method cannot be identified; check you input database! \n");
+            }
             ScaLBL_CopyToHost(Psi_previous.data(),Psi,sizeof(double)*Nx*Ny*Nz);
 
 
