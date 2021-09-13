@@ -152,6 +152,7 @@ void ScaLBL_Poisson::SetDomain(){
 	N = Nx*Ny*Nz;
 	Distance.resize(Nx,Ny,Nz);
 	Psi_host.resize(Nx,Ny,Nz);
+	Psi_previous.resize(Nx,Ny,Nz);
 
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
@@ -560,7 +561,7 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, int timestep_from_Study){
 		//************************************************************************/
 
         // Check convergence of steady-state solution
-        if (timesetp==2){
+        if (timestep==2){
             //save electric potential for convergence check
             ScaLBL_CopyToHost(Psi_previous.data(),Psi,sizeof(double)*Nx*Ny*Nz);
         }
