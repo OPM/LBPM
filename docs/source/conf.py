@@ -18,7 +18,7 @@ import sys
 # -- Project information -----------------------------------------------------
 
 project = 'LBPM'
-copyright = '2021, James E McClure'
+copyright = '2021'
 author = 'James E McClure'
 
 # The full version, including alpha/beta/rc tags
