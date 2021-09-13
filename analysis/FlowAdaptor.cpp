@@ -207,68 +207,8 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 
 void FlowAdaptor::Flatten(ScaLBL_ColorModel &M){	
 
-	int Np = M.Np;
-	double dA, dB;
-
-	double *Aq_tmp, *Bq_tmp;
-
-	Aq_tmp = new double [7*Np];
-	Bq_tmp = new double [7*Np];
-
-	ScaLBL_CopyToHost(Aq_tmp, M.Aq, 7*Np*sizeof(double));
-	ScaLBL_CopyToHost(Bq_tmp, M.Bq, 7*Np*sizeof(double));
-
-	for (int n=0; n < M.ScaLBL_Comm->LastExterior(); n++){
-		dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
-		dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
-		if (dA > 1.0){
-			double mass_change = dA - 1.0;
-			Aq_tmp[n] -= 0.333333333333333*mass_change;
-			Aq_tmp[n+Np] -= 0.111111111111111*mass_change;
-			Aq_tmp[n+2*Np] -= 0.111111111111111*mass_change;
-			Aq_tmp[n+3*Np] -= 0.111111111111111*mass_change;
-			Aq_tmp[n+4*Np] -= 0.111111111111111*mass_change;
-			Aq_tmp[n+5*Np] -= 0.111111111111111*mass_change;
-			Aq_tmp[n+6*Np] -= 0.111111111111111*mass_change;
-		}
-		if (dB > 1.0){
-			double mass_change = dB - 1.0;
-			Bq_tmp[n] -= 0.333333333333333*mass_change;
-			Bq_tmp[n+Np] -= 0.111111111111111*mass_change;
-			Bq_tmp[n+2*Np] -= 0.111111111111111*mass_change;
-			Bq_tmp[n+3*Np] -= 0.111111111111111*mass_change;
-			Bq_tmp[n+4*Np] -= 0.111111111111111*mass_change;
-			Bq_tmp[n+5*Np] -= 0.111111111111111*mass_change;
-			Bq_tmp[n+6*Np] -= 0.111111111111111*mass_change;
-		}
-	}
-	for (int n=M.ScaLBL_Comm->FirstInterior(); n < M.ScaLBL_Comm->LastInterior(); n++){
-		dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
-		dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
-		if (dA > 1.0){
-			double mass_change = dA - 1.0;
-			Aq_tmp[n] -= 0.333333333333333*mass_change;
-			Aq_tmp[n+Np] -= 0.111111111111111*mass_change;
-			Aq_tmp[n+2*Np] -= 0.111111111111111*mass_change;
-			Aq_tmp[n+3*Np] -= 0.111111111111111*mass_change;
-			Aq_tmp[n+4*Np] -= 0.111111111111111*mass_change;
-			Aq_tmp[n+5*Np] -= 0.111111111111111*mass_change;
-			Aq_tmp[n+6*Np] -= 0.111111111111111*mass_change;
-		}
-		if (dB > 1.0){
-			double mass_change = dB - 1.0;
-			Bq_tmp[n] -= 0.333333333333333*mass_change;
-			Bq_tmp[n+Np] -= 0.111111111111111*mass_change;
-			Bq_tmp[n+2*Np] -= 0.111111111111111*mass_change;
-			Bq_tmp[n+3*Np] -= 0.111111111111111*mass_change;
-			Bq_tmp[n+4*Np] -= 0.111111111111111*mass_change;
-			Bq_tmp[n+5*Np] -= 0.111111111111111*mass_change;
-			Bq_tmp[n+6*Np] -= 0.111111111111111*mass_change;
-		}
-	}
-
-	ScaLBL_CopyToDevice(M.Aq, Aq_tmp, 7*Np*sizeof(double));
-	ScaLBL_CopyToDevice(M.Bq, Bq_tmp, 7*Np*sizeof(double));
+	ScaLBL_PhaseField_Init(M.dvcMap, M.Phi, M.Den, M.Aq, M.Bq, 0, M.ScaLBL_Comm->LastExterior(), M.Np);
+	ScaLBL_PhaseField_Init(M.dvcMap, M.Phi, M.Den, M.Aq, M.Bq, M.ScaLBL_Comm->FirstInterior(), M.ScaLBL_Comm->LastInterior(), M.Np);
 }
 
 double FlowAdaptor::MoveInterface(ScaLBL_ColorModel &M){	
