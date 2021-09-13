@@ -79,6 +79,7 @@ public:
     IntArray Map;
     DoubleArray Distance;
     DoubleArray Psi_host;
+    DoubleArray Psi_previous;
     int *NeighborList;
     int *dvcMap;
     //signed char *dvcID;

@@ -558,36 +558,65 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, int timestep_from_Study){
 		//************************************************************************/
 
         // Check convergence of steady-state solution
+        if (timesetp==2){
+            //save electric potential for convergence check
+            ScaLBL_CopyToHost(Psi_previous.data(),Psi,sizeof(double)*Nx*Ny*Nz);
+        }
         if (timestep%analysis_interval==0){
-        
-            ScaLBL_D3Q7_PoissonResidualError(NeighborList,dvcMap,ResidualError,Psi,ChargeDensity,epsilon_LB,Nx,Nx*Ny,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior());
-            ScaLBL_D3Q7_PoissonResidualError(NeighborList,dvcMap,ResidualError,Psi,ChargeDensity,epsilon_LB,Nx,Nx*Ny,0, ScaLBL_Comm->LastExterior());
-		    ScaLBL_Comm->Barrier(); comm.barrier();
 
-            vector<double> ResidualError_host(Np);
-            double error_loc_max;
-            //calculate the maximum residual error
-            ScaLBL_CopyToHost(&ResidualError_host[0],ResidualError,sizeof(double)*Np);
+			double count_loc=0;
+			double count;
+            double MSE_loc=0.0;
+            //double MSE;
+            ScaLBL_CopyToHost(Psi_host.data(),Psi,sizeof(double)*Nx*Ny*Nz);
+			for (int k=1; k<Nz-1; k++){
+				for (int j=1; j<Ny-1; j++){
+					for (int i=1; i<Nx-1; i++){
+						if (Distance(i,j,k) > 0){
+                            MSE_loc += (Psi_host(i,j,k) - Psi_previous(i,j,k))*(Psi_host(i,j,k) - Psi_previous(i,j,k));
+							count_loc+=1.0;
+						}
+					}
+				}
+			}
+            error=Dm->Comm.sumReduce(MSE_loc);
+            count=Dm->Comm.sumReduce(count_loc);
+            error /= count;
+            ScaLBL_CopyToHost(Psi_previous.data(),Psi,sizeof(double)*Nx*Ny*Nz);
 
-            vector<double>::iterator it_temp1,it_temp2;
-            it_temp1=ResidualError_host.begin();
-            advance(it_temp1,ScaLBL_Comm->LastExterior());
-            vector<double>::iterator it_max = max_element(ResidualError_host.begin(),it_temp1);
-            unsigned int idx_max1 = distance(ResidualError_host.begin(),it_max);
 
-            it_temp1=ResidualError_host.begin();
-            it_temp2=ResidualError_host.begin();
-            advance(it_temp1,ScaLBL_Comm->FirstInterior());
-            advance(it_temp2,ScaLBL_Comm->LastInterior());
-            it_max = max_element(it_temp1,it_temp2);
-            unsigned int idx_max2 = distance(ResidualError_host.begin(),it_max);
-            if (ResidualError_host[idx_max1]>ResidualError_host[idx_max2]){
-                error_loc_max=ResidualError_host[idx_max1];
-            }
-            else{
-                error_loc_max=ResidualError_host[idx_max2];
-            }
-			error = Dm->Comm.maxReduce(error_loc_max);
+
+
+
+            //legacy code that tried to use residual to check convergence
+            //ScaLBL_D3Q7_PoissonResidualError(NeighborList,dvcMap,ResidualError,Psi,ChargeDensity,epsilon_LB,Nx,Nx*Ny,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior());
+            //ScaLBL_D3Q7_PoissonResidualError(NeighborList,dvcMap,ResidualError,Psi,ChargeDensity,epsilon_LB,Nx,Nx*Ny,0, ScaLBL_Comm->LastExterior());
+		    //ScaLBL_Comm->Barrier(); comm.barrier();
+
+            //vector<double> ResidualError_host(Np);
+            //double error_loc_max;
+            ////calculate the maximum residual error
+            //ScaLBL_CopyToHost(&ResidualError_host[0],ResidualError,sizeof(double)*Np);
+
+            //vector<double>::iterator it_temp1,it_temp2;
+            //it_temp1=ResidualError_host.begin();
+            //advance(it_temp1,ScaLBL_Comm->LastExterior());
+            //vector<double>::iterator it_max = max_element(ResidualError_host.begin(),it_temp1);
+            //unsigned int idx_max1 = distance(ResidualError_host.begin(),it_max);
+
+            //it_temp1=ResidualError_host.begin();
+            //it_temp2=ResidualError_host.begin();
+            //advance(it_temp1,ScaLBL_Comm->FirstInterior());
+            //advance(it_temp2,ScaLBL_Comm->LastInterior());
+            //it_max = max_element(it_temp1,it_temp2);
+            //unsigned int idx_max2 = distance(ResidualError_host.begin(),it_max);
+            //if (ResidualError_host[idx_max1]>ResidualError_host[idx_max2]){
+            //    error_loc_max=ResidualError_host[idx_max1];
+            //}
+            //else{
+            //    error_loc_max=ResidualError_host[idx_max2];
+            //}
+			//error = Dm->Comm.maxReduce(error_loc_max);
         }
 	}
     if(WriteLog==true){
