@@ -138,6 +138,8 @@ Array<TYPE> getAtt( int fid, const std::string &att );
  * @brief  Write the dimensions
  * @details  This function writes the grid dimensions to netcdf.
  * @param fid           Handle to the open file
+ * @param names
+ * @param dims
  */
 std::vector<int> defDim(
     int fid, const std::vector<std::string> &names, const std::vector<int> &dims );
@@ -147,6 +149,10 @@ std::vector<int> defDim(
  * @brief  Write a variable
  * @details  This function writes a variable to netcdf.
  * @param fid           Handle to the open file
+ * @param var           Variable to read
+ * @param dimids
+ * @param data
+ * @param rank_info
  */
 template<class TYPE>
 void write( int fid, const std::string &var, const std::vector<int> &dimids,

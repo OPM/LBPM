@@ -148,6 +148,8 @@ extern "C" void ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(int *Map, double *d
 
 extern "C" void ScaLBL_D3Q7_Poisson_Init(int *Map, double *dist, double *Psi, int start, int finish, int Np);
 
+//extern "C" void ScaLBL_D3Q7_PoissonResidualError(int *neighborList, int *Map, double *ResidualError, double *Psi, double *Den_charge, double epsilon_LB,int strideY, int strideZ,int start, int finish);
+
 //maybe deprecated
 //extern "C" void ScaLBL_D3Q7_Poisson_ElectricField(int *neighborList, int *Map, signed char *ID, double *Psi, double *ElectricField, int SolidBC,
 //        int strideY, int strideZ,int start, int finish, int Np);

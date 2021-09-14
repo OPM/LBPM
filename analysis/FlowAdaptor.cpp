@@ -207,6 +207,7 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 
 void FlowAdaptor::Flatten(ScaLBL_ColorModel &M){	
 
+	ScaLBL_D3Q19_Init(M.fq, M.Np);
 	ScaLBL_PhaseField_Init(M.dvcMap, M.Phi, M.Den, M.Aq, M.Bq, 0, M.ScaLBL_Comm->LastExterior(), M.Np);
 	ScaLBL_PhaseField_Init(M.dvcMap, M.Phi, M.Den, M.Aq, M.Bq, M.ScaLBL_Comm->FirstInterior(), M.ScaLBL_Comm->LastInterior(), M.Np);
 }

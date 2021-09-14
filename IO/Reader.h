@@ -102,7 +102,7 @@ std::shared_ptr<IO::Variable> getVariable( const std::string &path, const std::s
  * @brief Reformat the variable to match the mesh
  * @details  This function modifies the dimensions of the array to match the mesh
  * @param[in] mesh          The underlying mesh
- * @param[in/out] variable  The variable name to read
+ * @param[in,out] var       The variable name to read
  */
 void reformatVariable( const IO::Mesh &mesh, IO::Variable &var );
 

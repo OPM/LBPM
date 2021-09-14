@@ -237,7 +237,6 @@ inline int32_atomic atomic_fetch_and_or( int32_atomic volatile *v, int32_atomic 
  * \brief Fetch the current value and "ou" with given value
  * \details Perform *v = (*v) | x, returning the previous value
  * \return Returns the previous value before the "and" operation
- * \param[in] v     The pointer to the value to check and swap
  * \param[in] v     The pointer to the value to check and or
  * \param[in] x     The value to or
  */

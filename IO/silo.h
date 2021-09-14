@@ -64,7 +64,7 @@ void close( DBfile *fid );
  * @param[in] fid           Handle to the open file
  * @param[in] name          Name of variable
  */
-DataType varDataType( DBfile *dbfile, const std::string &name );
+DataType varDataType( DBfile *fid, const std::string &name );
 
 
 /*!
@@ -265,8 +265,6 @@ void writeMultiMesh( DBfile *fid, const std::string &meshname,
  * @param[in] varname       Mesh name
  * @param[in] subVarNames   Names of the sub meshes in the form "filename:meshname"
  * @param[in] subVarTypes   Type of each submesh
- * @param[in] ndim          Dimension of variable (used to determine suffix)
- * @param[in] nvar          Number of subvariables (used to determine suffix)
  */
 void writeMultiVar( DBfile *fid, const std::string &varname,
     const std::vector<std::string> &subVarNames, const std::vector<int> &subVarTypes );
