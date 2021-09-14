@@ -4,7 +4,7 @@
 /********************************************************
  *  Random number generation                             *
  ********************************************************/
-template<> char genRand<char>()
+/*template<> char genRand<char>()
 {
     static std::random_device rd;
     static std::mt19937 gen( rd() );
@@ -88,7 +88,7 @@ template<> long double genRand<long double>()
     static std::uniform_real_distribution<double> dis;
     return dis( gen );
 }
-
+*/
 
 /********************************************************
  *  axpy                                                 *

@@ -30,6 +30,7 @@ using StackTrace::Utilities::sleep_s;
  * \details This routine will peform the default startup sequence
  * \param argc              argc from main
  * \param argv              argv from main
+ * \param multiple          Intialize mpi with MPI_THREAD_MULTIPLE support?
  */
 void startup( int argc, char **argv, bool multiple=true );
 

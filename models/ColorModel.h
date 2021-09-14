@@ -10,6 +10,7 @@ Implementation of color lattice boltzmann model
 #include <fstream>
 
 #include "common/Communication.h"
+#include "analysis/FlowAdaptor.h"
 #include "analysis/TwoPhase.h"
 #include "analysis/runAnalysis.h"
 #include "common/MPI.h"
@@ -93,22 +94,5 @@ private:
     double MorphOpenConnected(double target_volume_change);
 };
 
-class FlowAdaptor{
-public:
-	FlowAdaptor(ScaLBL_ColorModel &M);
-	~FlowAdaptor();
-	double MoveInterface(ScaLBL_ColorModel &M);
-	double ImageInit(ScaLBL_ColorModel &M, std::string Filename);
-	double ShellAggregation(ScaLBL_ColorModel &M, const double delta_volume);
-	double UpdateFractionalFlow(ScaLBL_ColorModel &M);
-	double SeedPhaseField(ScaLBL_ColorModel &M, const double seed_water_in_oil);
-	void Flatten(ScaLBL_ColorModel &M);
-	DoubleArray phi;
-	DoubleArray phi_t;
-private:
-	int Nx, Ny, Nz;
-	int timestep;
-	int timestep_previous;
-};
 #endif
 

@@ -105,6 +105,7 @@ public:
      * @param[in] type          The element type
      * @param[in] NumElements   The number of elements
      * @param[in] dofMap        The connectivity information (type x NumElements)
+     * @param[in] NumNodes      The number of nodes
      * @param[in] x             The x coordinates or the xy/xyz coordinates
      * @param[in] y             The y coordinates (may be null)
      * @param[in] z             The z coordinates (may be null)
