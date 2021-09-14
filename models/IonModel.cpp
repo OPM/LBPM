@@ -627,13 +627,13 @@ void ScaLBL_IonModel::AssignSolidBoundary(double *ion_solid)
 	}
 }
 
-void ScaLBL_IonModel::AssignIonConcentration_FromFile(double *Ci,const vector<std::string> &File_ion)
+void ScaLBL_IonModel::AssignIonConcentration_FromFile(double *Ci,const vector<std::string> &File_ion, int ic)
 {
     double *Ci_host;
     Ci_host = new double[N];
 	double VALUE=0.f;
 
-    Mask->ReadFromFile(File_ion[0],File_ion[1],Ci_host);
+    Mask->ReadFromFile(File_ion[2*ic],File_ion[2*ic+1],Ci_host);
 
 	for (int k=0;k<Nz;k++){
 		for (int j=0;j<Ny;j++){
@@ -722,20 +722,24 @@ void ScaLBL_IonModel::Initialize(){
 	 */
     if (rank==0)    printf ("LB Ion Solver: initializing D3Q7 distributions\n");
 	if (ion_db->keyExists("IonConcentrationFile")){
-        //TODO: Need to figure out how to deal with multi-species concentration initialization
         //NOTE: "IonConcentrationFile" is a vector, including "file_name, datatype"
 		auto File_ion = ion_db->getVector<std::string>( "IonConcentrationFile" );
-        double *Ci_host;
-        Ci_host = new double[number_ion_species*Np];
-        for (size_t ic=0; ic<number_ion_species; ic++){
-            AssignIonConcentration_FromFile(&Ci_host[ic*Np],File_ion);
+        if (File_ion.size()==2*number_ion_species){
+            double *Ci_host;
+            Ci_host = new double[number_ion_species*Np];
+            for (size_t ic=0; ic<number_ion_species; ic++){
+                AssignIonConcentration_FromFile(&Ci_host[ic*Np],File_ion,ic);
+            }
+            ScaLBL_CopyToDevice(Ci, Ci_host, number_ion_species*sizeof(double)*Np);
+            comm.barrier();
+            for (size_t ic=0; ic<number_ion_species; ic++){
+                ScaLBL_D3Q7_Ion_Init_FromFile(&fq[ic*Np*7],&Ci[ic*Np],Np); 
+            }
+            delete [] Ci_host;
         }
-	    ScaLBL_CopyToDevice(Ci, Ci_host, number_ion_species*sizeof(double)*Np);
-	    comm.barrier();
-        for (size_t ic=0; ic<number_ion_species; ic++){
-            ScaLBL_D3Q7_Ion_Init_FromFile(&fq[ic*Np*7],&Ci[ic*Np],Np); 
+        else{
+            ERROR("Error: Number of user-input ion concentration files should be equal to number of ion species!\n");
         }
-        delete [] Ci_host;
     }
     else{
         for (size_t ic=0; ic<number_ion_species; ic++){
