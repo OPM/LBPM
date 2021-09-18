@@ -47,16 +47,39 @@ public:
 	double MoveInterface(ScaLBL_ColorModel &M);
 	
     /**
-     * \brief image re-initialization
-     * \details Re-initialize LB simulation from image data  
+     * \brief Image re-initialization
+     * \details Re-initialize LB simulation from image data
      * @param M        ScaLBL_ColorModel 
      * @param Filename    name of input file to be used to read image 
     */
 	double ImageInit(ScaLBL_ColorModel &M, std::string Filename);
 	
+    /**
+     * \details Update volume fraction based on morphological algorithm. Dilation / erosion algorithm will be applied to 
+     * grow / shrink the phase regions
+     * @param M        ScaLBL_ColorModel 
+     * @param delta_volume    target change in volume fraction 
+    */
 	double ShellAggregation(ScaLBL_ColorModel &M, const double delta_volume);
-	double UpdateFractionalFlow(ScaLBL_ColorModel &M);
+	
+    /**
+     * \details  Update fractional flow condition. Mass will be preferentially added or removed from 
+     * phase regions based on where flow is occurring
+     * @param M        ScaLBL_ColorModel 
+    */	double UpdateFractionalFlow(ScaLBL_ColorModel &M);
+
+    /**
+     * \brief image re-initialization
+     * \details Re-initialize LB simulation from image data  
+     * @param M        ScaLBL_ColorModel 
+     * @param seed_water_in_oil    controls amount of mass to randomly seed into fluids 
+    */
 	double SeedPhaseField(ScaLBL_ColorModel &M, const double seed_water_in_oil);
+	
+    /**
+     * \brief Re-initialize LB simulation
+     * @param M        ScaLBL_ColorModel 
+    */
 	void Flatten(ScaLBL_ColorModel &M);
 	DoubleArray phi;
 	DoubleArray phi_t;

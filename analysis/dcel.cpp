@@ -1,19 +1,19 @@
 #include "analysis/dcel.h"
 
-DECL::DECL(){
+DCEL::DCEL(){
 }
 
-DECL::~DECL(){
+DCEL::~DCEL(){
 	TriangleCount=0;
 	VertexCount=0;
 	
 }
 
-int DECL::Face(int index){
+int DCEL::Face(int index){
 	return FaceData[index];
 }
 
-void DECL::Write(){
+void DCEL::Write(){
 	int e1,e2,e3;
 	FILE *TRIANGLES;
 	TRIANGLES = fopen("triangles.stl","w");
@@ -32,7 +32,7 @@ void DECL::Write(){
 	fclose(TRIANGLES);
 }
 
-void DECL::LocalIsosurface(const DoubleArray& A, double value, const int i, const int j, const int k){
+void DCEL::LocalIsosurface(const DoubleArray& A, double value, const int i, const int j, const int k){
 	Point P,Q;
 	Point PlaceHolder;
 	Point C0,C1,C2,C3,C4,C5,C6,C7;
@@ -174,7 +174,7 @@ void DECL::LocalIsosurface(const DoubleArray& A, double value, const int i, cons
 	}
 	int nTris = TriangleCount;
 
-	// Now add the local values to the DECL data structure
+	// Now add the local values to the DCEL data structure
 	if (nTris>0){
 		FaceData.resize(TriangleCount);
 	    //printf("Construct halfedge structure... \n");
@@ -250,7 +250,7 @@ void DECL::LocalIsosurface(const DoubleArray& A, double value, const int i, cons
 	}
 }
 
-Point DECL::TriNormal(int edge)
+Point DCEL::TriNormal(int edge)
 {
 	Point P,Q,R;
 	Point U,V,W;
@@ -294,7 +294,7 @@ Point DECL::TriNormal(int edge)
 	return W;
 }
 
-double DECL::EdgeAngle(int edge)
+double DCEL::EdgeAngle(int edge)
 {
 	double angle;
 	double dotprod;
@@ -369,7 +369,7 @@ double DECL::EdgeAngle(int edge)
 
 void iso_surface(const Array<double>&Field, const double isovalue)
 {
-  DECL object;
+  DCEL object;
   int e1,e2,e3;
   FILE *TRIANGLES;
   TRIANGLES = fopen("isosurface.stl","w");
