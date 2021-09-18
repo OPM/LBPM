@@ -15,6 +15,14 @@
 #include "IO/Reader.h"
 #include "IO/Writer.h"
 
+
+/**
+ * \class GreyPhase
+ *
+ * @brief 
+ * The GreyPhase class tracks pressure, mass and momentum within a grey phase 
+ * 
+ */
 class GreyPhase{
  public:
   double p;
@@ -26,6 +34,14 @@ class GreyPhase{
  private:
 };
 
+
+/**
+ * \class GreyPhaseAnalysis
+ *
+ * @brief 
+ * The GreyPhaseAnalysis class is constructed to analyze the LBPM greyscale model
+ * 
+ */
 class GreyPhaseAnalysis{
 public:
 	std::shared_ptr <Domain> Dm;

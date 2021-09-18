@@ -50,7 +50,7 @@ void Minkowski::ComputeScalar(const DoubleArray& Field, const double isovalue)
 {
     PROFILE_START("ComputeScalar");
 	Xi = Ji = Ai = 0.0;
-	DECL object;
+	DCEL object;
 	int e1,e2,e3;
 	double s,s1,s2,s3;
 	double a1,a2,a3;
