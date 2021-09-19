@@ -4,9 +4,6 @@
 #include <vector>
 #include "analysis/pmmc.h"
 
-/* 
-*/
-
 /**
  * \class Vertex
  * @brief store vertex for DCEL data structure
