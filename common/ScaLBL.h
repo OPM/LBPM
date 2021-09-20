@@ -1,5 +1,5 @@
-/* ScaLBL.h 
- *  Header file for Scalable Lattice Boltzmann Library
+/** @file  ScaLBL.h */
+/*  \detail Header file for Scalable Lattice Boltzmann Library
  *  Separate implementations for GPU and CPU must both follow the conventions defined in this header
  *  This libarry contains the essential components of the LBM
  *     - streaming implementations
@@ -11,43 +11,166 @@
 #define ScalLBL_H
 #include "common/Domain.h"
 
+/**
+* \brief Set compute device
+* @param rank      rank of MPI process 
+*/
 extern "C" int ScaLBL_SetDevice(int rank);
 
+/**
+* \brief Allocate memory 
+* @param address      memory address
+* @param size         size in bytes
+*/
 extern "C" void ScaLBL_AllocateDeviceMemory(void** address, size_t size);
 
+/**
+* \brief Free memory
+* @param pointer         pointer to memory to free
+*/
 extern "C" void ScaLBL_FreeDeviceMemory(void* pointer);
 
+/**
+* \brief Copy memory from host to device 
+* \detail  Device memory should be close to simulation (based on NUMA cost)
+*          Host memory may be a shared memory region (with possibly higher NUMA cost for simulation)
+*          Analysis routine should minimize NUMA for host memory (based on process placement)
+* @param dest    memory location to copy to
+* @param source  memory region to copy from
+* @param size    size of the region to copy in bytes        
+*/
 extern "C" void ScaLBL_CopyToDevice(void* dest, const void* source, size_t size);
 
+
+/**
+* \brief Copy memory from device to host
+* \detail  Device memory should be close to simulation (based on NUMA cost)
+*          Host memory may be a shared memory region (with possibly higher NUMA cost for simulation)
+*          Analysis routine should minimize NUMA for host memory (based on process placement)
+* @param dest    memory location to copy to
+* @param source  memory region to copy from
+* @param size    size of the region to copy in bytes        
+*/
 extern "C" void ScaLBL_CopyToHost(void* dest, const void* source, size_t size);
 
+/**
+=* \brief Allocate zero copy memory buffer (i.e. shared memory)
+* @param address      memory address
+* @param size         size in bytes
+*/
 extern "C" void ScaLBL_AllocateZeroCopy(void** address, size_t size);
 
+/**
+* \brief Copy memory from host to zero copy buffer
+* \detail  Device memory should be close to simulation (based on NUMA cost)
+*          Host memory may be a shared memory region (with possibly higher NUMA cost for simulation)
+*          Analysis routine should minimize NUMA for host memory (based on process placement)
+* @param dest    memory location to copy to
+* @param source  memory region to copy from
+* @param size    size of the region to copy in bytes        
+*/
 extern "C" void ScaLBL_CopyToZeroCopy(void* dest, const void* source, size_t size);
 
+/**
+* \brief  Device barrier routine     
+*/
 extern "C" void ScaLBL_DeviceBarrier();
 
+/**
+* \brief  Pack D3Q19 distributions for communication
+* @param q  - index for distribution based on D3Q19 discrete velocity structure
+* @param list - list of distributions to communicate
+* @param start -  index to start parsing the list 
+* @param count -  number of values to pack 
+* @param sendbuf - memory buffer to hold values that will be sent
+* @param dist - memory buffer to hold the distributions
+* @param N - size of the distributions (derived from Domain structure)
+*/
 extern "C" void ScaLBL_D3Q19_Pack(int q, int *list, int start, int count, double *sendbuf, double *dist, int N);
 
+/**
+* \brief  Unpack D3Q19 distributions after communication
+* @param q  - index for distribution based on D3Q19 discrete velocity structure
+* @param list - list of distributions to communicate
+* @param start -  index to start parsing the list 
+* @param count -  number of values to unppack 
+* @param revbuf - memory buffer where recieved values have been stored
+* @param dist - memory buffer to hold the distributions
+* @param N - size of the distributions (derived from Domain structure)
+*/
 extern "C" void ScaLBL_D3Q19_Unpack(int q, int *list, int start, int count, double *recvbuf, double *dist, int N);
 
+/**
+* \brief Unpack D3Q7 distributions after communication
+* @param q  - index for distribution based on D3Q19 discrete velocity structure
+* @param list - list of distributions to communicate
+* @param start -  index to start parsing the list 
+* @param count -  number of values to unppack 
+* @param revbuf - memory buffer where recieved values have been stored
+* @param dist - memory buffer to hold the distributions
+* @param N - size of the distributions (derived from Domain structure)
+*/
 extern "C" void ScaLBL_D3Q7_Unpack(int q, int *list,  int start, int count, double *recvbuf, double *dist, int N);
 
+/**
+* \brief  Pack halo for scalar field to be prepare for communication
+* @param list - list of distributions to communicate
+* @param count -  number of values to ppack 
+* @param sendbuf - memory buffer to pack values into
+* @param Data - scalar field 
+* @param N - size of local sub-domain (derived from Domain structure)
+*/
 extern "C" void ScaLBL_Scalar_Pack(int *list, int count, double *sendbuf, double *Data, int N);
 
+/**
+* \brief  Pack halo for scalar field to be prepare for communication
+* @param list - list of distributions to communicate
+* @param count -  number of values to unppack 
+* @param recvbuf - memory buffer where recieved values have been stored
+* @param Data - scalar field 
+* @param N - size of local sub-domain (derived from Domain structure)
+*/
 extern "C" void ScaLBL_Scalar_Unpack(int *list, int count, double *recvbuf, double *Data, int N);
 
+/**
+* \brief  Unpack values and compute Shan-Chen type of gradient
+* @param weight - weight value for gradient sum
+* @param Cqx - contribution to x-part of gradient
+* @param Cqy - contribution to y-part of gradient
+* @param Cqz - contribution to z-part of gradient
+* @param list - list of distributions to communicate
+* @param start - location to start reading the list
+* @param count -  number of values to unppack 
+* @param recvbuf - memory buffer where recieved values have been stored
+* @param phi - scalar field 
+* @param grad - gradient 
+* @param N - size of local sub-domain (derived from Domain structure)
+*/
 extern "C" void ScaLBL_Gradient_Unpack(double weight, double Cqx, double Cqy, double Cqz, 
 		int *list, int start, int count, double *recvbuf, double *phi, double *grad, int N);
 
-extern "C" void ScaLBL_PackDenD3Q7(int *list, int count, double *sendbuf, int number, double *Data, int N);
 
-extern "C" void ScaLBL_UnpackDenD3Q7(int *list, int count, double *recvbuf, int number, double *Data, int N);
-
+/**
+* \brief Initialize D3Q19 distributions
+* @param Dist - D3Q19 distributions
+* @param Np - size of local sub-domain (derived from Domain structure)
+*/
 extern "C" void ScaLBL_D3Q19_Init(double *Dist, int Np);
 
+/**
+* \brief Compute momentum from D3Q19 distribution
+* @param Dist - D3Q19 distributions
+* @param vel - memory buffer to store the momentum that is computed
+* @param Np - size of local sub-domain (derived from Domain structure)
+*/
 extern "C" void ScaLBL_D3Q19_Momentum(double *dist, double *vel, int Np);
 
+/**
+* \brief Compute pressure from D3Q19 distribution
+* @param Dist - D3Q19 distributions
+* @param press - memory buffer to store the pressure field that is computed
+* @param Np - size of local sub-domain (derived from Domain structure)
+*/
 extern "C" void ScaLBL_D3Q19_Pressure(double *dist, double *press, int Np);
 
 // BGK MODEL
