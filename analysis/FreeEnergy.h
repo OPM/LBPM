@@ -19,6 +19,14 @@
 #include "IO/Writer.h"
 #include "models/FreeLeeModel.h"
 
+/**
+ * \class FreeEnergyAnalyzer
+ *
+ * @brief 
+ * The FreeEnergyAnalyzer class is constructed to analyze the LBPM free energy model for liquid-gas systems
+ * 
+ */
+
 class FreeEnergyAnalyzer{
 public:
 	std::shared_ptr <Domain> Dm;

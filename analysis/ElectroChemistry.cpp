@@ -1,5 +1,6 @@
 #include "analysis/ElectroChemistry.h"
 
+
 ElectroChemistryAnalyzer::ElectroChemistryAnalyzer(std::shared_ptr <Domain> dm):
 	Dm(dm)
 {

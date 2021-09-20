@@ -18,6 +18,14 @@
 #include "IO/Reader.h"
 #include "IO/Writer.h"
 
+/**
+ * \class Minkowski
+ *
+ * @brief 
+ * The Minkowski class is constructed to analyze the geometric properties of structures based on the Minkowski functionals
+ * 
+ */
+
 
 class Minkowski{
 	//...........................................................................
@@ -45,6 +53,7 @@ public:
 	int n_connected_components;
 	//...........................................................................
 	int Nx,Ny,Nz;
+
 	double V(){
 		return Vi;
 	}
@@ -59,15 +68,56 @@ public:
 	}
 		
 	//..........................................................................
+    /**
+    * \brief   Null constructor
+    */
 	Minkowski(){};//NULL CONSTRUCTOR
+	
+    /**
+    * \brief   Constructor based on an existing Domain
+    * @param Dm    - Domain structure 
+    */
 	Minkowski(std::shared_ptr <Domain> Dm);
 	~Minkowski();
+	
+    /**
+    * \brief   Compute scalar minkowski functionals	
+	 *  step 1. compute the distance to an object 
+	 *  step 2. construct dcel to represent the isosurface 
+	 *  step 3. compute the scalar Minkowski functionals
+	 * THIS ALGORITHM ASSUMES THAT id() is populated with phase id to distinguish objects
+	 *    0 - labels the object
+	 *    1 - labels everything else
+	 */    
 	void MeasureObject();
+	
 	void MeasureObject(double factor, const DoubleArray &Phi);
+	
+    /**
+    * \details   Compute scalar minkowski functionals for connected part of a structure
+    *   step 1. compute connected components and extract largest region by volume
+    *  step 2. compute the distance to the connected part of the structure 
+    *  step 3. construct dcel to represent the isosurface 
+    *  step 4. compute the scalar Minkowski functionals
+    * THIS ALGORITHM ASSUMES THAT id() is populated with phase id to distinguish objects
+    *    0 - labels the object
+    *    1 - labels everything else
+    */    
 	int MeasureConnectedPathway();
+
 	int MeasureConnectedPathway(double factor, const DoubleArray &Phi);
+	
+    /**
+    * \brief   Compute scalar minkowski functionals
+    * \details Construct an isosurface and return the geometric invariants based on the triangulated list
+    * @param isovalue        - threshold value to use to determine iso-surface
+    * @param Field           - DoubleArray containing the field to threshold
+    */
 	void ComputeScalar(const DoubleArray& Field, const double isovalue);
 
+    /**
+    * \brief   print the scalar invariants
+    */
 	void PrintAll();
 
 };
