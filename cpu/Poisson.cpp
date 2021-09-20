@@ -242,7 +242,7 @@ extern "C" void ScaLBL_D3Q7_PoissonResidualError(int *neighborList, int *Map, do
     double rho_e;//local charge density
 	// neighbors of electric potential psi
 	double m1,m2,m4,m6,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;
-	double m0,m3,m5,m7;
+	double m3,m5,m7;
     double psi_Laplacian;
     double residual_error;
 
