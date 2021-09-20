@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 		}
 		pmmc_MeshGradient(SDs,SDs_x,SDs_y,SDs_z,Nx,Ny,Nz);
 
-		DECL object;
+		DCEL object;
 		Point P1,P2,P3;
 		Point U,V,W;
 		int e1,e2,e3;

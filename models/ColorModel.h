@@ -37,21 +37,78 @@ Implementation of color lattice boltzmann model
 #ifndef ScaLBL_ColorModel_INC
 #define ScaLBL_ColorModel_INC
 
+/**
+ * \class ScaLBL_ColorModel
+ *
+ * @details
+ * The ScaLBL_ColorModel class contains routines to initialize and run a two-component color lattice Boltzmann model
+ * Momentum transport equations are described by a D3Q19 scheme
+ * Mass transport equations are described by D3Q7 scheme
+ */
+
 class ScaLBL_ColorModel{
 public:
+    /**
+    * \brief Constructor
+    * @param RANK        processor rank 
+    * @param NP        number of processors 
+    * @param COMM        MPI communicator 
+    */
 	ScaLBL_ColorModel(int RANK, int NP, const Utilities::MPI& COMM);
 	~ScaLBL_ColorModel();	
 	
-	// functions in they should be run
+    /**
+    * \brief Read simulation parameters
+    * @param filename       input database file that includes "Color" section 
+    */	
 	void ReadParams(string filename);
+	
+    /**
+    * \brief Read simulation parameters
+    * @param db0       input database that includes "Color" section 
+    */
 	void ReadParams(std::shared_ptr<Database> db0);
+	
+    /**
+    * \brief Create domain data structures
+    */
 	void SetDomain();
+	
+    /**
+    * \brief Read image data
+    */
 	void ReadInput();
+	
+    /**
+    * \brief Create color model data structures
+    */
 	void Create();
+	
+    /**
+    * \brief Initialize the simulation
+    */
 	void Initialize();
+	
+    /**
+    * \brief Run the simulation
+    */
 	void Run();
+	
+    /**
+    * \brief Run the simulation
+    * @param returntime -  timestep at which the routine will return
+    */
 	double Run(int returntime);
+	
+    /**
+    * \brief Debugging function to dump simulation state to disk
+    */
 	void WriteDebug();
+	
+    /**
+    * \brief Copy the phase field for use by external methods 
+    * @param f   - DoubleArray to hold the phase field
+    */
 	void getPhaseField(DoubleArray &f);
 	
 	bool Restart,pBC;
@@ -90,6 +147,9 @@ public:
 	double *Velocity;
 	double *Pressure;
 
+    /**
+    * \brief Assign wetting affinity values 
+    */
 	void AssignComponentLabels(double *phase);
 		
 private:
@@ -104,10 +164,6 @@ private:
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);
-    double ImageInit(std::string filename);
-    double MorphInit(const double beta, const double morph_delta);
-    double SeedPhaseField(const double seed_water_in_oil);
-    double MorphOpenConnected(double target_volume_change);
 };
 
 #endif

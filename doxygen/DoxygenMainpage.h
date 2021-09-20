@@ -1,9 +1,17 @@
 /** \mainpage LBPM
  *
- * This is the documentation for LBPM
+ * C/C++ routines 
  *
+ *   - \ref ScaLBL.h "Scalable Lattice Boltzmann Library (ScaLBL)"
+ *   - \ref models "Lattice Boltzmann models"
+ *       - \ref ColorModel "Color model"
+ *   - \ref analysis "Analysis routines"
+ *       - \ref FlowAdaptor "FlowAdaptor"
+ *       - \ref DCEL "Doubly connected edge list"
+ *       - \ref Minkowski "Minkowski functionals"
  *   - \ref IO "IO routines"
  *   - \ref Utilities "Utility routines"
+ *   - \ref tests "Unit tests"
  *
- * \author James McClure
+ * \author J.E. McClure, M. Berrill
  */
