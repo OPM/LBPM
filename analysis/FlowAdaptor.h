@@ -15,7 +15,6 @@
 
 /**
  * \class FlowAdaptor
- *
  * @brief 
  * The FlowAdaptor class operates on a lattice Boltzmann model to alter the flow conditions
  * 

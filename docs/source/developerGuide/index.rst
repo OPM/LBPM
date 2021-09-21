@@ -15,4 +15,8 @@ into the framework.
 
    testingModels/*
 
- 
+   doxygen/ScaLBL.rst
+
+   doxygen/Models.rst
+
+   doxygen/Analysis.rst
