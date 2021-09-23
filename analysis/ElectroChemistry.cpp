@@ -16,7 +16,16 @@ ElectroChemistryAnalyzer::ElectroChemistryAnalyzer(std::shared_ptr <Domain> dm):
 	Vel_y.resize(Nx,Ny,Nz);         Vel_y.fill(0);
 	Vel_z.resize(Nx,Ny,Nz);         Vel_z.fill(0);
 	SDs.resize(Nx,Ny,Nz);         	SDs.fill(0);
-	
+    IonFluxDiffusive_x.resize(Nx,Ny,Nz); IonFluxDiffusive_x.fill(0);
+    IonFluxDiffusive_y.resize(Nx,Ny,Nz); IonFluxDiffusive_y.fill(0);
+    IonFluxDiffusive_z.resize(Nx,Ny,Nz); IonFluxDiffusive_z.fill(0);
+    IonFluxAdvective_x.resize(Nx,Ny,Nz); IonFluxAdvective_x.fill(0);
+    IonFluxAdvective_y.resize(Nx,Ny,Nz); IonFluxAdvective_y.fill(0);
+    IonFluxAdvective_z.resize(Nx,Ny,Nz); IonFluxAdvective_z.fill(0);
+    IonFluxElectrical_x.resize(Nx,Ny,Nz); IonFluxElectrical_x.fill(0);
+    IonFluxElectrical_y.resize(Nx,Ny,Nz); IonFluxElectrical_y.fill(0);
+    IonFluxElectrical_z.resize(Nx,Ny,Nz); IonFluxElectrical_z.fill(0);
+
 	if (Dm->rank()==0){
 		bool WriteHeader=false;
 		TIMELOG = fopen("electrokinetic.csv","r");
@@ -167,6 +176,7 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
     auto VxVar = std::make_shared<IO::Variable>();
     auto VyVar = std::make_shared<IO::Variable>();
     auto VzVar = std::make_shared<IO::Variable>();
+
     
     if (vis_db->getWithDefault<bool>( "save_electric_potential", true )){
     	ElectricPotential->name = "ElectricPotential";
