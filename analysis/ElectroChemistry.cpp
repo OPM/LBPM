@@ -176,8 +176,16 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
     auto VxVar = std::make_shared<IO::Variable>();
     auto VyVar = std::make_shared<IO::Variable>();
     auto VzVar = std::make_shared<IO::Variable>();
+    std::vector<shared_ptr<IO::Variable>> IonFluxDiffusive;
+    for (size_t ion=0; ion<Ion.number_ion_species; ion++){
+        //push in x-,y-, and z-component for each ion species
+        IonFluxDiffusive.push_back(std::make_shared<IO::Variable>());
+        IonFluxDiffusive.push_back(std::make_shared<IO::Variable>());
+        IonFluxDiffusive.push_back(std::make_shared<IO::Variable>());
+    }
+    //--------------------------------------------------------------------------------------------------------------------
 
-    
+    //-------------------------------------Create Names for Variables------------------------------------------------------
     if (vis_db->getWithDefault<bool>( "save_electric_potential", true )){
     	ElectricPotential->name = "ElectricPotential";
     	ElectricPotential->type = IO::VariableType::VolumeVariable;
@@ -214,7 +222,35 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
         VzVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
         visData[0].vars.push_back(VzVar);
     }
+
+    if (vis_db->getWithDefault<bool>( "save_ion_flux_diffusive", false )){
+    	for (size_t ion=0; ion<Ion.number_ion_species; ion++){
+            // x-component of diffusive flux
+    		sprintf(VisName,"Ion%zu_FluxDiffusive_x",ion+1);
+    		IonFluxDiffusive[3*ion+0]->name = VisName;
+    		IonFluxDiffusive[3*ion+0]->type = IO::VariableType::VolumeVariable;
+    		IonFluxDiffusive[3*ion+0]->dim = 1;
+    		IonFluxDiffusive[3*ion+0]->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+    		visData[0].vars.push_back(IonFluxDiffusive[3*ion+0]);
+            // y-component of diffusive flux
+    		sprintf(VisName,"Ion%zu_FluxDiffusive_y",ion+1);
+    		IonFluxDiffusive[3*ion+1]->name = VisName;
+    		IonFluxDiffusive[3*ion+1]->type = IO::VariableType::VolumeVariable;
+    		IonFluxDiffusive[3*ion+1]->dim = 1;
+    		IonFluxDiffusive[3*ion+1]->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+    		visData[0].vars.push_back(IonFluxDiffusive[3*ion+1]);
+            // z-component of diffusive flux
+    		sprintf(VisName,"Ion%zu_FluxDiffusive_z",ion+1);
+    		IonFluxDiffusive[3*ion+2]->name = VisName;
+    		IonFluxDiffusive[3*ion+2]->type = IO::VariableType::VolumeVariable;
+    		IonFluxDiffusive[3*ion+2]->dim = 1;
+    		IonFluxDiffusive[3*ion+2]->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+    		visData[0].vars.push_back(IonFluxDiffusive[3*ion+2]);
+    	}
+    }
+    //--------------------------------------------------------------------------------------------------------------------
     
+    //------------------------------------Save All Variables--------------------------------------------------------------
     if (vis_db->getWithDefault<bool>( "save_electric_potential", true )){
     	ASSERT(visData[0].vars[0]->name=="ElectricPotential");
     	Poisson.getElectricPotential(ElectricalPotential);
@@ -225,7 +261,7 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
     if (vis_db->getWithDefault<bool>( "save_concentration", true )){
     	for (size_t ion=0; ion<Ion.number_ion_species; ion++){
     		sprintf(VisName,"IonConcentration_%zu",ion+1);
-    		IonConcentration[ion]->name = VisName;
+    		//IonConcentration[ion]->name = VisName;
     		ASSERT(visData[0].vars[1+ion]->name==VisName);
     		Array<double>& IonConcentrationData = visData[0].vars[1+ion]->data;
     		Ion.getIonConcentration(Rho,ion);
@@ -245,10 +281,36 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
     	fillData.copy(Vel_y,VelyData);
     	fillData.copy(Vel_z,VelzData);
     }
+
+    if (vis_db->getWithDefault<bool>( "save_ion_flux_diffusive", false )){
+    	for (size_t ion=0; ion<Ion.number_ion_species; ion++){
+            
+            // x-component of diffusive flux
+    		sprintf(VisName,"Ion%zu_FluxDiffusive_x",ion+1);
+    		//IonFluxDiffusive[3*ion+0]->name = VisName;
+    		ASSERT(visData[0].vars[4+Ion.numer_ion_species+3*ion+0]->name==VisName);
+            // y-component of diffusive flux
+    		sprintf(VisName,"Ion%zu_FluxDiffusive_y",ion+1);
+    		//IonFluxDiffusive[3*ion+1]->name = VisName;
+    		ASSERT(visData[0].vars[4+Ion.numer_ion_species+3*ion+1]->name==VisName);
+            // z-component of diffusive flux
+    		sprintf(VisName,"Ion%zu_FluxDiffusive_z",ion+1);
+    		//IonFluxDiffusive[3*ion+2]->name = VisName;
+    		ASSERT(visData[0].vars[4+Ion.numer_ion_species+3*ion+2]->name==VisName);
+
+    		Array<double>& IonFluxData_x = visData[0].vars[4+Ion.numer_ion_species+3*ion+0]->data;
+    		Array<double>& IonFluxData_y = visData[0].vars[4+Ion.numer_ion_species+3*ion+1]->data;
+    		Array<double>& IonFluxData_z = visData[0].vars[4+Ion.numer_ion_species+3*ion+2]->data;
+    		Ion.getIonFluxDiffusive(IonFluxDiffusive_x,IonFluxDiffusive_y,IonFluxDiffusive_z,ion);
+    		fillData.copy(IonFluxDiffusive_x,IonFluxData_x);
+    		fillData.copy(IonFluxDiffusive_y,IonFluxData_y);
+    		fillData.copy(IonFluxDiffusive_z,IonFluxData_z);
+    	}
+    }
     
     if (vis_db->getWithDefault<bool>( "write_silo", true ))
     	IO::writeData( timestep, visData, Dm->Comm );
-
+    //--------------------------------------------------------------------------------------------------------------------
 /*    if (vis_db->getWithDefault<bool>( "save_8bit_raw", true )){
     	char CurrentIDFilename[40];
     	sprintf(CurrentIDFilename,"id_t%d.raw",timestep);

@@ -83,6 +83,7 @@ public:
     double *IonSolid;
     double *FluidVelocityDummy;
     double *ElectricFieldDummy;
+    double *FluxDiffusive;
 
 private:
 	Utilities::MPI comm;
