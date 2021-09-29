@@ -356,8 +356,8 @@ void ScaLBL_GreyscaleColorModel::AssignGreySolidLabels()//apply capillary penalt
 						AFFINITY=AffinityList[idx];
                         Sn = SnList[idx];
                         Sw = SwList[idx];
-                        Kn = SnList[idx];
-                        Kw = SwList[idx];
+                        Kn = KnList[idx];
+                        Kw = KwList[idx];
 						idx = NLABELS;
 					}
 				}
