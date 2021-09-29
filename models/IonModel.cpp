@@ -1016,33 +1016,33 @@ void ScaLBL_IonModel::getIonFluxDiffusive_debug(int timestep){
         //x-component
 	    ScaLBL_Comm->RegularLayout(Map,&FluxDiffusive[ic*3*Np+0*Np],PhaseField);
         ScaLBL_Comm->Barrier(); comm.barrier();
-        IonFlux_LB_to_Phys(PhaseField);
+        IonFlux_LB_to_Phys(PhaseField,ic);
 
         FILE *OUTFILE_X;
         sprintf(LocalRankFilename,"IonFluxDiffusive_X_%02zu_Time_%i.%05i.raw",ic+1,timestep,rank);
-        OUTFILE = fopen(LocalRankFilename,"wb");
+        OUTFILE_X = fopen(LocalRankFilename,"wb");
         fwrite(PhaseField.data(),8,N,OUTFILE_X);
         fclose(OUTFILE_X);
 
         //y-component
 	    ScaLBL_Comm->RegularLayout(Map,&FluxDiffusive[ic*3*Np+1*Np],PhaseField);
         ScaLBL_Comm->Barrier(); comm.barrier();
-        IonFlux_LB_to_Phys(PhaseField);
+        IonFlux_LB_to_Phys(PhaseField,ic);
 
         FILE *OUTFILE_Y;
         sprintf(LocalRankFilename,"IonFluxDiffusive_Y_%02zu_Time_%i.%05i.raw",ic+1,timestep,rank);
-        OUTFILE = fopen(LocalRankFilename,"wb");
+        OUTFILE_Y = fopen(LocalRankFilename,"wb");
         fwrite(PhaseField.data(),8,N,OUTFILE_Y);
         fclose(OUTFILE_Y);
 
         //z-component
 	    ScaLBL_Comm->RegularLayout(Map,&FluxDiffusive[ic*3*Np+2*Np],PhaseField);
         ScaLBL_Comm->Barrier(); comm.barrier();
-        IonFlux_LB_to_Phys(PhaseField);
+        IonFlux_LB_to_Phys(PhaseField,ic);
 
         FILE *OUTFILE_Z;
         sprintf(LocalRankFilename,"IonFluxDiffusive_Z_%02zu_Time_%i.%05i.raw",ic+1,timestep,rank);
-        OUTFILE = fopen(LocalRankFilename,"wb");
+        OUTFILE_Z = fopen(LocalRankFilename,"wb");
         fwrite(PhaseField.data(),8,N,OUTFILE_Z);
         fclose(OUTFILE_Z);
     }

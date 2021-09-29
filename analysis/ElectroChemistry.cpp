@@ -288,19 +288,19 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
             // x-component of diffusive flux
     		sprintf(VisName,"Ion%zu_FluxDiffusive_x",ion+1);
     		//IonFluxDiffusive[3*ion+0]->name = VisName;
-    		ASSERT(visData[0].vars[4+Ion.numer_ion_species+3*ion+0]->name==VisName);
+    		ASSERT(visData[0].vars[4+Ion.number_ion_species+3*ion+0]->name==VisName);
             // y-component of diffusive flux
     		sprintf(VisName,"Ion%zu_FluxDiffusive_y",ion+1);
     		//IonFluxDiffusive[3*ion+1]->name = VisName;
-    		ASSERT(visData[0].vars[4+Ion.numer_ion_species+3*ion+1]->name==VisName);
+    		ASSERT(visData[0].vars[4+Ion.number_ion_species+3*ion+1]->name==VisName);
             // z-component of diffusive flux
     		sprintf(VisName,"Ion%zu_FluxDiffusive_z",ion+1);
     		//IonFluxDiffusive[3*ion+2]->name = VisName;
-    		ASSERT(visData[0].vars[4+Ion.numer_ion_species+3*ion+2]->name==VisName);
+    		ASSERT(visData[0].vars[4+Ion.number_ion_species+3*ion+2]->name==VisName);
 
-    		Array<double>& IonFluxData_x = visData[0].vars[4+Ion.numer_ion_species+3*ion+0]->data;
-    		Array<double>& IonFluxData_y = visData[0].vars[4+Ion.numer_ion_species+3*ion+1]->data;
-    		Array<double>& IonFluxData_z = visData[0].vars[4+Ion.numer_ion_species+3*ion+2]->data;
+    		Array<double>& IonFluxData_x = visData[0].vars[4+Ion.number_ion_species+3*ion+0]->data;
+    		Array<double>& IonFluxData_y = visData[0].vars[4+Ion.number_ion_species+3*ion+1]->data;
+    		Array<double>& IonFluxData_z = visData[0].vars[4+Ion.number_ion_species+3*ion+2]->data;
     		Ion.getIonFluxDiffusive(IonFluxDiffusive_x,IonFluxDiffusive_y,IonFluxDiffusive_z,ion);
     		fillData.copy(IonFluxDiffusive_x,IonFluxData_x);
     		fillData.copy(IonFluxDiffusive_y,IonFluxData_y);
