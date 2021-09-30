@@ -97,13 +97,14 @@ __global__  void dvc_ScaLBL_D3Q7_AAeven_IonConcentration(double *dist, double *D
 	}
 }
 
-__global__  void dvc_ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *Den, double *Velocity, double *ElectricField, 
+__global__  void dvc_ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *Den, double *FluxDiffusive, double *Velocity, double *ElectricField, 
                                            double Di, int zi, double rlx, double Vt, int start, int finish, int Np){
 	int n;
 	double Ci;
     double ux,uy,uz;
     double uEPx,uEPy,uEPz;//electrochemical induced velocity
     double Ex,Ey,Ez;//electrical field
+    double flux_diffusive_x,flux_diffusive_y,flux_diffusive_z;
 	double f0,f1,f2,f3,f4,f5,f6;
 	int nr1,nr2,nr3,nr4,nr5,nr6;
 
@@ -146,6 +147,14 @@ __global__  void dvc_ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, doub
             nr6 = neighborList[n+5*Np];
             f6 = dist[nr6];
             
+            // compute diffusive flux
+            flux_diffusive_x = (1.0-0.5*rlx)*((f1-f2)-ux*Ci);
+            flux_diffusive_y = (1.0-0.5*rlx)*((f3-f4)-uy*Ci);
+            flux_diffusive_z = (1.0-0.5*rlx)*((f5-f6)-uz*Ci);
+            FluxDiffusive[n+0*Np] = flux_diffusive_x;
+            FluxDiffusive[n+1*Np] = flux_diffusive_y;
+            FluxDiffusive[n+2*Np] = flux_diffusive_z;
+
             // q=0
             dist[n] = f0*(1.0-rlx)+rlx*0.25*Ci;
             //dist[n] = f0*(1.0-rlx)+rlx*0.25*Ci*(1.0 - 2.0*((ux+uEPx)*(ux+uEPx) + (uy+uEPy)*(uy+uEPy) + (uz+uEPz)*(uz+uEPz)));
@@ -177,13 +186,14 @@ __global__  void dvc_ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, doub
 	}
 }
 
-__global__  void dvc_ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *Velocity, double *ElectricField, 
+__global__  void dvc_ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *FluxDiffusive, double *Velocity, double *ElectricField, 
                                             double Di, int zi, double rlx, double Vt, int start, int finish, int Np){
 	int n;
 	double Ci;
     double ux,uy,uz;
     double uEPx,uEPy,uEPz;//electrochemical induced velocity
     double Ex,Ey,Ez;//electrical field
+    double flux_diffusive_x,flux_diffusive_y,flux_diffusive_z;
 	double f0,f1,f2,f3,f4,f5,f6;
 
 	int S = Np/NBLOCKS/NTHREADS + 1;
@@ -212,6 +222,14 @@ __global__  void dvc_ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *V
             f5 = dist[6*Np+n];
             f6 = dist[5*Np+n];
             
+            // compute diffusive flux
+            flux_diffusive_x = (1.0-0.5*rlx)*((f1-f2)-ux*Ci);
+            flux_diffusive_y = (1.0-0.5*rlx)*((f3-f4)-uy*Ci);
+            flux_diffusive_z = (1.0-0.5*rlx)*((f5-f6)-uz*Ci);
+            FluxDiffusive[n+0*Np] = flux_diffusive_x;
+            FluxDiffusive[n+1*Np] = flux_diffusive_y;
+            FluxDiffusive[n+2*Np] = flux_diffusive_z;
+
             // q=0
             dist[n] = f0*(1.0-rlx)+rlx*0.25*Ci;
             //dist[n] = f0*(1.0-rlx)+rlx*0.25*Ci*(1.0 - 2.0*((ux+uEPx)*(ux+uEPx) + (uy+uEPy)*(uy+uEPy) + (uz+uEPz)*(uz+uEPz)));
@@ -330,10 +348,10 @@ extern "C" void ScaLBL_D3Q7_AAeven_IonConcentration(double *dist, double *Den, i
 	//cudaProfilerStop();
 }
 
-extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *Den, double *Velocity, double *ElectricField,  
+extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *Den, double *FluxDiffusive, double *Velocity, double *ElectricField,  
                                       double Di, int zi, double rlx, double Vt, int start, int finish, int Np){
 	//cudaProfilerStart();
-	dvc_ScaLBL_D3Q7_AAodd_Ion<<<NBLOCKS,NTHREADS >>>(neighborList,dist,Den,Velocity,ElectricField,Di,zi,rlx,Vt,start,finish,Np);
+	dvc_ScaLBL_D3Q7_AAodd_Ion<<<NBLOCKS,NTHREADS >>>(neighborList,dist,Den,FluxDiffusive,Velocity,ElectricField,Di,zi,rlx,Vt,start,finish,Np);
 
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -342,10 +360,10 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *D
 	//cudaProfilerStop();
 }
 
-extern "C" void ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *Velocity, double *ElectricField, 
+extern "C" void ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *FluxDiffusive, double *Velocity, double *ElectricField, 
                                        double Di, int zi, double rlx, double Vt, int start, int finish, int Np){
 	//cudaProfilerStart();
-	dvc_ScaLBL_D3Q7_AAeven_Ion<<<NBLOCKS,NTHREADS >>>(dist,Den,Velocity,ElectricField,Di,zi,rlx,Vt,start,finish,Np);
+	dvc_ScaLBL_D3Q7_AAeven_Ion<<<NBLOCKS,NTHREADS >>>(dist,Den,FluxDiffusive,Velocity,ElectricField,Di,zi,rlx,Vt,start,finish,Np);
 
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
