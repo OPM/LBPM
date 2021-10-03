@@ -1,37 +1,13 @@
 =============================================
-Greyscale model
+Greyscale color model
 =============================================
 
 The LBPM greyscale lattice Boltzmann model is constructed to approximate the
-solution of the Darcy-Brinkman equations in grey regions, coupled to a Navier-Stokes
-solution in open regions. To use the greyscale model, the input image should be segmented
-into "grey" and open regions. Each particular "grey" label should be assigned both
-a porosity and permeability value. 
+solution of the Darcy-Brinkman equations in grey regions coupled to a color model implementation
+solution in open regions. A simple constitutive form is used to model the relative
+permeability in the grey regions,
 
-A typical command to launch the LBPM color simulator is as follows
 
-```
-mpirun -np $NUMPROCS lbpm_greyscale_simulator input.db
-```
-
-where ``$NUMPROCS`` is the number of MPI processors to be used and ``input.db`` is
-the name of the input database that provides the simulation parameters.
-Note that the specific syntax to launch MPI tasks may vary depending on your system.
-For additional details please refer to your local system documentation.
-
-***************************
-Model parameters
-***************************
-
-The essential model parameters for the single phase greyscale model are
-
-- ``tau`` -- control the fluid viscosity -- :math:`0.7 < \tau < 1.5`
-
-The kinematic viscosity is given by
-
-***************************
-Model formulation
-***************************
 
 A D3Q19 LBE is constructed to describe the momentum transport
 
@@ -55,7 +31,6 @@ The force is imposed based on the construction developed by Guo et al
       $$
 
 
-where :math:`c_s^2 = 1/3` is the speed of sound for the D3Q19 lattice.
 The acceleration includes contributions due to the external driving force :math:`\bm{g}`
 as well as a drag force due to the permeability :math:`K` and flow rate :math:`\bm{u}` with the
 porosity :math:`\epsilon` and  viscosity :math:`\nu` determining the net forces acting within

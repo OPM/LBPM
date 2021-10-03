@@ -22,7 +22,7 @@ For additional details please refer to your local system documentation.
 Model parameters
 ***************************
 
-The essential model parameters for the color model are
+The essential model parameters for the single-phase MRT model are
 
 - ``tau`` -- control the fluid viscosity -- :math:`0.7 < \tau < 1.5`
 
