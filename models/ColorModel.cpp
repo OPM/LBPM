@@ -875,7 +875,8 @@ double ScaLBL_ColorModel::Run(int returntime){
 					//double kBeff_filmB = h*h*muB*(flow_rate_B_filmB)/(force_mag);
 					
 					double viscous_pressure_drop = (rhoA*volA + rhoB*volB)*force_mag;
-					double Mobility = muA/muB;
+					double Mobility = muA/muB; // visc contrast
+					double eff_pres = 1.0 / (kAeff + kBeff); // effective pressure drop
 
 					bool WriteHeader=false;
 					FILE * kr_log_file = fopen("relperm.csv","r");
@@ -891,7 +892,7 @@ double ScaLBL_ColorModel::Run(int returntime){
 					  fprintf(kr_log_file, "eff.perm.oil.connected.upper.bound eff.perm.water.connected.upper.bound ");
 					  fprintf(kr_log_file, "eff.perm.oil.connected.lower.bound eff.perm.water.connected.lower.bound ");
 					  fprintf(kr_log_file, "eff.perm.oil.disconnected eff.perm.water.disconnected ");
-					  fprintf(kr_log_file, "cap.pressure cap.pressure.connected pressure.drop Ca M\n");
+					  fprintf(kr_log_file, "cap.pressure cap.pressure.connected pressure.drop Ca M eff.pressure\n");
 
 					}
 					fprintf(kr_log_file,"%i %.5g ", CURRENT_TIMESTEP,current_saturation);
@@ -900,7 +901,8 @@ double ScaLBL_ColorModel::Run(int returntime){
 					fprintf(kr_log_file,"%.5g %.5g ", kAeff_connected, kBeff_connected);
 					fprintf(kr_log_file,"%.5g %.5g ", kAeff_connected_low, kBeff_connected_low);
 					fprintf(kr_log_file,"%.5g %.5g ", kAeff_disconnected, kBeff_disconnected);
-					fprintf(kr_log_file,"%.5g %.5g %.5g %.5g %.5g\n", pAB, pAB_connected, viscous_pressure_drop, Ca, Mobility);
+					fprintf(kr_log_file,"%.5g %.5g %.5g %.5g %.5g ", pAB, pAB_connected, viscous_pressure_drop, Ca, Mobility);
+					fprintf(kr_log_file,"%.5g\n", eff_pres);
 					fclose(kr_log_file);
 
 					printf("  Measured capillary number %f \n ",Ca);

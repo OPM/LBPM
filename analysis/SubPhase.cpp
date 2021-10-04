@@ -96,7 +96,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		{
 			// If timelog is empty, write a short header to list the averages
 			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
-			fprintf(TIMELOG,"sw krw krn krwf krnf vw vn force pw pn wet\n");				
+			fprintf(TIMELOG,"sw krw krn krwf krnf vw vn force pw pn wet peff\n");				
 		}
 	}
 }
@@ -378,15 +378,18 @@ void SubPhase::Basic(){
 		double not_water_film_flow_rate=gnb.V*(giwn.Pnx*dir_x + giwn.Pny*dir_y + giwn.Pnz*dir_z)/gnb.M / Dm->Volume;
 		//double total_flow_rate = water_flow_rate + not_water_flow_rate;
 		//double fractional_flow = water_flow_rate / total_flow_rate;
-
 		double h = Dm->voxel_length;		
 		double krn = h*h*nu_n*not_water_flow_rate / force_mag ;
 		double krw = h*h*nu_w*water_flow_rate / force_mag;
 		/* not counting films */
 		double krnf = krn - h*h*nu_n*not_water_film_flow_rate / force_mag ;
 		double krwf = krw - h*h*nu_w*water_film_flow_rate / force_mag;
-		//printf("   water saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
-		fprintf(TIMELOG,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",saturation,krw,krn,krwf,krnf,h*water_flow_rate,h*not_water_flow_rate, force_mag, gwb.p, gnb.p, total_wetting_interaction_global); 
+		double eff_pressure = 1.0 / (krn + krw); // effective pressure drop
+
+		fprintf(TIMELOG,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",
+			saturation, krw, krn, krwf, krnf, h*water_flow_rate,
+			h*not_water_flow_rate, force_mag, 
+			gwb.p, gnb.p, total_wetting_interaction_global, eff_pressure); 
 		fflush(TIMELOG);
 	}
 	if (err==true){
