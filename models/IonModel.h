@@ -37,7 +37,11 @@ public:
     void getIonConcentration(DoubleArray &IonConcentration, const size_t ic);
     void getIonConcentration_debug(int timestep);
     void getIonFluxDiffusive(DoubleArray &IonFlux_x,DoubleArray &IonFlux_y,DoubleArray &IonFlux_z,const size_t ic);
+    void getIonFluxAdvective(DoubleArray &IonFlux_x,DoubleArray &IonFlux_y,DoubleArray &IonFlux_z,const size_t ic);
+    void getIonFluxElectrical(DoubleArray &IonFlux_x,DoubleArray &IonFlux_y,DoubleArray &IonFlux_z,const size_t ic);
     void getIonFluxDiffusive_debug(int timestep);
+    void getIonFluxAdvective_debug(int timestep);
+    void getIonFluxElectrical_debug(int timestep);
     void DummyFluidVelocity();
     void DummyElectricField();
     double CalIonDenConvergence(vector<double> &ci_avg_previous);
