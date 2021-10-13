@@ -171,7 +171,12 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
 
     visData[0].meshName = "domain";
     visData[0].mesh = std::make_shared<IO::DomainMesh>( Dm->rank_info,Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,Dm->Lx,Dm->Ly,Dm->Lz );
-    auto ElectricPotential = std::make_shared<IO::Variable>();
+    //electric potential
+    auto ElectricPotentialVar = std::make_shared<IO::Variable>();
+    //electric field
+    auto ElectricFieldVar_x = std::make_shared<IO::Variable>();
+    auto ElectricFieldVar_y = std::make_shared<IO::Variable>();
+    auto ElectricFieldVar_z = std::make_shared<IO::Variable>();
 
     //ion concentration
     std::vector<shared_ptr<IO::Variable>> IonConcentration;
@@ -210,11 +215,11 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
 
     //-------------------------------------Create Names for Variables------------------------------------------------------
     if (vis_db->getWithDefault<bool>( "save_electric_potential", true )){
-    	ElectricPotential->name = "ElectricPotential";
-    	ElectricPotential->type = IO::VariableType::VolumeVariable;
-    	ElectricPotential->dim = 1;
-    	ElectricPotential->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
-        visData[0].vars.push_back(ElectricPotential);
+    	ElectricPotentialVar->name = "ElectricPotential";
+    	ElectricPotentialVar->type = IO::VariableType::VolumeVariable;
+    	ElectricPotentialVar->dim = 1;
+    	ElectricPotentialVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        visData[0].vars.push_back(ElectricPotentialVar);
     }
 
     if (vis_db->getWithDefault<bool>( "save_concentration", true )){
@@ -322,6 +327,24 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
     		IonFluxElectrical[3*ion+2]->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
     		visData[0].vars.push_back(IonFluxElectrical[3*ion+2]);
     	}
+    }
+
+    if (vis_db->getWithDefault<bool>( "save_electric_field", false )){
+        ElectricFieldVar_x->name = "ElectricField_x";
+        ElectricFieldVar_x->type = IO::VariableType::VolumeVariable;
+        ElectricFieldVar_x->dim = 1;
+        ElectricFieldVar_x->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        visData[0].vars.push_back(ElectricFieldVar_x);
+        ElectricFieldVar_y->name = "ElectricField_y";
+        ElectricFieldVar_y->type = IO::VariableType::VolumeVariable;
+        ElectricFieldVar_y->dim = 1;
+        ElectricFieldVar_y->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        visData[0].vars.push_back(ElectricFieldVar_y);
+        ElectricFieldVar_z->name = "ElectricField_z";
+        ElectricFieldVar_z->type = IO::VariableType::VolumeVariable;
+        ElectricFieldVar_z->dim = 1;
+        ElectricFieldVar_z->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        visData[0].vars.push_back(ElectricFieldVar_z);
     }
     //--------------------------------------------------------------------------------------------------------------------
     
@@ -433,6 +456,19 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
     		fillData.copy(IonFluxElectrical_y,IonFluxData_y);
     		fillData.copy(IonFluxElectrical_z,IonFluxData_z);
     	}
+    }
+
+    if (vis_db->getWithDefault<bool>( "save_electric_field", false )){
+    	ASSERT(visData[0].vars[4+Ion.number_ion_species*(1+9)+0]->name=="ElectricField_x");
+    	ASSERT(visData[0].vars[4+Ion.number_ion_species*(1+9)+1]->name=="ElectricField_y");
+    	ASSERT(visData[0].vars[4+Ion.number_ion_species*(1+9)+2]->name=="ElectricField_z");
+        Poisson.getElectricField(ElectricalField_x, ElectricalField_y, ElectricalField_z);
+    	Array<double>& ElectricalFieldxData = visData[0].vars[4+Ion.number_ion_species*(1+9)+0]->data;
+    	Array<double>& ElectricalFieldyData = visData[0].vars[4+Ion.number_ion_species*(1+9)+1]->data;
+    	Array<double>& ElectricalFieldzData = visData[0].vars[4+Ion.number_ion_species*(1+9)+2]->data;
+    	fillData.copy(ElectricalField_x,ElectricalFieldxData);
+    	fillData.copy(ElectricalField_y,ElectricalFieldyData);
+    	fillData.copy(ElectricalField_z,ElectricalFieldzData);
     }
 
     if (vis_db->getWithDefault<bool>( "write_silo", true ))
