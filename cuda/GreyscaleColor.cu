@@ -1521,6 +1521,8 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			phi=(nA-nB)/(nA+nB);
 			// local density
 			rho0=rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
+			rho0 /= porosity;
+
 			// local relaxation time
 			tau=tauA + 0.5*(1.0-phi)*(tauB-tauA);
 			tau_eff=tauA_eff + 0.5*(1.0-phi)*(tauB_eff-tauA_eff);
@@ -2314,6 +2316,8 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 
 			// local density
 			rho0=rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
+			rho0 /= porosity;
+
 			// local relaxation time
 			tau=tauA + 0.5*(1.0-phi)*(tauB-tauA);
 			tau_eff=tauA_eff + 0.5*(1.0-phi)*(tauB_eff-tauA_eff);
