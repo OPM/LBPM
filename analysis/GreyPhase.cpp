@@ -19,6 +19,7 @@ GreyPhaseAnalysis::GreyPhaseAnalysis(std::shared_ptr <Domain> dm):
 	Vel_x.resize(Nx,Ny,Nz);         Vel_x.fill(0);	    // Gradient of the phase indicator field
 	Vel_y.resize(Nx,Ny,Nz);         Vel_y.fill(0);
 	Vel_z.resize(Nx,Ny,Nz);         Vel_z.fill(0);
+	MobilityRatio.resize(Nx,Ny,Nz); MobilityRatio.fill(0);
 	//.........................................
 	
 	if (Dm->rank()==0){
@@ -89,14 +90,17 @@ void GreyPhaseAnalysis::Basic(){
 					double nB = Rho_w(n);				
 					double phi = (nA-nB)/(nA+nB);					
 					double porosity = Porosity(n);
-					Water_local.M += rho_w*nB*porosity;
-					Water_local.Px += porosity*rho_w*nB*Vel_x(n);
-					Water_local.Py += porosity*rho_w*nB*Vel_y(n);
-					Water_local.Pz += porosity*rho_w*nB*Vel_z(n);
-					Oil_local.M += rho_n*nA*porosity;
-					Oil_local.Px += porosity*rho_n*nA*Vel_x(n);
-					Oil_local.Py += porosity*rho_n*nA*Vel_y(n);
-					Oil_local.Pz += porosity*rho_n*nA*Vel_z(n);
+					double mobility_ratio = MobilityRatio(n);
+					
+					Water_local.M += nB*porosity;
+					Water_local.Px += porosity*(nA+nB)*Vel_x(n)*0.5*(1.0-mobility_ratio);
+					Water_local.Py += porosity*(nA+nB)*Vel_y(n)*0.5*(1.0-mobility_ratio);
+					Water_local.Pz += porosity*(nA+nB)*Vel_z(n)*0.5*(1.0-mobility_ratio);
+					
+					Oil_local.M += nA*porosity;
+					Oil_local.Px += porosity*(nA+nB)*Vel_x(n)*0.5*(1.0+mobility_ratio);
+					Oil_local.Py += porosity*(nA+nB)*Vel_y(n)*0.5*(1.0+mobility_ratio);
+					Oil_local.Pz += porosity*(nA+nB)*Vel_z(n)*0.5*(1.0+mobility_ratio);
 
 					if ( phi > 0.99 ){
 						Oil_local.p += Pressure(n);

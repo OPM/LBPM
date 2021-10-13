@@ -16,87 +16,98 @@
 #include "common/MPI.h"
 #include "common/Communication.h"
 #include "common/Database.h"
+/**
+ * @file Domain.h
+ * \brief Parallel Domain data structures and helper functions
+ */
 
-class Domain;
-template<class TYPE> class PatchData;
 
-
-//! Class to hold information about a box
+/**
+ * \class Box
+ *
+ * @details
+ * information about a box
+ */
 class Box {
 public:
     int ifirst[3];
     int ilast[3];
 };
 
+class Patch;
 
-enum class DataLocation { CPU, DEVICE };
+/**
+ * \class Domain
+ *
+ * @details
+ * the Domain class includes basic information to distribution 3D image data to multiple processes using MPI.
+ * A regular domain decomposision is performed, with each MPI process getting a [Nx,Ny,Nz] sub-domain.
+ * 8-bit image labels are retained internally.
+ * The domain class resides on the CPU and provides utilities to support CPU-based analysis.
+ * GPU-based data structures should be constructed separately but may utilize information that the Domain class provides.
+*/
 
-
-//! Class to hold information about a patch
-class Patch {
-public:
-    
-    //! Empty constructor
-    Patch() = delete;
-
-    //! Copy constructor
-    Patch( const Patch& ) = delete;
-
-    //! Assignment operator
-    Patch& operator=( const Patch& ) = delete;
-
-    //! Return the box for the patch
-    inline const Box& getBox() const { return d_box; } 
-
-    //! Create patch data
-    template<class TYPE>
-    std::shared_ptr<PatchData<TYPE>> createPatchData( DataLocation location ) const;
-
-private:
-    Box d_box;
-    int d_owner;
-    Domain *d_domain;
-
-};
-
-
-//! Class to hold domain info
 class Domain{
 public:
-    //! Default constructor
+    /**
+    * \brief Constructor
+    * @param db           input database
+    * @param Communicator MPI communicator  
+    */
     Domain( std::shared_ptr<Database> db, const Utilities::MPI& Communicator);
 
-    //! Obsolete constructor
+    /**
+     * \brief Obsolete constructor
+     */
     Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 
                    double lx, double ly, double lz, int BC);
 
-    //! Empty constructor
+    /**
+    * \brief Empty constructor
+    */
     Domain() = delete;
 
-    //! Copy constructor
+    /**
+    * \brief Copy constructor
+    */
     Domain( const Domain& ) = delete;
 
-    //! Assignment operator
+    /**
+     * \brief Assignment operator
+     */ 
     Domain& operator=( const Domain& ) = delete;
 
-    //! Destructor
+    /**
+     * \brief Destructor
+     */ 
     ~Domain();
     
-    //! Get the database
+    /**
+     * \brief Get the database
+    */
     inline std::shared_ptr<const Database> getDatabase() const { return d_db; }
 
-    //! Get the domain box
+    /** 
+    * \brief Get the domain box
+    */
     inline const Box& getBox() const { return d_box; } 
 
-    //! Get local patch
+    /** 
+    * \brief Get local patch
+    */
     inline const Patch& getLocalPatch() const { return *d_localPatch; }
 
-    //! Get all patches
+    /** 
+     * \brief Get all patches
+    */ 
     inline const std::vector<Patch>& getAllPatch() const { return d_patches; }
 
 
 private:
 
+    /** 
+     * \brief initialize from database
+    */ 
     void initialize( std::shared_ptr<Database> db );
 
     std::shared_ptr<Database> d_db;
@@ -124,6 +135,9 @@ public: // Public variables (need to create accessors instead)
     //**********************************
     // MPI ranks for all 18 neighbors
     //**********************************
+    /** 
+     * \brief Compute the porosity based on the current domain id file
+    */ 
     inline double Porosity() const { return porosity; }
     inline int iproc() const { return rank_info.ix; }
     inline int jproc() const { return rank_info.jy; }
@@ -165,22 +179,78 @@ public: // Public variables (need to create accessors instead)
     // Solid indicator function
     std::vector<signed char> id;
 
+    /** 
+     * \brief Read domain IDs from file
+    */ 
     void ReadIDs();
+    
+    /** 
+     * \brief Compute the porosity
+    */ 
     void ComputePorosity();
+    
+    /** 
+     * \brief Read image and perform domain decomposition
+     * @param filename  - name of file to read IDs
+    */ 
     void Decomp( const std::string& filename );
+    
+    /** 
+     * \brief Perform a halo exchange using MPI
+     * @param Mesh - array data that holds scalar values
+    */ 
     void CommunicateMeshHalo(DoubleArray &Mesh);
+    
+    /** 
+     * \brief Initialize communication data structures within Domain object. 
+     * This routine needs to be called before the communication functionality will work
+    */ 
     void CommInit(); 
+    
+    /** 
+     * \brief Count number of pore nodes (labels > 1)
+    */ 
     int PoreCount();
     
+    /** 
+     * \brief Read array data from a file and distribute to local arrays for each MPI process
+     * @param Filename - name of the file to read the data 
+     * @param Datatype - data type to use 
+     * @param UserData - Array to store the values that are read
+    */ 
     void ReadFromFile(const std::string& Filename,const std::string& Datatype, double *UserData);
+    
+    /**
+     * \brief Aggregate labels from all MPI processes and write to a file
+     * @param filename - name of the file to write
+     */
     void AggregateLabels( const std::string& filename );
+    /**
+     * \brief Aggregate user provided array  from all MPI processes and write to a single file
+     * @param filename - name of the file to write
+     * @param UserData - array data to aggregate and write
+     */
     void AggregateLabels( const std::string& filename, DoubleArray &UserData );
 
 private:
 
+    /**
+     * \brief Pack halo data for 8-bit integer
+     * @param list - list of values in the halo
+     * @param count - count of values in the halo
+     * @param sendbuf - memory buffer to use to pack values for MPI
+     * @param ID - 8-bit values on mesh [Nx, Ny, Nz]
+     */
     void PackID(int *list, int count, signed char *sendbuf, signed char *ID);
+    
+    /**
+     * \brief Unpack halo data for 8-bit integer
+     * @param list - list of values in the halo
+     * @param count - count of values in the halo
+     * @param recvbuf - memory buffer containing values recieved by MPI
+     * @param ID - 8-bit values on mesh [Nx, Ny, Nz]
+     */
     void UnpackID(int *list, int count, signed char *recvbuf, signed char *ID);
-    void CommHaloIDs();
     
 	//......................................................................................
 	MPI_Request req1[18], req2[18];
@@ -195,6 +265,44 @@ private:
     //......................................................................................
     const std::vector<int>& getRecvList( const char* dir ) const;
     const std::vector<int>& getSendList( const char* dir ) const;
+
+};
+
+template<class TYPE> class PatchData;
+
+
+enum class DataLocation { CPU, DEVICE };
+
+
+/**
+ * \class Patch
+ *
+ * @details
+ * store patch data
+ */
+class Patch {
+public:
+    
+    //! Empty constructor
+    Patch() = delete;
+
+    //! Copy constructor
+    Patch( const Patch& ) = delete;
+
+    //! Assignment operator
+    Patch& operator=( const Patch& ) = delete;
+
+    //! Return the box for the patch
+    inline const Box& getBox() const { return d_box; } 
+
+    //! Create patch data
+    template<class TYPE>
+    std::shared_ptr<PatchData<TYPE>> createPatchData( DataLocation location ) const;
+
+private:
+    Box d_box;
+    int d_owner;
+    Domain *d_domain;
 
 };
 

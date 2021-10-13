@@ -15,19 +15,69 @@ Implementation of two-fluid greyscale color lattice boltzmann model
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
+/**
+ * \class ScaLBL_GreyscaleColorModel
+ *
+ * @details
+ * The ScaLBL_GreyscaleColorModel class extends the standard color model incorporate transport
+ * through sub-resolution "greyscale" regions.
+ * Momentum transport equations are described by a D3Q19 scheme
+ * Mass transport equations are described by D3Q7 scheme
+ */
+
+
 class ScaLBL_GreyscaleColorModel{
 public:
+    /**
+    * \brief Constructor
+    * @param RANK        processor rank 
+    * @param NP        number of processors 
+    * @param COMM        MPI communicator 
+    */
 	ScaLBL_GreyscaleColorModel(int RANK, int NP, const Utilities::MPI& COMM);
 	~ScaLBL_GreyscaleColorModel();	
 	
 	// functions in they should be run
+    /**
+    * \brief Read simulation parameters
+    * @param filename       input database file that includes "Color" section 
+    */	
 	void ReadParams(string filename);
+	
+    /**
+    * \brief Read simulation parameters
+    * @param db0       input database that includes "Color" section 
+    */
 	void ReadParams(std::shared_ptr<Database> db0);
+	
+    /**
+    * \brief Create domain data structures
+    */
 	void SetDomain();
+	
+    /**
+    * \brief Read image data
+    */
 	void ReadInput();
+	
+    /**
+    * \brief Create color model data structures
+    */
 	void Create();
+	
+    /**
+    * \brief Initialize the simulation
+    */
 	void Initialize();
+	
+    /**
+    * \brief Run the simulation
+    */
 	void Run();
+	
+    /**
+    * \brief Debugging function to dump simulation state to disk
+    */
 	void WriteDebug();
 	
 	bool Restart,pBC;
@@ -72,7 +122,7 @@ public:
     double *GreySw;
     double *GreyKn;
     double *GreyKw;
-	//double *ColorGrad;
+	double *MobilityRatio;
 	double *Velocity;
 	double *Pressure;
     double *Porosity_dvc;
@@ -91,14 +141,24 @@ private:
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);
+    
+    /**
+    * \brief Assign wetting affinity values 
+    */
     void AssignComponentLabels();
+    
+    /**
+    * \brief Assign wetting affinity values in greyscale regions
+    */
     void AssignGreySolidLabels();
+    /**
+    * \brief Assign porosity and permeability in greyscale regions
+    */
     void AssignGreyPoroPermLabels();
-    //void AssignGreyscalePotential();
-    void ImageInit(std::string filename);
-    double MorphInit(const double beta, const double morph_delta);
+    /**
+    * \brief Seed phase field
+    */
     double SeedPhaseField(const double seed_water_in_oil);
-    double MorphOpenConnected(double target_volume_change);
     void WriteVisFiles();
 };
 
