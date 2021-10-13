@@ -76,6 +76,8 @@ int main(int argc, char **argv)
         }
         IonModel.getIonConcentration_debug(timestep);
         IonModel.getIonFluxDiffusive_debug(timestep);
+        IonModel.getIonFluxAdvective_debug(timestep);
+        IonModel.getIonFluxElectrical_debug(timestep);
 
         if (rank==0) printf("Maximum timestep is reached and the simulation is completed\n");
         if (rank==0) printf("*************************************************************\n");

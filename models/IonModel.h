@@ -86,6 +86,8 @@ public:
     double *FluidVelocityDummy;
     double *ElectricFieldDummy;
     double *FluxDiffusive;
+    double *FluxAdvective;
+    double *FluxElectrical;
 
 private:
 	Utilities::MPI comm;

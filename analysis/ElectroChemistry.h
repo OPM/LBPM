@@ -35,6 +35,9 @@ public:
 	DoubleArray Rho;	           // density field 
 	DoubleArray ChemicalPotential;	   // density field 
 	DoubleArray ElectricalPotential;	// density field 
+	DoubleArray ElectricalField_x;	// density field 
+	DoubleArray ElectricalField_y;	// density field 
+	DoubleArray ElectricalField_z;	// density field 
 	DoubleArray Pressure; 	// pressure field
 	DoubleArray Vel_x;		// velocity field
 	DoubleArray Vel_y;

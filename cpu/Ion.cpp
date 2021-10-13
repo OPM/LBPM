@@ -80,7 +80,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_IonConcentration(double *dist, double *Den, i
     }
 }
 
-extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *Den, double *FluxDiffusive, double *Velocity, double *ElectricField, 
+extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *Den, double *FluxDiffusive, double *FluxAdvective, double *FluxElectrical, double *Velocity, double *ElectricField, 
                                       double Di, int zi, double rlx, double Vt, int start, int finish, int Np){
 	int n;
 	double Ci;
@@ -133,6 +133,12 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *D
         FluxDiffusive[n+0*Np] = flux_diffusive_x;
         FluxDiffusive[n+1*Np] = flux_diffusive_y;
         FluxDiffusive[n+2*Np] = flux_diffusive_z;
+        FluxAdvective[n+0*Np] = ux*Ci;
+        FluxAdvective[n+1*Np] = uy*Ci;
+        FluxAdvective[n+2*Np] = uz*Ci;
+        FluxElectrical[n+0*Np] = uEPx*Ci;
+        FluxElectrical[n+1*Np] = uEPy*Ci;
+        FluxElectrical[n+2*Np] = uEPz*Ci;
 		
 		// q=0
 		dist[n] = f0*(1.0-rlx)+rlx*0.25*Ci;
@@ -158,7 +164,7 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *D
 	}
 }
 
-extern "C" void ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *FluxDiffusive, double *Velocity, double *ElectricField, 
+extern "C" void ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *FluxDiffusive, double *FluxAdvective, double *FluxElectrical, double *Velocity, double *ElectricField, 
                                        double Di, int zi, double rlx, double Vt, int start, int finish, int Np){
 	int n;
 	double Ci;
@@ -197,6 +203,12 @@ extern "C" void ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *FluxDi
         FluxDiffusive[n+0*Np] = flux_diffusive_x;
         FluxDiffusive[n+1*Np] = flux_diffusive_y;
         FluxDiffusive[n+2*Np] = flux_diffusive_z;
+        FluxAdvective[n+0*Np] = ux*Ci;
+        FluxAdvective[n+1*Np] = uy*Ci;
+        FluxAdvective[n+2*Np] = uz*Ci;
+        FluxElectrical[n+0*Np] = uEPx*Ci;
+        FluxElectrical[n+1*Np] = uEPy*Ci;
+        FluxElectrical[n+2*Np] = uEPz*Ci;
 
 		// q=0
 		dist[n] = f0*(1.0-rlx)+rlx*0.25*Ci;
