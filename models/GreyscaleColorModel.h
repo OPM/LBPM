@@ -79,6 +79,7 @@ public:
     * \brief Debugging function to dump simulation state to disk
     */
 	void WriteDebug();
+    void WriteVisFiles();
 	
 	bool Restart,pBC;
 	bool REVERSE_FLOW_DIRECTION;
@@ -159,6 +160,5 @@ private:
     * \brief Seed phase field
     */
     double SeedPhaseField(const double seed_water_in_oil);
-    void WriteVisFiles();
 };
 
