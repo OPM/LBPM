@@ -3,8 +3,9 @@
  * C/C++ routines 
  *
  *   - \ref ScaLBL.h "Scalable Lattice Boltzmann Library (ScaLBL)"
+ *   - \ref Domain.h "Domain structure"
  *   - \ref models "Lattice Boltzmann models"
- *       - \ref ColorModel "Color model"
+ *       - \ref ScaLBL_ColorModel "Color model"
  *   - \ref analysis "Analysis routines"
  *       - \ref FlowAdaptor "FlowAdaptor"
  *       - \ref DCEL "Doubly connected edge list"

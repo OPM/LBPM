@@ -1,25 +1,9 @@
 ###############################################################################
-LBPM model summary
+Analysis methods
 ###############################################################################
-
-Currently supported lattice Boltzmann models
 
 .. toctree::
    :glob:
    :maxdepth: 2
-
-   color/*
-
-   mrt/*
-
-   nernstPlanck/*
-
-   PoissonBoltzmann/*
    
-   greyscale/*
-
-   greyscaleColor/*
-
-   freeEnergy/*
-
-   
+   analysis/*

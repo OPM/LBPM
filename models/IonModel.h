@@ -36,6 +36,12 @@ public:
 	void Run(double *Velocity, double *ElectricField);
     void getIonConcentration(DoubleArray &IonConcentration, const size_t ic);
     void getIonConcentration_debug(int timestep);
+    void getIonFluxDiffusive(DoubleArray &IonFlux_x,DoubleArray &IonFlux_y,DoubleArray &IonFlux_z,const size_t ic);
+    void getIonFluxAdvective(DoubleArray &IonFlux_x,DoubleArray &IonFlux_y,DoubleArray &IonFlux_z,const size_t ic);
+    void getIonFluxElectrical(DoubleArray &IonFlux_x,DoubleArray &IonFlux_y,DoubleArray &IonFlux_z,const size_t ic);
+    void getIonFluxDiffusive_debug(int timestep);
+    void getIonFluxAdvective_debug(int timestep);
+    void getIonFluxElectrical_debug(int timestep);
     void DummyFluidVelocity();
     void DummyElectricField();
     double CalIonDenConvergence(vector<double> &ci_avg_previous);
@@ -83,6 +89,9 @@ public:
     double *IonSolid;
     double *FluidVelocityDummy;
     double *ElectricFieldDummy;
+    double *FluxDiffusive;
+    double *FluxAdvective;
+    double *FluxElectrical;
 
 private:
 	Utilities::MPI comm;
@@ -98,5 +107,6 @@ private:
     void AssignSolidBoundary(double *ion_solid);
     void AssignIonConcentration_FromFile(double *Ci,const vector<std::string> &File_ion,int ic);
     void IonConcentration_LB_to_Phys(DoubleArray &Den_reg);
+    void IonFlux_LB_to_Phys(DoubleArray &Den_reg, const size_t ic);
 };
 #endif

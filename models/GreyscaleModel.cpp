@@ -632,29 +632,6 @@ void ScaLBL_GreyscaleModel::Run(){
             if (BoundaryCondition > 0 && Dm->inlet_layers_z > 0 && Dm->kproc() == 0) kmin = 1 + Dm->inlet_layers_z;//"1" indicates the halo layer
             if (BoundaryCondition > 0 && Dm->outlet_layers_z > 0 && Dm->kproc() == Dm->nprocz()-1) kmax = Nz-1 - Dm->outlet_layers_z; 
 
-//			px_loc = py_loc = pz_loc = 0.f;
-//            mass_loc = 0.f;
-//			for (int k=kmin; k<kmax; k++){
-//				for (int j=jmin; j<Ny-1; j++){
-//					for (int i=imin; i<Nx-1; i++){
-//						if (SignDist(i,j,k) > 0){
-//							px_loc   += Velocity_x(i,j,k)*Den*PorosityMap(i,j,k);
-//							py_loc   += Velocity_y(i,j,k)*Den*PorosityMap(i,j,k);
-//							pz_loc   += Velocity_z(i,j,k)*Den*PorosityMap(i,j,k);
-//							mass_loc += Den*PorosityMap(i,j,k);
-//						}
-//					}
-//				}
-//			}
-//			MPI_Allreduce(&px_loc,  &px,      1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-//			MPI_Allreduce(&py_loc,  &py,      1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-//			MPI_Allreduce(&pz_loc,  &pz,      1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-//			MPI_Allreduce(&mass_loc,&mass_glb,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-//			
-//			vax = px/mass_glb;
-//			vay = py/mass_glb;
-//			vaz = pz/mass_glb;
-            
 			vax_loc = vay_loc = vaz_loc = 0.f;
 			for (int k=kmin; k<kmax; k++){
 				for (int j=jmin; j<Ny-1; j++){
@@ -781,51 +758,6 @@ void ScaLBL_GreyscaleModel::Run(){
 
 void ScaLBL_GreyscaleModel::VelocityField(){
 
-/*	Minkowski Morphology(Mask);
-	int SIZE=Np*sizeof(double);
-	ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
-	ScaLBL_DeviceBarrier(); comm.barrier();
-	ScaLBL_CopyToHost(&VELOCITY[0],&Velocity[0],3*SIZE);
-
-	memcpy(Morphology.SDn.data(), Distance.data(), Nx*Ny*Nz*sizeof(double));
-	Morphology.Initialize();
-	Morphology.UpdateMeshValues();
-	Morphology.ComputeLocal();
-	Morphology.Reduce();
-	
-	double count_loc=0;
-	double count;
-	double vax,vay,vaz;
-	double vax_loc,vay_loc,vaz_loc;
-	vax_loc = vay_loc = vaz_loc = 0.f;
-	for (int n=0; n<ScaLBL_Comm->LastExterior(); n++){
-		vax_loc += VELOCITY[n];
-		vay_loc += VELOCITY[Np+n];
-		vaz_loc += VELOCITY[2*Np+n];
-		count_loc+=1.0;
-	}
-	
-	for (int n=ScaLBL_Comm->FirstInterior(); n<ScaLBL_Comm->LastInterior(); n++){
-		vax_loc += VELOCITY[n];
-		vay_loc += VELOCITY[Np+n];
-		vaz_loc += VELOCITY[2*Np+n];
-		count_loc+=1.0;
-	}
-	MPI_Allreduce(&vax_loc,&vax,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	MPI_Allreduce(&vay_loc,&vay,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	MPI_Allreduce(&vaz_loc,&vaz,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	MPI_Allreduce(&count_loc,&count,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	
-	vax /= count;
-	vay /= count;
-	vaz /= count;
-	
-	double mu = (tau-0.5)/3.f;
-	if (rank==0) printf("Fx Fy Fz mu Vs As Js Xs vx vy vz\n");
-	if (rank==0) printf("%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",Fx, Fy, Fz, mu, 
-						Morphology.V(),Morphology.A(),Morphology.J(),Morphology.X(),vax,vay,vaz);
-						*/
-	
 	std::vector<IO::MeshDataStruct> visData;
 	fillHalo<double> fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1);
 

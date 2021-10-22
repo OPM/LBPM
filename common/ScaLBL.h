@@ -15,7 +15,7 @@
   along with OPM.  If not, see <http://www.gnu.org/licenses/>.
 */
 /** @file  ScaLBL.h */
-/*  \detail Header file for Scalable Lattice Boltzmann Library
+/*  \details Header file for Scalable Lattice Boltzmann Library
  *  Separate implementations for GPU and CPU must both follow the conventions defined in this header
  *  This libarry contains the essential components of the LBM
  *     - streaming implementations
@@ -48,7 +48,7 @@ extern "C" void ScaLBL_FreeDeviceMemory(void* pointer);
 
 /**
 * \brief Copy memory from host to device 
-* \detail  Device memory should be close to simulation (based on NUMA cost)
+* \details  Device memory should be close to simulation (based on NUMA cost)
 *          Host memory may be a shared memory region (with possibly higher NUMA cost for simulation)
 *          Analysis routine should minimize NUMA for host memory (based on process placement)
 * @param dest    memory location to copy to
@@ -60,7 +60,7 @@ extern "C" void ScaLBL_CopyToDevice(void* dest, const void* source, size_t size)
 
 /**
 * \brief Copy memory from device to host
-* \detail  Device memory should be close to simulation (based on NUMA cost)
+* \details  Device memory should be close to simulation (based on NUMA cost)
 *          Host memory may be a shared memory region (with possibly higher NUMA cost for simulation)
 *          Analysis routine should minimize NUMA for host memory (based on process placement)
 * @param dest    memory location to copy to
@@ -78,7 +78,7 @@ extern "C" void ScaLBL_AllocateZeroCopy(void** address, size_t size);
 
 /**
 * \brief Copy memory from host to zero copy buffer
-* \detail  Device memory should be close to simulation (based on NUMA cost)
+* \details  Device memory should be close to simulation (based on NUMA cost)
 *          Host memory may be a shared memory region (with possibly higher NUMA cost for simulation)
 *          Analysis routine should minimize NUMA for host memory (based on process placement)
 * @param dest    memory location to copy to
@@ -110,7 +110,7 @@ extern "C" void ScaLBL_D3Q19_Pack(int q, int *list, int start, int count, double
 * @param list - list of distributions to communicate
 * @param start -  index to start parsing the list 
 * @param count -  number of values to unppack 
-* @param revbuf - memory buffer where recieved values have been stored
+* @param recvbuf - memory buffer where recieved values have been stored
 * @param dist - memory buffer to hold the distributions
 * @param N - size of the distributions (derived from Domain structure)
 */
@@ -122,7 +122,7 @@ extern "C" void ScaLBL_D3Q19_Unpack(int q, int *list, int start, int count, doub
 * @param list - list of distributions to communicate
 * @param start -  index to start parsing the list 
 * @param count -  number of values to unppack 
-* @param revbuf - memory buffer where recieved values have been stored
+* @param recvbuf - memory buffer where recieved values have been stored
 * @param dist - memory buffer to hold the distributions
 * @param N - size of the distributions (derived from Domain structure)
 */
@@ -175,15 +175,15 @@ extern "C" void ScaLBL_D3Q19_Init(double *Dist, int Np);
 
 /**
 * \brief Compute momentum from D3Q19 distribution
-* @param Dist - D3Q19 distributions
+* @param dist - D3Q19 distributions
 * @param vel - memory buffer to store the momentum that is computed
 * @param Np - size of local sub-domain (derived from Domain structure)
 */
 extern "C" void ScaLBL_D3Q19_Momentum(double *dist, double *vel, int Np);
 
 /**
-* \brief Compute pressure from D3Q19 distribution
-* @param Dist - D3Q19 distributions
+* \brief compute pressure from D3Q19 distribution
+* @param dist - D3Q19 distributions
 * @param press - memory buffer to store the pressure field that is computed
 * @param Np - size of local sub-domain (derived from Domain structure)
 */
@@ -250,12 +250,12 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *d_neighborList, int *Map,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-        double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *GreyKn, double *GreyKw, double *Poros,double *Perm,double *Vel, double *Pressure,
+        double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *GreyKn, double *GreyKw, double *Poros,double *Perm,double *Vel, double *MobilityRatio, double *Pressure,
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Fx, double Fy, double Fz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *d_neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-		double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *GreyKn, double *GreyKw, double *Poros, double *Perm,double *Vel,double *Pressure, 
+		double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *GreyKn, double *GreyKw, double *Poros, double *Perm,double *Vel, double *MobilityRatio, double *Pressure, 
         double rhoA, double rhoB, double tauA, double tauB, double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Fx, double Fy, double Fz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np);
 
@@ -269,10 +269,10 @@ extern "C" void ScaLBL_D3Q7_AAodd_IonConcentration(int *neighborList, double *di
 extern "C" void ScaLBL_D3Q7_AAeven_IonConcentration(double *dist, double *Den, int start, int finish, int Np);
 
 
-extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *Den, double *Velocity, double *ElectricField, 
+extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *Den, double *FluxDiffusive, double *FluxAdvective, double *FluxElectrical, double *Velocity, double *ElectricField, 
                                       double Di, int zi, double rlx, double Vt, int start, int finish, int Np);
 
-extern "C" void ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *Velocity, double *ElectricField, 
+extern "C" void ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *FluxDiffusive, double *FluxAdvective, double *FluxElectrical, double *Velocity, double *ElectricField, 
                                        double Di, int zi, double rlx, double Vt, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q7_Ion_Init(double *dist, double *Den, double DenInit, int Np);
