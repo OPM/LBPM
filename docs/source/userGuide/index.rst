@@ -12,3 +12,4 @@ Welcome to the LBPM user guide.
 
    visualization/*
 
+   IO/*

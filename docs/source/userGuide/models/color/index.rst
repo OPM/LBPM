@@ -266,3 +266,8 @@ the inlet or outlet, the ``Domain`` section of the database may specify the foll
 - ``InletLayerPhase = 2`` -- establish a reservoir of component B at the inlet
 - ``OutletLayerPhase = 1`` -- establish a reservoir of component A at the outlet
 
+****************
+Example data
+****************
+
+Example data can be downloaded from https://www.digitalrocksportal.org/projects/326 

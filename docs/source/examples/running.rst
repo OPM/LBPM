@@ -1,5 +1,5 @@
 ==============
-LBPM examples 
+Examples 
 ==============
 
 There are two main components to running LBPM simulators.
