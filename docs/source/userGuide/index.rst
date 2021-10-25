@@ -10,8 +10,5 @@ Welcome to the LBPM user guide.
 
    models/*
 
-   analysis/*
-
    visualization/*
 
-   IO/*
