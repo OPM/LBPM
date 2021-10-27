@@ -1,0 +1,25 @@
+name: Install OpenMPI test
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  install-openmpi:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: download-openmpi
+      run: wget https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-4.0.2.tar.gz
+    - name: extract-openmpi
+      run: tar -xvf ./openmpi-4.0.2.tar.gz
+    - name: configure-openmpi
+      run: ./openmpi-4.0.2/configure --prefix="/home/${USER}/.openmpi"
+    - name: install-openmpi
+      run: |
+        make -j
+        sudo make install
+        
