@@ -12,6 +12,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: check path
+      run: |
+        echo $PATH
+        echo $GITHUB_PATH
+    
     - name: download-openmpi
       run: wget https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-4.0.2.tar.gz
     - name: extract-openmpi
