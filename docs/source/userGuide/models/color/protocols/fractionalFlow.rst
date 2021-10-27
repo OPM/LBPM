@@ -52,7 +52,7 @@ where :math:`\max{|\mathbf{u}_i|}` is the maximum flow speed within fluid :math:
 :math:`U_\epsilon` is a threshold speed that is set to minimize the influence of spurious
 currents on the mass seeding algorithm. The sum of the weighting function is used to normalize
 the local weights so that the added mass will match the value specified by ``mass_fraction_factor``.
-If the flow is slower than :math:`\epsilon_m`, the algorithm will tend to add mass evenly to the system.
+If the flow is slower than :math:`U_\epsilon`, the algorithm will tend to add mass evenly to the system.
 For example, if the water is only present in films that flow very slowly, then mass will
 be evenly seeded throughout entire water film. Alternatively, if one or both fluids
 flows through distinct channels, the mass will be disproportionately added to these
