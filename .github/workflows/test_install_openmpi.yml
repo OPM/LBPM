@@ -22,4 +22,9 @@ jobs:
       run: |
         make -j
         sudo make install
-        
+    - name: setting path
+      run: echo "/home/${USER}/.openmpi/bin" >> $GITHUB_PATH
+    
+    - name: checking version
+      run: mpirun --version
+    
