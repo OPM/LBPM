@@ -22,7 +22,7 @@ For additional details please refer to your local system documentation.
 Model parameters
 ***************************
 
-The essential model parameters for the color model are
+The essential model parameters for the single-phase MRT model are
 
 - ``tau`` -- control the fluid viscosity -- :math:`0.7 < \tau < 1.5`
 
@@ -165,13 +165,6 @@ The relaxation parameters are determined based on the relaxation time :math:`\ta
    $$
 
 
-
-****************************
-Example Input File
-****************************
-
-
-
   
 ****************************
 Boundary Conditions
@@ -207,3 +200,29 @@ the inlet or outlet, the ``Domain`` section of the database may specify the foll
 - ``InletLayerPhase = 2`` -- establish a reservoir of component B at the inlet
 - ``OutletLayerPhase = 1`` -- establish a reservoir of component A at the outlet
 
+  ****************************
+Example Input File
+****************************
+
+.. code-block:: c
+
+   MRT {
+      tau = 1.0
+      F = 0.0, 0.0, 1.0e-5
+      timestepMax = 2000
+      tolerance = 0.01
+   }
+   Domain {
+      Filename = "Bentheimer_LB_sim_intermediate_oil_wet_Sw_0p37.raw"  
+      ReadType = "8bit"      // data type
+      N = 900, 900, 1600     // size of original image
+      nproc = 2, 2, 2        // process grid
+      n = 200, 200, 200      // sub-domain size
+      offset = 300, 300, 300 // offset to read sub-domain
+      voxel_length = 1.66    // voxel length (in microns)
+      ReadValues = 0, 1, 2   // labels within the original image
+      WriteValues = 0, 1, 2  // associated labels to be used by LBPM
+      InletLayers = 0, 0, 10 // specify 10 layers along the z-inlet
+      BC = 0                 // boundary condition type (0 for periodic)
+   }
+ 

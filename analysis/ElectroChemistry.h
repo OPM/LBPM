@@ -35,11 +35,23 @@ public:
 	DoubleArray Rho;	           // density field 
 	DoubleArray ChemicalPotential;	   // density field 
 	DoubleArray ElectricalPotential;	// density field 
+	DoubleArray ElectricalField_x;	// density field 
+	DoubleArray ElectricalField_y;	// density field 
+	DoubleArray ElectricalField_z;	// density field 
 	DoubleArray Pressure; 	// pressure field
 	DoubleArray Vel_x;		// velocity field
 	DoubleArray Vel_y;
 	DoubleArray Vel_z;
 	DoubleArray SDs;
+    DoubleArray IonFluxDiffusive_x; //ion diffusive flux components
+    DoubleArray IonFluxDiffusive_y;
+    DoubleArray IonFluxDiffusive_z;
+    DoubleArray IonFluxAdvective_x; //ion advective flux components
+    DoubleArray IonFluxAdvective_y;
+    DoubleArray IonFluxAdvective_z;
+    DoubleArray IonFluxElectrical_x; //ion electromigration flux components
+    DoubleArray IonFluxElectrical_y;
+    DoubleArray IonFluxElectrical_z;
 
 	ElectroChemistryAnalyzer(std::shared_ptr <Domain> Dm);
 	~ElectroChemistryAnalyzer();

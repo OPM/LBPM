@@ -68,11 +68,11 @@ double FlowAdaptor::ImageInit(ScaLBL_ColorModel &M, std::string Filename){
 
 double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){	
 
-	double MASS_FRACTION_CHANGE = 0.01;
+	double MASS_FRACTION_CHANGE = 0.006;
 	double FRACTIONAL_FLOW_EPSILON = 5e-6;
 	if (M.db->keyExists( "FlowAdaptor" )){
 		auto flow_db = M.db->getDatabase( "FlowAdaptor" );
-		MASS_FRACTION_CHANGE = flow_db->getWithDefault<double>( "mass_fraction_factor", 0.01);
+		MASS_FRACTION_CHANGE = flow_db->getWithDefault<double>( "mass_fraction_factor", 0.006);
 		FRACTIONAL_FLOW_EPSILON = flow_db->getWithDefault<double>( "fractional_flow_epsilon", 5e-6);
 	}
 	int Np = M.Np;

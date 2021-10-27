@@ -132,7 +132,7 @@ extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, int *Map, double *d
 		f6 = dist[nr6];
 		
 		Ex = (f1-f2)*rlx*4.0;//NOTE the unit of electric field here is V/lu
-		Ey = (f3-f4)*rlx*4.0;//factor 4.0 is D3Q7 lattice speed of sound
+		Ey = (f3-f4)*rlx*4.0;//factor 4.0 is D3Q7 lattice squared speed of sound
 		Ez = (f5-f6)*rlx*4.0;
         ElectricField[n+0*Np] = Ex;
         ElectricField[n+1*Np] = Ey;
@@ -189,7 +189,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_Poisson(int *Map, double *dist, double *Den_c
 
 
 		Ex = (f1-f2)*rlx*4.0;//NOTE the unit of electric field here is V/lu
-		Ey = (f3-f4)*rlx*4.0;//factor 4.0 is D3Q7 lattice speed of sound
+		Ey = (f3-f4)*rlx*4.0;//factor 4.0 is D3Q7 lattice squared speed of sound
 		Ez = (f5-f6)*rlx*4.0;
         ElectricField[n+0*Np] = Ex;
         ElectricField[n+1*Np] = Ey;

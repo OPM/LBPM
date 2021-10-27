@@ -71,6 +71,7 @@ public:
 	DoubleArray Vel_x;		// velocity field
 	DoubleArray Vel_y;
 	DoubleArray Vel_z;
+	DoubleArray MobilityRatio;
 
 	GreyPhaseAnalysis(std::shared_ptr <Domain> Dm);
 	~GreyPhaseAnalysis();

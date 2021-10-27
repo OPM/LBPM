@@ -17,6 +17,8 @@ into the framework.
 
    doxygen/ScaLBL.rst
 
+   doxygen/Domain.rst
+
    doxygen/Models.rst
 
    doxygen/Analysis.rst
