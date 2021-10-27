@@ -18,19 +18,24 @@ jobs:
         echo $GITHUB_PATH
         cmake --version
     
-    #- name: download-openmpi
-    #  run: wget https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-4.0.2.tar.gz
-    #- name: extract-openmpi
-    #  run: tar -xvf ./openmpi-4.0.2.tar.gz
-    #- name: configure-openmpi
-    #  run: ./openmpi-4.0.2/configure --prefix="/home/${USER}/.openmpi"
-    #- name: install-openmpi
-    #  run: |
-    #    make -j
-    #    sudo make install
-    #- name: setting path
-    #  run: echo "/home/${USER}/.openmpi/bin" >> $GITHUB_PATH
-    #
-    #- name: checking version
-    #  run: mpirun --version
+    - name: download-openmpi
+      run: wget https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-4.0.2.tar.gz
+      
+    - name: extract-openmpi
+      run: tar -xvf ./openmpi-4.0.2.tar.gz
+      
+    - name: configure-openmpi
+      run: ./openmpi-4.0.2/configure --prefix="/home/${USER}/.openmpi"
+      
+    - name: install-openmpi
+      run: |
+        make -j
+        sudo make install
+        
+    - name: setting path
+      run: |
+        echo "/home/${USER}/.openmpi/bin" >> $GITHUB_PATH
+        #echo "/home/${USER}/.openmpi/bin" >> $PATH
+    - name: checking version
+      run: mpirun --version
     
