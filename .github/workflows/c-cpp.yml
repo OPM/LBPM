@@ -26,7 +26,7 @@ jobs:
         
     - name: install-dependencies
       run: |
-        wget https://wci.llnl.gov/content/assets/docs/simulation/computer-codes/silo/silo-4.10.2/silo-4.10.2.tar.gz
+        curl "https://wci.llnl.gov/sites/wci/files/2021-01/silo-4.10.2.tgz" -o "silo-4.10.2.tar.gz" 
         wget https://www.zlib.net/zlib-1.2.11.tar.gz
         wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.5/src/hdf5-1.10.5.tar.gz
 
