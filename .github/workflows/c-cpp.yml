@@ -44,7 +44,7 @@ jobs:
         make
         sudo make install
         
-        cd ../hdf5-1.8.12
+        cd ../hdf5-1.10.5
         CC=mpicc  CXX=mpicxx CXXFLAGS="-fPIC -O3 -std=c++14" \
         ./configure --prefix=$LBPM_HDF5_DIR --enable-parallel --enable-shared --with-zlib=$LBPM_ZLIB_DIR
         make
