@@ -1,0 +1,68 @@
+name: LBPM CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-and-test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: install-openmpi
+      run: |
+        wget https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-4.0.2.tar.gz
+        tar -xvf ./openmpi-4.0.2.tar.gz
+        ./openmpi-4.0.2/configure --prefix="/home/${USER}/.openmpi"
+        make -j
+        sudo make install
+        
+    - name: install-dependencies
+      run: |
+        wget https://wci.llnl.gov/content/assets/docs/simulation/computer-codes/silo/silo-4.10.2/silo-4.10.2.tar.gz
+        wget https://www.zlib.net/zlib-1.2.11.tar.gz
+        wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.5/src/hdf5-1.10.5.tar.gz
+
+        export LBPM_ZLIB_DIR="/home/${USER}/extlib/zlib"
+        export LBPM_HDF5_DIR="/home/${USER}/extlib/hdf5"
+        export LBPM_SILO_DIR="/home/${USER}/extlib/silo"
+        
+        
+        tar -xzvf zlib-1.2.11.tar.gz
+        tar -xzvf hdf5-1.10.5.tar.gz
+        tar -xzvf silo-4.10.2.tar.gz
+
+        cd zlib-1.2.11
+        ./configure --prefix=$LBPM_ZLIB_DIR
+        make
+        sudo make install
+        
+        cd ../hdf5-1.8.12
+        CC=mpicc  CXX=mpicxx CXXFLAGS="-fPIC -O3 -std=c++14" \
+        ./configure --prefix=$LBPM_HDF5_DIR --enable-parallel --enable-shared --with-zlib=$LBPM_ZLIB_DIR
+        make
+        sudo make install
+
+        cd ../silo-4.10.2
+        CC=mpicc  CXX=mpicxx CXXFLAGS="-fPIC -O3 -std=c++14" \
+        ./configure --prefix=$LBPM_SILO_DIR -with-hdf5=$LBPM_HDF5_DIR/include, $LBPM_HDF5_DIR/lib --enable-static
+        make
+        sudo make install
+       
+        
+    - name: setting path
+      run: |
+        echo "/home/${USER}/.openmpi/bin" >> $GITHUB_PATH
+        #echo "/home/${USER}/.openmpi/bin" >> $PATH
+        #Do we need this?
+        export LD_LIBRARY_PATH="$LBPM_ZLIB_DIR:$LBPM_HDF5_DIR:LBPM_SILO_DIR"
+        
+    - name: checking MPI version
+      run: mpirun --version
+
+    - name: check out commit
+      uses: actions/checkout@v2
+      
