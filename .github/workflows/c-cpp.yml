@@ -44,27 +44,21 @@ jobs:
         which mpicc
         which mpicxx
         
-
-
-    - name: install zlib dependencies
+    - name: install dependencies
       run: |
         cd zlib-1.2.11
         ./configure --prefix=$LBPM_ZLIB_DIR
         make
         sudo make install
         
-    - name: install hdf5 dependencies
-      run: |
         cd ../hdf5-1.8.12
         CC=mpicc  CXX=mpicxx CXXFLAGS="-fPIC -O3 -std=c++14" \
         ./configure --prefix=$LBPM_HDF5_DIR --enable-parallel --enable-shared --with-zlib=$LBPM_ZLIB_DIR
         make
         sudo make install
 
-    - name: install silo dependencies
-      run: |
-       cd ../silo-4.10.2
-       CC=mpicc  CXX=mpicxx CXXFLAGS="-fPIC -O3 -std=c++14" \
+        cd ../silo-4.10.2
+        CC=mpicc  CXX=mpicxx CXXFLAGS="-fPIC -O3 -std=c++14" \
         ./configure --prefix=$LBPM_SILO_DIR -with-hdf5=$LBPM_HDF5_DIR/include, $LBPM_HDF5_DIR/lib --enable-static
         make
         sudo make install
