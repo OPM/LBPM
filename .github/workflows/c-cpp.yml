@@ -29,9 +29,9 @@ jobs:
     
     - name: install-openmpi
       run: |
-        wget https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-4.0.2.tar.gz
-        tar -xvf ./openmpi-4.0.2.tar.gz
-        ./openmpi-4.0.2/configure --prefix="/home/${USER}/.openmpi"
+        wget https://www.open-mpi.org/software/ompi/v3.1/openmpi-3.1.2.tar.gz
+        tar -xvf ./openmpi-3.1.2.tar.gz
+        ./openmpi-3.1.2/configure --prefix="/home/${USER}/.openmpi"
         make -j
         sudo make install
         echo "/home/${USER}/.openmpi/bin" >> $GITHUB_PATH
