@@ -18,13 +18,13 @@ jobs:
         curl "https://wci.llnl.gov/sites/wci/files/2021-01/silo-4.10.2.tgz" -o "silo-4.10.2.tar.gz" 
         wget https://www.zlib.net/zlib-1.2.11.tar.gz
         wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/hdf5-1.8.12/src/hdf5-1.8.12.tar.gz
-
+        wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/hdf5-1.8.10/src/hdf5-1.8.10.tar.gz 
         export LBPM_ZLIB_DIR="/home/${USER}/extlib/zlib"
         export LBPM_HDF5_DIR="/home/${USER}/extlib/hdf5"
         export LBPM_SILO_DIR="/home/${USER}/extlib/silo"
        
         tar -xzvf zlib-1.2.11.tar.gz
-        tar -xzvf hdf5-1.8.12.tar.gz
+        tar -xzvf hdf5-1.8.10.tar.gz
         tar -xzvf silo-4.10.2.tar.gz
     
     - name: install-openmpi
@@ -59,9 +59,9 @@ jobs:
         
     - name: install hdf5 dependencies
       run: |
-        cd hdf5-1.8.12
+        cd hdf5-1.8.10
         CC=/home/runner/.openmpi/bin/mpicc  CXX=/home/runner/.openmpi/bin/mpicxx  CXXFLAGS="-fPIC -O3 -std=c++14" \
-        autoreconf --install ./configure --prefix=$LBPM_HDF5_DIR --enable-parallel --enable-shared --with-zlib=$LBPM_ZLIB_DIR
+        ./configure --prefix=$LBPM_HDF5_DIR --enable-parallel --enable-shared --with-zlib=$LBPM_ZLIB_DIR
         make
         sudo make install
         cd ..
@@ -70,7 +70,7 @@ jobs:
       run: |      
         cd silo-4.10.2
         CC=/home/runner/.openmpi/bin/mpicc  CXX=/home/runner/.openmpi/bin/mpicxx  CXXFLAGS="-fPIC -O3 -std=c++14" \
-        autoreconf --install ./configure --prefix=$LBPM_SILO_DIR -with-hdf5=$LBPM_HDF5_DIR/include, $LBPM_HDF5_DIR/lib --enable-static
+        ./configure --prefix=$LBPM_SILO_DIR -with-hdf5=$LBPM_HDF5_DIR/include, $LBPM_HDF5_DIR/lib --enable-static
         make
         sudo make install
         cd ..
