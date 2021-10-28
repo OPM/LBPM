@@ -20,9 +20,14 @@ jobs:
         make -j
         sudo make install
         echo "/home/${USER}/.openmpi/bin" >> $GITHUB_PATH
+        export PATH="/home/${USER}/.openmpi/bin:$PATH"
+        
         
     - name: checking MPI version
-      run: mpirun --version
+      run: |
+        mpirun --version
+        which mpicc
+        which mpicxx
         
     - name: install-dependencies
       run: |
