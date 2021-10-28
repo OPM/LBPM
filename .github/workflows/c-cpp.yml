@@ -12,6 +12,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    
+    - name: download dependencies
+      run: |
+        curl "https://wci.llnl.gov/sites/wci/files/2021-01/silo-4.10.2.tgz" -o "silo-4.10.2.tar.gz" 
+        wget https://www.zlib.net/zlib-1.2.11.tar.gz
+        wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/hdf5-1.8.12/src/hdf5-1.8.12.tar.gz
+
+        export LBPM_ZLIB_DIR="/home/${USER}/extlib/zlib"
+        export LBPM_HDF5_DIR="/home/${USER}/extlib/hdf5"
+        export LBPM_SILO_DIR="/home/${USER}/extlib/silo"
+       
+        tar -xzvf zlib-1.2.11.tar.gz
+        tar -xzvf hdf5-1.8.12.tar.gz
+        tar -xzvf silo-4.10.2.tar.gz
+    
     - name: install-openmpi
       run: |
         wget https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-4.0.2.tar.gz
@@ -29,19 +44,7 @@ jobs:
         which mpicc
         which mpicxx
         
-    - name: download dependencies
-      run: |
-        curl "https://wci.llnl.gov/sites/wci/files/2021-01/silo-4.10.2.tgz" -o "silo-4.10.2.tar.gz" 
-        wget https://www.zlib.net/zlib-1.2.11.tar.gz
-        wget http://www.hdfgroup.org/ftp/HDF5/current/src/hdf5-1.8.12.tar.gz
 
-        export LBPM_ZLIB_DIR="/home/${USER}/extlib/zlib"
-        export LBPM_HDF5_DIR="/home/${USER}/extlib/hdf5"
-        export LBPM_SILO_DIR="/home/${USER}/extlib/silo"
-       
-        tar -xzvf zlib-1.2.11.tar.gz
-        tar -xzvf hdf5-1.8.12.tar.gz
-        tar -xzvf silo-4.10.2.tar.gz
 
     - name: install zlib dependencies
       run: |
@@ -58,7 +61,7 @@ jobs:
         make
         sudo make install
 
-    - name: install zlib dependencies
+    - name: install silo dependencies
       run: |
        cd ../silo-4.10.2
        CC=mpicc  CXX=mpicxx CXXFLAGS="-fPIC -O3 -std=c++14" \
