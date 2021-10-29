@@ -17,8 +17,8 @@ jobs:
       run: |
         sudo apt-get update -y
         sudo apt-get install -y libtool 
-        sudo apt-get install -y libtool-ltdl
-        sudo apt-get install -y libtool-ltdl-devel
+        #sudo apt-get install -y libtool-ltdl
+        #sudo apt-get install -y libtool-ltdl-devel
         
         #curl "https://wci.llnl.gov/sites/wci/files/2021-01/silo-4.10.2.tgz" -o "silo-4.10.2.tar.gz" 
         wget https://bitbucket.org/AdvancedMultiPhysics/tpl-builder/downloads/silo-4.10.2.tar.gz
