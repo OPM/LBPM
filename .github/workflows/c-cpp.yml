@@ -72,14 +72,14 @@ jobs:
         sudo make install
         cd ..
         
-    - name: install silo dependencies
-      run: |      
-        cd silo-4.10.2
-        CC=/home/runner/.openmpi/bin/mpicc  CXX=/home/runner/.openmpi/bin/mpicxx  CXXFLAGS="-fPIC -O3 -std=c++14" \
-        ./configure --prefix=$LBPM_SILO_DIR -with-hdf5=$LBPM_HDF5_DIR/include, $LBPM_HDF5_DIR/lib --enable-static
-        make
-        sudo make install
-        cd ..
+#    - name: install silo dependencies
+#      run: |      
+#        cd silo-4.10.2
+#        CC=/home/runner/.openmpi/bin/mpicc  CXX=/home/runner/.openmpi/bin/mpicxx  CXXFLAGS="-fPIC -O3 -std=c++14" \
+#        ./configure --prefix=$LBPM_SILO_DIR -with-hdf5=$LBPM_HDF5_DIR/include, $LBPM_HDF5_DIR/lib --enable-static
+#        make
+#        sudo make install
+#        cd ..
       
 
     - name: check out commit
