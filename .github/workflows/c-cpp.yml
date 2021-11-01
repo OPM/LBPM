@@ -14,7 +14,7 @@ jobs:
       LBPM_ZLIB_DIR: /home/runner/extlib/zlib
       LBPM_HDF5_DIR: /home/runner/extlib/hdf5
       LBPM_SILO_DIR: /home/runner/extlib/silo
-
+      MPI_DIR: /home/runner/.openmpi
       
     steps:
     
@@ -25,6 +25,7 @@ jobs:
         echo $LBPM_SILO_DIR
         echo $HOME
         echo $GITHUB_PATH
+        echo $GITHUB_WORKSPACE
           
         sudo apt-get update -y
         #sudo apt-get install -y libtool-ltdl
@@ -43,6 +44,8 @@ jobs:
     
     - name: check out commit
       uses: actions/checkout@v2
+      with: 
+        path: LBPM
       
     - name: ls dir
       run: ls -a
@@ -87,14 +90,33 @@ jobs:
         sudo make install
         cd ..
         
-    - name: install silo dependencies
-      run: |      
-        cd silo-4.10.2
-        CC=/home/runner/.openmpi/bin/mpicc  CXX=/home/runner/.openmpi/bin/mpicxx  CXXFLAGS="-fPIC -O3 -std=c++14" 
-        ./configure --prefix=$LBPM_SILO_DIR -with-hdf5=$LBPM_HDF5_DIR/include, $LBPM_HDF5_DIR/lib --enable-static
-        make
-        sudo make install
-        cd ..
+#    - name: install silo dependencies
+#      run: |      
+#        cd silo-4.10.2
+#        CC=/home/runner/.openmpi/bin/mpicc  CXX=/home/runner/.openmpi/bin/mpicxx  CXXFLAGS="-fPIC -O3 -std=c++14" 
+#        ./configure --prefix=$LBPM_SILO_DIR -with-hdf5=$LBPM_HDF5_DIR/include, $LBPM_HDF5_DIR/lib --enable-static
+#        make
+#        sudo make install
+#        cd ..
       
-
+    - name: configure cmake
+      run: |
+        mkdir -p build
+        cd build
+        cmake 
+        -D CMAKE_C_COMPILER:PATH=$MPI_DIR/bin/mpicc          \
+        -D CMAKE_CXX_COMPILER:PATH=$MPI_DIR/bin/mpicxx        \
+        -D CMAKE_C_FLAGS="-O3 -fPIC"         \
+        -D CMAKE_CXX_FLAGS="-O3 -fPIC "      \
+        -D CMAKE_CXX_STANDARD=14    \
+        -D MPIEXEC=$MPI_DIR/mpirun                     \
+        -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
+        -D CMAKE_BUILD_TYPE:STRING=Release     \
+        -D HDF5_DIRECTORY=$LBPM_HDF5_DIR \
+        -D HDF5_LIB="$LBPM_HDF5_DIR/lib/libhdf5.a"\
+        -D USE_SILO=0 \
+        -D USE_NETCDF=0  \
+        -D USE_CUDA=0                        \
+        -D USE_TIMER=0 \
+        $GITHUB_WORKSPACE/LBPM
  
