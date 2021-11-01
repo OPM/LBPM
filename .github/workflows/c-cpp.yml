@@ -103,20 +103,20 @@ jobs:
       run: |
         mkdir -p build
         cd build
-        cmake 
-        -D CMAKE_C_COMPILER:PATH=$MPI_DIR/bin/mpicc          \
-        -D CMAKE_CXX_COMPILER:PATH=$MPI_DIR/bin/mpicxx        \
-        -D CMAKE_C_FLAGS="-O3 -fPIC"         \
-        -D CMAKE_CXX_FLAGS="-O3 -fPIC "      \
-        -D CMAKE_CXX_STANDARD=14    \
-        -D MPIEXEC=$MPI_DIR/mpirun                     \
-        -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
-        -D CMAKE_BUILD_TYPE:STRING=Release     \
-        -D HDF5_DIRECTORY=$LBPM_HDF5_DIR \
-        -D HDF5_LIB="$LBPM_HDF5_DIR/lib/libhdf5.a"\
-        -D USE_SILO=0 \
-        -D USE_NETCDF=0  \
-        -D USE_CUDA=0                        \
-        -D USE_TIMER=0 \
+        cmake  \
+        -DCMAKE_C_COMPILER:PATH=$MPI_DIR/bin/mpicc          \
+        -DCMAKE_CXX_COMPILER:PATH=$MPI_DIR/bin/mpicxx        \
+        -DCMAKE_C_FLAGS="-O3 -fPIC"         \
+        -DCMAKE_CXX_FLAGS="-O3 -fPIC "      \
+        -DCMAKE_CXX_STANDARD=14    \
+        -DMPIEXEC=$MPI_DIR/mpirun                     \
+        -DUSE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
+        -DCMAKE_BUILD_TYPE:STRING=Release     \
+        -DHDF5_DIRECTORY=$LBPM_HDF5_DIR \
+        -DHDF5_LIB="$LBPM_HDF5_DIR/lib/libhdf5.a"  \
+        -DUSE_SILO=0 \
+        -DUSE_NETCDF=0  \
+        -DUSE_CUDA=0   \
+        -DUSE_TIMER=0 \
         $GITHUB_WORKSPACE/LBPM
  
