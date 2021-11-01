@@ -40,7 +40,12 @@ jobs:
         tar -xzvf zlib-1.2.11.tar.gz
         tar -xzvf hdf5-1.8.12.tar.gz
         tar -xzvf silo-4.10.2.tar.gz
-        
+    
+    - name: check out commit
+      uses: actions/checkout@v2
+      
+    - name: ls dir
+      run: ls -a
 
     
     - name: install-openmpi
@@ -92,6 +97,4 @@ jobs:
         cd ..
       
 
-    - name: check out commit
-      uses: actions/checkout@v2
-      
+ 
