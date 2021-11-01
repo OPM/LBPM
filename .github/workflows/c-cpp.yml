@@ -11,9 +11,9 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
-      LBPM_ZLIB_DIR: "$HOME/extlib/zlib"
-      LBPM_HDF5_DIR: "$HOME/extlib/hdf5"
-      LBPM_SILO_DIR: "$HOME/extlib/silo"
+      LBPM_ZLIB_DIR: $HOME/extlib/zlib
+      LBPM_HDF5_DIR: $HOME/extlib/hdf5
+      LBPM_SILO_DIR: $HOME/extlib/silo
 
       
     steps:
