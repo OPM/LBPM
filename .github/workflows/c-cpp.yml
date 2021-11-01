@@ -20,10 +20,16 @@ jobs:
     
     - name: download dependencies
       run: |
+        echo $LBPM_ZLIB_DIR
+        echo $LBPM_HDF5_DIR
+        echo $LBPM_SILO_DIR
+          
         sudo apt-get update -y
         #sudo apt-get install -y libtool 
         #sudo apt-get install -y libtool-ltdl
         #sudo apt-get install -y libtool-ltdl-devel
+      
+        
         
         #curl "https://wci.llnl.gov/sites/wci/files/2021-01/silo-4.10.2.tgz" -o "silo-4.10.2.tar.gz" 
         wget https://bitbucket.org/AdvancedMultiPhysics/tpl-builder/downloads/silo-4.10.2.tar.gz
@@ -35,10 +41,7 @@ jobs:
         tar -xzvf hdf5-1.8.12.tar.gz
         tar -xzvf silo-4.10.2.tar.gz
         
-        echo ${env.LBPM_ZLIB_DIR}
-        echo ${env.LBPM_HDF5_DIR}
-        echo ${env.LBPM_SILO_DIR}
-    
+
     
     - name: install-openmpi
       run: |
@@ -75,7 +78,7 @@ jobs:
       run: |
         cd hdf5-1.8.12
         CC=/home/runner/.openmpi/bin/mpicc  CXX=/home/runner/.openmpi/bin/mpicxx  CXXFLAGS="-fPIC -O3 -std=c++14" \
-        ./configure --prefix=${env.LBPM_HDF5_DIR} --enable-parallel --enable-shared --with-zlib=${env.LBPM_ZLIB_DIR}
+        ./configure --prefix=$LBPM_HDF5_DIR --enable-parallel --enable-shared --with-zlib=$LBPM_ZLIB_DIR
         make
         sudo make install
         cd ..
@@ -84,7 +87,7 @@ jobs:
       run: |      
         cd silo-4.10.2
         CC=/home/runner/.openmpi/bin/mpicc  CXX=/home/runner/.openmpi/bin/mpicxx  CXXFLAGS="-fPIC -O3 -std=c++14" 
-        ./configure --prefix=${env.LBPM_SILO_DIR} -with-hdf5=${env.LBPM_HDF5_DIR}/include, ${env.LBPM_HDF5_DIR}/lib --enable-static
+        ./configure --prefix=$LBPM_SILO_DIR -with-hdf5=$LBPM_HDF5_DIR/include, $LBPM_HDF5_DIR/lib --enable-static
         make
         sudo make install
         cd ..
