@@ -19,9 +19,8 @@ class Morphology{
 public:    
 	/**
 	* \brief Create a flow adaptor to operate on the LB model
-	* @param Dm       Domain structure 
 	*/
-	Morphology(std::shared_ptr <Domain> Dm);
+	Morphology();
 
 	/**
 	* \brief Destructor

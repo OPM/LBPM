@@ -24,57 +24,10 @@ inline void UnpackID(const int *list, int count, signed char *recvbuf, signed ch
 	}
 }
 
-Morphology::Morphology(std::shared_ptr <Domain> Dm){
-	int nx = Dm->Nx;
-	int ny = Dm->Ny;
-	int nz = Dm->Nz;
-	int nprocx = Dm->nprocx();
-	int nprocy = Dm->nprocy();
-	int nprocz = Dm->nprocz();
-	int rank = Dm->rank();
+Morphology::Morphology(){
 	
 	/* MPI tags*/
 	sendtag = recvtag = 1381;
-	
-	// send buffers
-	sendID_x = new signed char [Dm->sendCount("x")];
-	sendID_y = new signed char [Dm->sendCount("y")];
-	sendID_z = new signed char [Dm->sendCount("z")];
-	sendID_X = new signed char [Dm->sendCount("X")];
-	sendID_Y = new signed char [Dm->sendCount("Y")];
-	sendID_Z = new signed char [Dm->sendCount("Z")];
-	sendID_xy = new signed char [Dm->sendCount("xy")];
-	sendID_yz = new signed char [Dm->sendCount("yz")];
-	sendID_xz = new signed char [Dm->sendCount("xz")];
-	sendID_Xy = new signed char [Dm->sendCount("Xy")];
-	sendID_Yz = new signed char [Dm->sendCount("Yz")];
-	sendID_xZ = new signed char [Dm->sendCount("xZ")];
-	sendID_xY = new signed char [Dm->sendCount("xY")];
-	sendID_yZ = new signed char [Dm->sendCount("yZ")];
-	sendID_Xz = new signed char [Dm->sendCount("Xz")];
-	sendID_XY = new signed char [Dm->sendCount("XY")];
-	sendID_YZ = new signed char [Dm->sendCount("YZ")];
-	sendID_XZ = new signed char [Dm->sendCount("XZ")];
-	//......................................................................................
-	// recv buffers
-	recvID_x = new signed char [Dm->recvCount("x")];
-	recvID_y = new signed char [Dm->recvCount("y")];
-	recvID_z = new signed char [Dm->recvCount("z")];
-	recvID_X = new signed char [Dm->recvCount("X")];
-	recvID_Y = new signed char [Dm->recvCount("Y")];
-	recvID_Z = new signed char [Dm->recvCount("Z")];
-	recvID_xy = new signed char [Dm->recvCount("xy")];
-	recvID_yz = new signed char [Dm->recvCount("yz")];
-	recvID_xz = new signed char [Dm->recvCount("xz")];
-	recvID_Xy = new signed char [Dm->recvCount("Xy")];
-	recvID_xZ = new signed char [Dm->recvCount("xZ")];
-	recvID_xY = new signed char [Dm->recvCount("xY")];
-	recvID_yZ = new signed char [Dm->recvCount("yZ")];
-	recvID_Yz = new signed char [Dm->recvCount("Yz")];
-	recvID_Xz = new signed char [Dm->recvCount("Xz")];
-	recvID_XY = new signed char [Dm->recvCount("XY")];
-	recvID_YZ = new signed char [Dm->recvCount("YZ")];
-	recvID_XZ = new signed char [Dm->recvCount("XZ")];
 }
 
 Morphology::~Morphology(){
@@ -87,7 +40,6 @@ void Morphology::Initialize(std::shared_ptr <Domain> Dm, DoubleArray &Distance){
 	size_t Ny = Dm->Ny;
 	size_t Nz = Dm->Nz;
 	size_t N = Nx*Ny*Nz;
-	size_t count = 0;
 
 	int *tmpShift_x, *tmpShift_y, *tmpShift_z;
 	double *tmpDistance;
@@ -121,7 +73,6 @@ void Morphology::Initialize(std::shared_ptr <Domain> Dm, DoubleArray &Distance){
 			}
 		}
 	}
-	printf(" Start data exchange \n");
 	Dm->Comm.Irecv(&recvCount,1,Dm->rank_X(),recvtag+0);
 	Dm->Comm.send(&sendCount,1,Dm->rank_x(),sendtag+0);	
 	Dm->Comm.barrier();
@@ -136,7 +87,6 @@ void Morphology::Initialize(std::shared_ptr <Domain> Dm, DoubleArray &Distance){
 	yShift.resize(recvLoc);
 	zShift.resize(recvLoc);
 	morphRadius.resize(recvLoc);
-	printf(" (x/X) Prepare to send %i recv %i \n", sendCount, recvCount);
 	//..............................
 	/* send the morphological radius */
 	Dm->Comm.Irecv(&morphRadius[recvOffset_X],recvCount,Dm->rank_X(),recvtag+0);
@@ -184,7 +134,6 @@ void Morphology::Initialize(std::shared_ptr <Domain> Dm, DoubleArray &Distance){
 	yShift.resize(recvLoc);
 	zShift.resize(recvLoc);
 	morphRadius.resize(recvLoc);
-	printf(" (X/x) Prepare to send %i recv %i \n", sendCount, recvCount);
 	//..............................
 	/* send the morphological radius */
 	Dm->Comm.Irecv(&morphRadius[recvOffset_x],recvCount,Dm->rank_x(),recvtag+0);
@@ -396,12 +345,13 @@ void Morphology::Initialize(std::shared_ptr <Domain> Dm, DoubleArray &Distance){
 	localID.resize(sendCount);
 	nonlocalID.resize(recvCount);
 	
-	printf("  offset %i for send (x) %i \n", sendOffset_x, sendCount_x);
+	/*printf("  offset %i for send (x) %i \n", sendOffset_x, sendCount_x);
 	printf("  offset %i for send (X) %i \n", sendOffset_X, sendCount_X);
 	printf("  offset %i for send (y) %i \n", sendOffset_y, sendCount_y);
 	printf("  offset %i for send (Y) %i \n", sendOffset_Y, sendCount_Y);
 	printf("  offset %i for send (z) %i \n", sendOffset_z, sendCount_z);
 	printf("  offset %i for send (Z) %i \n", sendOffset_Z, sendCount_Z);
+	*/
 
 }
 
@@ -513,7 +463,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	}
 	Dm->Comm.barrier();
 	
-	Morphology Structure(Dm);
+	Morphology Structure;
 	Structure.Initialize(Dm,SignDist);
 	
 	// total Global is the number of nodes in the pore-space
@@ -653,7 +603,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	Array<char> ID(nx,ny,nz);
 	fillHalo<char> fillChar(Dm->Comm,Dm->rank_info,{nx-2,ny-2,nz-2},{1,1,1},0,1);
 	
-	Morphology Structure(Dm);
+	Morphology Structure;
 	Structure.Initialize(Dm,SignDist);
 
 	int n;

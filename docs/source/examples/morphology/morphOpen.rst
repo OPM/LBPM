@@ -19,16 +19,15 @@ Since the morphological operation works on the input domain, associated paramete
 
 	  Domain {
 	     Filename = "discs_3x128x128.raw"
-	     ReadType = "16bit"    // data type
+	     ReadType = "8bit"    // data type
 	     N = 3, 128, 128       // size of original image
 	     nproc = 1, 2, 2       // process grid
 	     n = 3, 64, 64         // sub-domain size
-	     voxel_length = 7.0    // voxel length (in microns)
+	     voxel_length = 1.0    // voxel length (in microns)
 	     ReadValues = 0, 1, 2  // labels within the original image
 	     WriteValues = 0, 2, 2 // associated labels to be used by LBPM
-	     InletLayers = 0, 0, 6 // specify 6 layers along the z-inlet
 	     BC = 0                // fully periodic BC
-	     Sw = 0.20             // target saturation for morphological tools
+	     Sw = 0.35             // target saturation for morphological tools
 	  }
 
 Once this has been set, we launch lbpm_morphdrain_pp in the same way as other parallel tools
@@ -42,7 +41,8 @@ Successful output looks like the following
 
 .. code:: bash
 
-	  Performing morphological opening with target saturation 0.500000 
+
+	  Performing morphological opening with target saturation 0.350000 
 	  voxel length = 1.000000 micron 
 	  voxel length = 1.000000 micron 
 	  Input media: discs_3x128x128.raw
@@ -89,15 +89,11 @@ Successful output looks like the following
 	     1.000000      35.891230
 	     1.000000      34.096668
 	     1.000000      32.391835
-	     0.805149      30.772243
-	     0.727353      29.233631
-	     0.719791      27.771949
-	     0.714883      26.383352
-	     0.710861      25.064184
-	     0.637249      23.810975
-	     0.444570      22.620426
-	  Final void fraction =0.444570
-	  Final critical radius=22.620426
+	     0.575114      30.772243
+	     0.433119      29.233631
+	     0.291231      27.771949
+	  Final void fraction =0.291231
+	  Final critical radius=27.771949
 	  Writing ID file 
 	  Writing file to: discs_3x128x128.raw.morphdrain.raw
 
