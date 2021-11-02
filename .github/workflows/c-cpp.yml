@@ -54,7 +54,7 @@ jobs:
         mkdir build2
         cd build2
         pwd
-                
+        rm -rf CMake*      
         cmake  \
           -DCMAKE_C_COMPILER:PATH=$MPI_DIR/bin/mpicc          \
           -DCMAKE_CXX_COMPILER:PATH=$MPI_DIR/bin/mpicxx        \
