@@ -49,11 +49,51 @@ jobs:
         path: LBPM
 
 
+
+    - name: install-openmpi
+      run: |
+        wget https://download.open-mpi.org/release/open-mpi/v3.1/openmpi-3.1.2.tar.gz
+        tar -xvf ./openmpi-3.1.2.tar.gz
+        ./openmpi-3.1.2/configure --prefix="$HOME/.openmpi"
+        make -j
+        sudo make install
+        echo "$HOME/.openmpi/bin" >> $GITHUB_PATH
+               
+  
+
+    - name: install zlib dependencies
+      run: |
+        cd zlib-1.2.11
+        ./configure --prefix=$LBPM_ZLIB_DIR
+        make
+        sudo make install
+        cd ..
+
+
+    - name: install hdf5 dependencies
+      run: |
+        cd hdf5-1.8.12
+        CC=/home/runner/.openmpi/bin/mpicc  CXX=/home/runner/.openmpi/bin/mpicxx  CXXFLAGS="-fPIC -O3 -std=c++14" \
+        ./configure --prefix=$LBPM_HDF5_DIR --enable-parallel --enable-shared --with-zlib=$LBPM_ZLIB_DIR
+        make
+        sudo make install
+        cd ..
+
+
+    - name: install silo dependencies
+      run: |
+        cd silo-4.10.2
+        CC=$MPI_DIR/bin/mpicc  CXX=$MPI_DIR/bin/mpicxx CXXFLAGS="-fPIC -O3 -std=c++14" \
+        ./configure --prefix=$LBPM_SILO_DIR -with-hdf5="$LBPM_HDF5_DIR/include,$LBPM_HDF5_DIR/lib" --enable-static
+        make 
+        sudo make install
+        cd ..
+
+
     - name: configure cmake
       run: |
-        mkdir build2
-        cd build2
-        pwd
+        mkdir build
+        cd build
         rm -rf CMake*      
         cmake                                           \
         -D CMAKE_BUILD_TYPE:STRING=Release          \
@@ -90,49 +130,6 @@ jobs:
           #-DUSE_CUDA=0   \
           #-DUSE_TIMER=0 \
           #$GITHUB_WORKSPACE/LBPM
-        cd ..
-
-
-    - name: install-openmpi
-      run: |
-        wget https://download.open-mpi.org/release/open-mpi/v3.1/openmpi-3.1.2.tar.gz
-        tar -xvf ./openmpi-3.1.2.tar.gz
-        ./openmpi-3.1.2/configure --prefix="$HOME/.openmpi"
-        make -j
-        sudo make install
-        echo "$HOME/.openmpi/bin" >> $GITHUB_PATH
-               
-        
-    - name: checking MPI version
-      run: |
-        mpirun --version
-        which mpicc
-        which mpicxx
-        
-    - name: install zlib dependencies
-      run: |
-        cd zlib-1.2.11
-        ./configure --prefix=$LBPM_ZLIB_DIR
-        make
-        sudo make install
-        cd ..
-        
-    - name: install hdf5 dependencies
-      run: |
-        cd hdf5-1.8.12
-        CC=/home/runner/.openmpi/bin/mpicc  CXX=/home/runner/.openmpi/bin/mpicxx  CXXFLAGS="-fPIC -O3 -std=c++14" \
-        ./configure --prefix=$LBPM_HDF5_DIR --enable-parallel --enable-shared --with-zlib=$LBPM_ZLIB_DIR
-        make
-        sudo make install
-        cd ..
-    
-    - name: install silo dependencies
-      run: |
-        cd silo-4.10.2
-        CC=$MPI_DIR/bin/mpicc  CXX=$MPI_DIR/bin/mpicxx CXXFLAGS="-fPIC -O3 -std=c++14" \
-        ./configure --prefix=$LBPM_SILO_DIR -with-hdf5="$LBPM_HDF5_DIR/include,$LBPM_HDF5_DIR/lib" --enable-static
-        make 
-        sudo make install
         cd ..
 
                 
