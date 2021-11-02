@@ -45,6 +45,7 @@ jobs:
       run: |
         mkdir -p build
         cd build
+        echo $GITHUB_WORKSPACE/LBPM        
         cmake  \
         -DCMAKE_C_COMPILER:PATH=$MPI_DIR/bin/mpicc          \
         -DCMAKE_CXX_COMPILER:PATH=$MPI_DIR/bin/mpicxx        \
