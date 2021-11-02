@@ -97,7 +97,7 @@ int main(int argc, char **argv)
 		printf("   Volume  = %f (analytical = %f) \n", sphere.Vi,0.256*0.33333333333333*3.14159*double((Nx-2)*(Nx-2)*(Nx-2)));
 		double error = fabs(sphere.Vi - 0.256*0.33333333333333*3.14159*double((Nx-2)*(Nx-2)*(Nx-2)))/ (0.256*0.33333333333333*3.14159*double((Nx-2)*(Nx-2)*(Nx-2)));
 		printf("   Relative error %f \n", error);
-		if (error  > 0.02){
+		if (error  > 0.03){
 			toReturn = 10;
 			printf("ERROR (test_morph): difference from analytical volume is too large\n");
 			
