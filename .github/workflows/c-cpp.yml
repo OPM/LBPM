@@ -108,7 +108,7 @@ jobs:
       run: |
         cd build
         make
-        make install
+        sudo make install
         cd ..
         
     - name: tests
