@@ -17,7 +17,7 @@ jobs:
       MPI_DIR: /home/runner/.openmpi
       
     steps:
-    
+      
     - name: download dependencies
       run: |
         echo $LBPM_ZLIB_DIR
@@ -40,7 +40,17 @@ jobs:
         tar -xzvf zlib-1.2.11.tar.gz
         tar -xzvf hdf5-1.8.12.tar.gz
         tar -xzvf silo-4.10.2.tar.gz
-    
+   
+    - name: install silo dependencies
+      run: |
+        cd silo-4.10.2
+        autoreconf --install
+        CC=$MPI_DIR/bin/mpicc  CXX=$MPI_DIR/bin/mpicxx CXXFLAGS="-fPIC -O3 -std=c++14" \
+        ./configure --prefix=$LBPM_SILO_DIR -with-hdf5="$LBPM_HDF5_DIR/include,$LBPM_HDF5_DIR/lib" --enable-static
+        make 
+        sudo make install
+        cd ..
+   
     - name: check out commit
       uses: actions/checkout@v2
       with: 
@@ -80,15 +90,7 @@ jobs:
         sudo make install
         cd ..
     
-    - name: install silo dependencies
-      run: |
-        cd ../silo-4.10.2
-        autoreconf --install
-        CC=$MPI_DIR/bin/mpicc  CXX=$MPI_DIR/bin/mpicxx CXXFLAGS="-fPIC -O3 -std=c++14" \
-        ./configure --prefix=$LBPM_SILO_DIR -with-hdf5="$LBPM_HDF5_DIR/include,$LBPM_HDF5_DIR/lib" --enable-static
-        make 
-        sudo make install
-        cd ..
+
                 
     - name: configure cmake
       run: |
