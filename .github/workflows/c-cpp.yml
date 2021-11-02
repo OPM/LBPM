@@ -56,23 +56,23 @@ jobs:
         pwd
                 
         cmake  \
-        -DCMAKE_C_COMPILER:PATH=$MPI_DIR/bin/mpicc          \
-        -DCMAKE_CXX_COMPILER:PATH=$MPI_DIR/bin/mpicxx        \
-        -DCMAKE_C_FLAGS="-O3 -fPIC"         \
-        -DCMAKE_CXX_FLAGS="-O3 -fPIC "      \
-        -DCMAKE_CXX_STANDARD=14    \
-        -DMPIEXEC=$MPI_DIR/mpirun                     \
-        -DUSE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
-        -DCMAKE_BUILD_TYPE:STRING=Release     \
-        -DHDF5_DIRECTORY=$LBPM_HDF5_DIR \
-        -DHDF5_LIB=$LBPM_HDF5_DIR/lib/libhdf5.a  \
-        -DUSE_SILO=1 \
-        -DSILO_LIB=$LBPM_SILO_DIR/lib/libsiloh5.a	 \
-        -DSILO_DIRECTORY=$LBPM_SILO_DIR	 \      
-        -DUSE_NETCDF=0  \
-        -DUSE_CUDA=0   \
-        -DUSE_TIMER=0 \
-        $GITHUB_WORKSPACE/LBPM
+          -DCMAKE_C_COMPILER:PATH=$MPI_DIR/bin/mpicc          \
+          -DCMAKE_CXX_COMPILER:PATH=$MPI_DIR/bin/mpicxx        \
+          -DCMAKE_C_FLAGS="-O3 -fPIC"         \
+          -DCMAKE_CXX_FLAGS="-O3 -fPIC "      \
+          -DCMAKE_CXX_STANDARD=14    \
+          -DMPIEXEC=$MPI_DIR/mpirun                     \
+          -DUSE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
+          -DCMAKE_BUILD_TYPE:STRING=Release     \
+          -DHDF5_DIRECTORY=$LBPM_HDF5_DIR \
+          -DHDF5_LIB=$LBPM_HDF5_DIR/lib/libhdf5.a  \
+          -DUSE_SILO=1 \
+          -DSILO_LIB=$LBPM_SILO_DIR/lib/libsiloh5.a	 \
+          -DSILO_DIRECTORY=$LBPM_SILO_DIR	 \      
+          -DUSE_NETCDF=0  \
+          -DUSE_CUDA=0   \
+          -DUSE_TIMER=0 \
+          $GITHUB_WORKSPACE/LBPM
         cd ..
 
 
