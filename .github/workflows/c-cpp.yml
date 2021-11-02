@@ -23,7 +23,6 @@ jobs:
         echo $LBPM_ZLIB_DIR
         echo $LBPM_HDF5_DIR
         echo $LBPM_SILO_DIR
-        echo $HOME
         echo $GITHUB_PATH
         echo $GITHUB_WORKSPACE
           
