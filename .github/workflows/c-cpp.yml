@@ -51,8 +51,8 @@ jobs:
 
     - name: configure cmake
       run: |
-        mkdir -p build
-        cd build
+        mkdir build2
+        cd build2
         echo $GITHUB_WORKSPACE/LBPM        
         cmake  \
         -DCMAKE_C_COMPILER:PATH=$MPI_DIR/bin/mpicc          \
@@ -64,15 +64,14 @@ jobs:
         -DUSE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
         -DCMAKE_BUILD_TYPE:STRING=Release     \
         -DHDF5_DIRECTORY=$LBPM_HDF5_DIR \
-        -DHDF5_LIB="$LBPM_HDF5_DIR/lib/libhdf5.a"  \
+        -DHDF5_LIB=$LBPM_HDF5_DIR/lib/libhdf5.a  \
         -DUSE_SILO=1 \
-        -DSILO_LIB="$LBPM_SILO_DIR/lib/libsiloh5.a"	 \
+        -DSILO_LIB=$LBPM_SILO_DIR/lib/libsiloh5.a	 \
         -DSILO_DIRECTORY=$LBPM_SILO_DIR	 \      
         -DUSE_NETCDF=0  \
         -DUSE_CUDA=0   \
         -DUSE_TIMER=0 \
-        "/home/runner/work/LBPM/LBPM/LBPM"
-        #$GITHUB_WORKSPACE/LBPM
+        $GITHUB_WORKSPACE/LBPM
         cd ..
 
 
