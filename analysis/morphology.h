@@ -28,31 +28,65 @@ public:
 	*/
 	~Morphology();
 	
-	
 	/**
-	* \brief Send /recieve function for labels
+	* \brief Initialize morphology structure from distance map
+	* @param Dm       Domain structure 
+	* @param Distance   Signed distance to boundary of structure
 	*/
-	void SendRecv(std::shared_ptr <Domain> Dm, char *id);
+	void Initialize(std::shared_ptr <Domain> Dm, DoubleArray &Distance);
 	
 	/**
 	* \brief  Find all sites such that the reach of the signed distance at the site  overlaps with a sub-domain boundary
+	* @param Dm    Domain structure 
+	* @param id    image labels
+	* @param ErodeLabel label to erode based on morphological operation
+	* @param NewLabel   label to assign based on morphological operation
 	*/
-	void GetOverlaps(DoubleArray &SignDist);
-
-
+	int GetOverlaps(std::shared_ptr <Domain> Dm, signed char *id, const signed char ErodeLabel, const signed char NewLabel);
+	
+    /*
+     *  data structures to store non-local morphological information 
+    */
+    std::vector<int> xShift, yShift, zShift;
+    std::vector<int> sendID;
+    std::vector<double> morphRadius; 
+    std::vector<unsigned char> localID;
+    std::vector<unsigned char> nonlocalID;
+    
 private:
-	IntArray LocalOverlaps;
-	IntArray NonLocalOverlaps; 
-	
-	// List of sites that overlap with processor boundaries
-	int *sendOverlap_x, *sendOverlap_y, *sendOverlap_z, *sendOverlap_X, *sendOverlap_Y, *sendOverlap_Z;
-	int *sendOverlap_xy, *sendOverlap_yz, *sendOverlap_xz, *sendOverlap_Xy, *sendOverlap_Yz, *sendOverlap_xZ;
-	int *sendOverlap_xY, *sendOverlap_yZ, *sendOverlap_Xz, *sendOverlap_XY, *sendOverlap_YZ, *sendOverlap_XZ;
-	
-	int *recvOverlap_x, *recvOverlap_y, *recvOverlap_z, *recvOverlap_X, *recvOverlap_Y, *recvOverlap_Z;
-	int *recvOverlap_xy, *recvOverlap_yz, *recvOverlap_xz, *recvOverlap_Xy, *recvOverlap_Yz, *recvOverlap_xZ;
-	int *recvOverlap_xY, *recvOverlap_yZ, *recvOverlap_Xz, *recvOverlap_XY, *recvOverlap_YZ, *recvOverlap_XZ;
-	
+	int sendtag,recvtag;
+    
+    //......................................................................................
+    int sendCount, recvCount;
+    //......................................................................................
+    int sendOffset_x, sendOffset_y, sendOffset_z, sendOffset_X, sendOffset_Y, sendOffset_Z;
+    int sendOffset_xy, sendOffset_yz, sendOffset_xz, sendOffset_Xy, sendOffset_Yz, sendOffset_xZ;
+    int sendOffset_xY, sendOffset_yZ, sendOffset_Xz, sendOffset_XY, sendOffset_YZ, sendOffset_XZ;
+    int sendOffset_xyz, sendOffset_XYZ, sendOffset_xYz, sendOffset_XyZ;
+    int sendOffset_Xyz, sendOffset_xYZ, sendOffset_xyZ, sendOffset_XYz;
+    //......................................................................................
+    int recvOffset_x, recvOffset_y, recvOffset_z, recvOffset_X, recvOffset_Y, recvOffset_Z;
+    int recvOffset_xy, recvOffset_yz, recvOffset_xz, recvOffset_Xy, recvOffset_Yz, recvOffset_xZ;
+    int recvOffset_xY, recvOffset_yZ, recvOffset_Xz, recvOffset_XY, recvOffset_YZ, recvOffset_XZ;
+    int recvOffset_xyz, recvOffset_XYZ, recvOffset_xYz, recvOffset_XyZ;
+    int recvOffset_Xyz, recvOffset_xYZ, recvOffset_xyZ, recvOffset_XYz;    
+    //......................................................................................
+    int sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z;
+    int sendCount_xy, sendCount_yz, sendCount_xz, sendCount_Xy, sendCount_Yz, sendCount_xZ;
+    int sendCount_xY, sendCount_yZ, sendCount_Xz, sendCount_XY, sendCount_YZ, sendCount_XZ;
+    int sendCount_xyz, sendCount_XYZ, sendCount_xYz, sendCount_XyZ;
+    int sendCount_Xyz, sendCount_xYZ, sendCount_xyZ, sendCount_XYz;
+    //......................................................................................
+    int recvCount_x, recvCount_y, recvCount_z, recvCount_X, recvCount_Y, recvCount_Z;
+    int recvCount_xy, recvCount_yz, recvCount_xz, recvCount_Xy, recvCount_Yz, recvCount_xZ;
+    int recvCount_xY, recvCount_yZ, recvCount_Xz, recvCount_XY, recvCount_YZ, recvCount_XZ;
+    int recvCount_xyz, recvCount_XYZ, recvCount_xYz, recvCount_XyZ;
+    int recvCount_Xyz, recvCount_xYZ, recvCount_xyZ, recvCount_XYz;    
+    //......................................................................................
+    std::vector<char> sendList;
+    std::vector<char> recvList;
+    //......................................................................................
+    
 	// Communication buffers
 	signed char *sendID_x, *sendID_y, *sendID_z, *sendID_X, *sendID_Y, *sendID_Z;
 	signed char *sendID_xy, *sendID_yz, *sendID_xz, *sendID_Xy, *sendID_Yz, *sendID_xZ;
