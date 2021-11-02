@@ -41,6 +41,14 @@ jobs:
         tar -xzvf hdf5-1.8.12.tar.gz
         tar -xzvf silo-4.10.2.tar.gz
    
+
+
+    - name: check out commit
+      uses: actions/checkout@v2
+      with: 
+        path: LBPM
+
+
     - name: configure cmake
       run: |
         mkdir -p build
@@ -63,16 +71,11 @@ jobs:
         -DUSE_NETCDF=0  \
         -DUSE_CUDA=0   \
         -DUSE_TIMER=0 \
-        $GITHUB_WORKSPACE/LBPM
+        /home/runner/work/LBPM/LBPM/LBPM
+#        $GITHUB_WORKSPACE/LBPM
         cd ..
 
 
-    - name: check out commit
-      uses: actions/checkout@v2
-      with: 
-        path: LBPM
-
-    
     - name: install-openmpi
       run: |
         wget https://download.open-mpi.org/release/open-mpi/v3.1/openmpi-3.1.2.tar.gz
