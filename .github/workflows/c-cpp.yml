@@ -71,8 +71,8 @@ jobs:
         -DUSE_NETCDF=0  \
         -DUSE_CUDA=0   \
         -DUSE_TIMER=0 \
-        /home/runner/work/LBPM/LBPM/LBPM
-#        $GITHUB_WORKSPACE/LBPM
+        "/home/runner/work/LBPM/LBPM/LBPM"
+        #$GITHUB_WORKSPACE/LBPM
         cd ..
 
 
