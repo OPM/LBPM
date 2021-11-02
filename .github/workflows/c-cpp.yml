@@ -55,24 +55,41 @@ jobs:
         cd build2
         pwd
         rm -rf CMake*      
-        cmake  \
-          -DCMAKE_C_COMPILER:PATH=$MPI_DIR/bin/mpicc          \
-          -DCMAKE_CXX_COMPILER:PATH=$MPI_DIR/bin/mpicxx        \
-          -DCMAKE_C_FLAGS="-O3 -fPIC"         \
-          -DCMAKE_CXX_FLAGS="-O3 -fPIC "      \
-          -DCMAKE_CXX_STANDARD=14    \
-          -DMPIEXEC=$MPI_DIR/mpirun                     \
-          -DUSE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
-          -DCMAKE_BUILD_TYPE:STRING=Release     \
-          -DHDF5_DIRECTORY=$LBPM_HDF5_DIR \
-          -DHDF5_LIB=$LBPM_HDF5_DIR/lib/libhdf5.a  \
-          -DUSE_SILO=1 \
-          -DSILO_LIB=$LBPM_SILO_DIR/lib/libsiloh5.a	 \
-          -DSILO_DIRECTORY=$LBPM_SILO_DIR	 \      
-          -DUSE_NETCDF=0  \
-          -DUSE_CUDA=0   \
-          -DUSE_TIMER=0 \
-          $GITHUB_WORKSPACE/LBPM
+        cmake                                           \
+        -D CMAKE_BUILD_TYPE:STRING=Release          \
+        -D CMAKE_C_COMPILER:PATH=$MPI_DIR/bin/mpicc              \
+        -D CMAKE_CXX_COMPILER:PATH=$MPI_DIR/bin/mpicxx           \
+        -D MPI_CXX_COMPILER=$MPI_DIR/bin/mpicxx            \
+        -D CMAKE_C_FLAGS="-fPIC"                    \
+        -D CMAKE_CXX_FLAGS="-fPIC"                  \
+        -D CMAKE_CXX_STD=14                         \
+        -D USE_TIMER=0                              \
+          -D TIMER_DIRECTORY=$LBPM_TIMER_DIR     \
+        -D USE_NETCDF=0                             \
+          -D NETCDF_DIRECTORY=$LBPM_NETCDF_DIR   \
+        -D USE_SILO=1                               \
+          -D HDF5_DIRECTORY=$LBPM_HDF5_DIR         \
+          -D SILO_DIRECTORY=$LBPM_SILO_DIR         \
+        -D USE_CUDA=0                               \
+        $GITHUB_WORKSPACE/LBPM
+        
+          #-DCMAKE_C_COMPILER:PATH=$MPI_DIR/bin/mpicc          \
+          #-DCMAKE_CXX_COMPILER:PATH=$MPI_DIR/bin/mpicxx        \
+          #-DCMAKE_C_FLAGS="-O3 -fPIC"         \
+          #-DCMAKE_CXX_FLAGS="-O3 -fPIC "      \
+          #-DCMAKE_CXX_STANDARD=14    \
+          #-DMPIEXEC=$MPI_DIR/mpirun                     \
+          #-DUSE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
+          #-DCMAKE_BUILD_TYPE:STRING=Release     \
+          #-DHDF5_DIRECTORY=$LBPM_HDF5_DIR \
+          #-DHDF5_LIB=$LBPM_HDF5_DIR/lib/libhdf5.a  \
+          #-DUSE_SILO=1 \
+          #-DSILO_LIB=$LBPM_SILO_DIR/lib/libsiloh5.a	 \
+          #-DSILO_DIRECTORY=$LBPM_SILO_DIR	 \      
+          #-DUSE_NETCDF=0  \
+          #-DUSE_CUDA=0   \
+          #-DUSE_TIMER=0 \
+          #$GITHUB_WORKSPACE/LBPM
         cd ..
 
 
