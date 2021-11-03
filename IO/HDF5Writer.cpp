@@ -274,7 +274,7 @@ std::vector<IO::MeshDatabase> writeMeshesHDF5( const std::vector<IO::MeshDataStr
 
 
 std::vector<IO::MeshDatabase> writeMeshesHDF5(
-    const std::vector<IO::MeshDataStruct> &, const std::string &, IO::FileFormat, int )
+    const std::vector<IO::MeshDataStruct> &, const std::string &, IO::FileFormat, int, Xdmf & )
 {
     return std::vector<IO::MeshDatabase>();
 }
