@@ -1,0 +1,147 @@
+name: LBPM CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-and-test:
+
+    runs-on: ubuntu-latest
+    env:
+      LBPM_ZLIB_DIR: /home/runner/extlib/zlib
+      LBPM_HDF5_DIR: /home/runner/extlib/hdf5
+      LBPM_SILO_DIR: /home/runner/extlib/silo
+      MPI_DIR: /home/runner/.openmpi
+      
+    steps:
+      
+    - name: download dependencies
+      run: |
+        echo $LBPM_ZLIB_DIR
+        echo $LBPM_HDF5_DIR
+        echo $LBPM_SILO_DIR
+        echo $GITHUB_PATH
+        echo $GITHUB_WORKSPACE
+          
+        sudo apt-get update -y
+        #sudo apt-get install -y libtool-ltdl
+        #sudo apt-get install -y libtool-ltdl-devel
+             
+        
+        #curl "https://wci.llnl.gov/sites/wci/files/2021-01/silo-4.10.2.tgz" -o "silo-4.10.2.tar.gz" 
+        wget https://bitbucket.org/AdvancedMultiPhysics/tpl-builder/downloads/silo-4.10.2.tar.gz
+        wget https://www.zlib.net/zlib-1.2.11.tar.gz
+        wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/hdf5-1.8.12/src/hdf5-1.8.12.tar.gz
+        #wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/hdf5-1.8.10/src/hdf5-1.8.10.tar.gz 
+       
+        tar -xzvf zlib-1.2.11.tar.gz
+        tar -xzvf hdf5-1.8.12.tar.gz
+        tar -xzvf silo-4.10.2.tar.gz
+   
+
+
+    - name: check out commit
+      uses: actions/checkout@v2
+      with: 
+        path: LBPM
+
+
+
+    - name: install-openmpi
+      run: |
+        wget https://download.open-mpi.org/release/open-mpi/v3.1/openmpi-3.1.2.tar.gz
+        tar -xvf ./openmpi-3.1.2.tar.gz
+        ./openmpi-3.1.2/configure --prefix="$HOME/.openmpi"
+        make -j
+        sudo make install
+        echo "$HOME/.openmpi/bin" >> $GITHUB_PATH
+               
+  
+
+    - name: install zlib dependencies
+      run: |
+        cd zlib-1.2.11
+        ./configure --prefix=$LBPM_ZLIB_DIR
+        make
+        sudo make install
+        cd ..
+
+
+    - name: install hdf5 dependencies
+      run: |
+        cd hdf5-1.8.12
+        CC=/home/runner/.openmpi/bin/mpicc  CXX=/home/runner/.openmpi/bin/mpicxx  CXXFLAGS="-fPIC -O3 -std=c++14" \
+        ./configure --prefix=$LBPM_HDF5_DIR --enable-parallel --enable-shared --with-zlib=$LBPM_ZLIB_DIR
+        make
+        sudo make install
+        cd ..
+
+
+    - name: install silo dependencies
+      run: |
+        cd silo-4.10.2
+        CC=$MPI_DIR/bin/mpicc  CXX=$MPI_DIR/bin/mpicxx CXXFLAGS="-fPIC -O3 -std=c++14" \
+        ./configure --prefix=$LBPM_SILO_DIR -with-hdf5="$LBPM_HDF5_DIR/include,$LBPM_HDF5_DIR/lib" --enable-static
+        make 
+        sudo make install
+        cd ..
+
+
+    - name: configure cmake
+      run: |
+        mkdir build
+        cd build
+        rm -rf CMake*      
+        cmake                                           \
+        -D CMAKE_BUILD_TYPE:STRING=Release          \
+        -D CMAKE_C_COMPILER:PATH=$MPI_DIR/bin/mpicc              \
+        -D CMAKE_CXX_COMPILER:PATH=$MPI_DIR/bin/mpicxx           \
+        -D MPI_CXX_COMPILER=$MPI_DIR/bin/mpicxx            \
+        -D CMAKE_C_FLAGS="-fPIC"                    \
+        -D CMAKE_CXX_FLAGS="-fPIC"                  \
+        -D CMAKE_CXX_STD=14                         \
+        -D USE_TIMER=0                              \
+          -D TIMER_DIRECTORY=$LBPM_TIMER_DIR     \
+        -D USE_NETCDF=0                             \
+          -D NETCDF_DIRECTORY=$LBPM_NETCDF_DIR   \
+        -D USE_SILO=1                               \
+          -D HDF5_DIRECTORY=$LBPM_HDF5_DIR         \
+          -D SILO_DIRECTORY=$LBPM_SILO_DIR         \
+        -D USE_CUDA=0                               \
+        $GITHUB_WORKSPACE/LBPM
+        
+          #-DCMAKE_C_COMPILER:PATH=$MPI_DIR/bin/mpicc          \
+          #-DCMAKE_CXX_COMPILER:PATH=$MPI_DIR/bin/mpicxx        \
+          #-DCMAKE_C_FLAGS="-O3 -fPIC"         \
+          #-DCMAKE_CXX_FLAGS="-O3 -fPIC "      \
+          #-DCMAKE_CXX_STANDARD=14    \
+          #-DMPIEXEC=$MPI_DIR/mpirun                     \
+          #-DUSE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
+          #-DCMAKE_BUILD_TYPE:STRING=Release     \
+          #-DHDF5_DIRECTORY=$LBPM_HDF5_DIR \
+          #-DHDF5_LIB=$LBPM_HDF5_DIR/lib/libhdf5.a  \
+          #-DUSE_SILO=1 \
+          #-DSILO_LIB=$LBPM_SILO_DIR/lib/libsiloh5.a	 \
+          #-DSILO_DIRECTORY=$LBPM_SILO_DIR	 \      
+          #-DUSE_NETCDF=0  \
+          #-DUSE_CUDA=0   \
+          #-DUSE_TIMER=0 \
+          #$GITHUB_WORKSPACE/LBPM
+        cd ..
+
+                
+ 
+    - name: build and make
+      run: |
+        cd build
+        make
+        sudo make install
+        cd ..
+        
+    - name: tests
+      run: |
+        cd build
+        ctest
