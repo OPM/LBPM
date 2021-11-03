@@ -51,6 +51,7 @@ class fillHalo
 public:
     /*!
      * @brief  Default constructor
+     * @param[in] comm          Communicator to use
      * @param[in] info          Rank and neighbor rank info
      * @param[in] n             Number of local cells
      * @param[in] ng            Number of ghost cells

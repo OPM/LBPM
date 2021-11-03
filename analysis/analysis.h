@@ -22,8 +22,8 @@ typedef Array<BlobIDType> BlobIDArray;
  * @param[in] SignDist      SignDist
  * @param[in] vF            vF
  * @param[in] vS            vS
- * @param[in] S             S
  * @param[out] LocalBlobID  The ids of the blobs
+ * @param[in] periodic      Optional value
  * @return  Returns the number of blobs
  */
 int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist, 
@@ -48,12 +48,13 @@ int ComputeLocalPhaseComponent( const IntArray &PhaseID, int &VALUE, IntArray &C
  * @param[in] nx            Number of elements in the x-direction
  * @param[in] ny            Number of elements in the y-direction
  * @param[in] nz            Number of elements in the z-direction
+ * @param[in] rank_info     MPI communication info
  * @param[in] Phase         Phase
  * @param[in] SignDist      SignDist
  * @param[in] vF            vF
  * @param[in] vS            vS
- * @param[in] S             S
- * @param[out] LocalBlobID  The ids of the blobs
+ * @param[out] GlobalBlobID The ids of the blobs
+ * @param[in] comm          MPI communicator
  * @return  Returns the number of blobs
  */
 int ComputeGlobalBlobIDs( int nx, int ny, int nz, const RankInfoStruct& rank_info, 
@@ -68,10 +69,11 @@ int ComputeGlobalBlobIDs( int nx, int ny, int nz, const RankInfoStruct& rank_inf
  * @param[in] nx            Number of elements in the x-direction
  * @param[in] ny            Number of elements in the y-direction
  * @param[in] nz            Number of elements in the z-direction
- * @param[in] rank_in       MPI communication info
+ * @param[in] rank_info     MPI communication info
  * @param[in] PhaseID       Array that identifies the phases
  * @param[in] VALUE         Identifier for the phase to decompose
  * @param[out] GlobalBlobID The ids of the blobs for the phase
+ * @param[in] comm          The communicator to use
  * @return Return the number of components in the specified phase
  */
 int ComputeGlobalPhaseComponent( int nx, int ny, int nz, const RankInfoStruct& rank_info,
@@ -82,10 +84,8 @@ int ComputeGlobalPhaseComponent( int nx, int ny, int nz, const RankInfoStruct& r
  * @brief  Reorder the blobs
  * @details  Reorder the blobs based on the number of cells they contain
  *    largest first.
- * @param[in] nx            Number of elements in the x-direction
- * @param[in] ny            Number of elements in the y-direction
- * @param[in] nz            Number of elements in the z-direction
- * @param[in/out] ID        The ids of the blobs
+ * @param[in,out] ID        The ids of the blobs
+ * @param[in] comm          MPI communicator
  */
 void ReorderBlobIDs( BlobIDArray& ID, const Utilities::MPI& comm );
 
@@ -117,8 +117,12 @@ struct ID_map_struct {
  * @details  This functions computes the map of blob ids between iterations
  * @return  Returns the map of the blob ids.  Each final blob may have no source
  *    ids, one parent, or multiple parents.  Each src id may be a parent for multiple blobs.
+ * @param[in] nx            Number of elements in the x-direction
+ * @param[in] ny            Number of elements in the y-direction
+ * @param[in] nz            Number of elements in the z-direction
  * @param[in] ID1           The blob ids at the first timestep
  * @param[in] ID2           The blob ids at the second timestep
+ * @param[in] comm          The communicator to use
  */
 ID_map_struct computeIDMap( int nx, int ny, int nz, const BlobIDArray& ID1, const BlobIDArray& ID2, const Utilities::MPI& comm );
 
@@ -127,7 +131,7 @@ ID_map_struct computeIDMap( int nx, int ny, int nz, const BlobIDArray& ID1, cons
  * @brief  Compute the new global ids based on the map
  * @details  This functions computes the time-consistent global ids for the
  *     current global id index
- * @param[in/out] map       The timestep mapping for the ids
+ * @param[in,out] map       The timestep mapping for the ids
  * @param[in] id_max        The globally largest id used previously
  * @param[out] new_ids      The newly renumbered blob ids (0:ids.max())
  */
@@ -139,9 +143,9 @@ void getNewIDs( ID_map_struct& map, BlobIDType& id_max, std::vector<BlobIDType>&
  * @details  This functions computes the map of blob ids between iterations.
  *    Note: we also update the map to reflect the new ids
  * @param[out] new_ids          The newly renumbered blob ids (0:ids.max())
- * @param[in/out] IDs           The blob ids to renumber
+ * @param[in,out] IDs           The blob ids to renumber
  */
-void renumberIDs( const std::vector<BlobIDType>& new_id_list, BlobIDArray& IDs );
+void renumberIDs( const std::vector<BlobIDType>& new_ids, BlobIDArray& IDs );
 
 
 /*!

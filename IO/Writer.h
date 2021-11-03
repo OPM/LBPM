@@ -21,11 +21,13 @@ namespace IO {
  * @param[in] format        The data format to use:
  *                              old - Old mesh format
  *                                    (provided for backward compatibility, cannot write variables)
- *                              new - New format, 1 file/process silo - Silo
+ *                              new - New format, 1 file/process
+ *                              silo - Silo
+ *                              hdf5 - HDF5 + XMDF
  * @param[in] append        Append any existing data (default is false)
  */
 void initialize(
-    const std::string &path = "", const std::string &format = "silo", bool append = false );
+    const std::string &path = "", const std::string &format = "hdf5", bool append = false );
 
 
 /*!
@@ -53,6 +55,11 @@ inline void writeData(
     sprintf( subdir, "vis%03i", timestep );
     writeData( subdir, meshData, comm );
 }
+
+
+// Create the database entry for the mesh data
+IO::MeshDatabase getDatabase(
+    const std::string &filename, const IO::MeshDataStruct &mesh, IO::FileFormat format, int rank );
 
 
 } // namespace IO

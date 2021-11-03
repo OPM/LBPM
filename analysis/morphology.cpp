@@ -24,6 +24,409 @@ inline void UnpackID(const int *list, int count, signed char *recvbuf, signed ch
 	}
 }
 
+Morphology::Morphology(){
+	
+	/* MPI tags*/
+	sendtag = recvtag = 1381;
+}
+
+Morphology::~Morphology(){
+	
+}
+
+void Morphology::Initialize(std::shared_ptr <Domain> Dm, DoubleArray &Distance){
+	/* Loop over all faces and determine overlaps */
+	size_t Nx = Dm->Nx;
+	size_t Ny = Dm->Ny;
+	size_t Nz = Dm->Nz;
+	size_t N = Nx*Ny*Nz;
+
+	int *tmpShift_x, *tmpShift_y, *tmpShift_z;
+	double *tmpDistance;
+	tmpShift_x = new int [N];
+	tmpShift_y= new int [N];
+	tmpShift_z = new int [N];
+	tmpDistance = new double [N];
+	
+	double distance, boundary_distance;
+	
+	/* Loop over the local sub-domain and create overlap lists for each neighboring sub-domain */
+	int sendLoc = 0;   // counter for the local sub-domain send values
+	int recvLoc = 0;   // counter for the local recv
+	//...................................................
+	/* x face */
+	sendCount = recvCount = 0;	
+	for (size_t k=1; k<Nz-1; k++){
+		for (size_t j=1; j<Ny-1; j++){
+			for (size_t i=1; i<Nx-1; i++){
+				distance = Distance(i,j,k);
+				// Distance to x boundary
+				boundary_distance = double(i-1);
+				if (distance > boundary_distance){
+					tmpShift_x[sendCount] = Nx + i-2;
+					tmpShift_y[sendCount] = j;
+					tmpShift_z[sendCount] = k;
+					tmpDistance[sendCount++] = distance;
+					int n = k*Nx*Ny + j*Nx + i;
+					sendID.push_back(n);
+				}
+			}
+		}
+	}
+	Dm->Comm.Irecv(&recvCount,1,Dm->rank_X(),recvtag+0);
+	Dm->Comm.send(&sendCount,1,Dm->rank_x(),sendtag+0);	
+	Dm->Comm.barrier();
+	sendOffset_x = sendLoc;
+	recvOffset_X = recvLoc;
+	sendLoc += sendCount;
+	recvLoc += recvCount;
+	sendCount_x = sendCount;
+	recvCount_X = recvCount;
+	/* grow the arrays */
+	xShift.resize(recvLoc);
+	yShift.resize(recvLoc);
+	zShift.resize(recvLoc);
+	morphRadius.resize(recvLoc);
+	//..............................
+	/* send the morphological radius */
+	Dm->Comm.Irecv(&morphRadius[recvOffset_X],recvCount,Dm->rank_X(),recvtag+0);
+	Dm->Comm.send(&tmpDistance[0],sendCount,Dm->rank_x(),sendtag+0);	
+	/* send the shift values */
+	Dm->Comm.Irecv(&xShift[recvOffset_X],recvCount,Dm->rank_X(),recvtag+1);
+	Dm->Comm.send(&tmpShift_x[0],sendCount,Dm->rank_x(),sendtag+1);
+	Dm->Comm.Irecv(&yShift[recvOffset_X],recvCount,Dm->rank_X(),recvtag+2);
+	Dm->Comm.send(&tmpShift_y[0],sendCount,Dm->rank_x(),sendtag+2);
+	Dm->Comm.Irecv(&zShift[recvOffset_X],recvCount,Dm->rank_X(),recvtag+3);
+	Dm->Comm.send(&tmpShift_z[0],sendCount,Dm->rank_x(),sendtag+3);
+	Dm->Comm.barrier();	
+	//...................................................
+	//...................................................
+	/* X face */
+	sendCount = recvCount = 0;
+	for (size_t k=1; k<Nz-1; k++){
+		for (size_t j=1; j<Ny-1; j++){
+			for (size_t i=1; i<Nx-1; i++){
+				distance = Distance(i,j,k);
+				// Distance to x boundary
+				boundary_distance = double(Nx-i-1);
+				if (distance > boundary_distance){
+					tmpShift_x[sendCount] = (i)-(Nx-2);
+					tmpShift_y[sendCount] = j;
+					tmpShift_z[sendCount] = k;
+					tmpDistance[sendCount++] = distance;
+					int n = k*Nx*Ny + j*Nx + i;
+					sendID.push_back(n);
+				}
+			}
+		}
+	}
+	Dm->Comm.Irecv(&recvCount,1,Dm->rank_x(),recvtag+0);
+	Dm->Comm.send(&sendCount,1,Dm->rank_X(),sendtag+0);	
+	Dm->Comm.barrier();
+	sendOffset_X = sendLoc;
+	recvOffset_x = recvLoc;
+	sendLoc += sendCount;
+	recvLoc += recvCount;
+	sendCount_X = sendCount;
+	recvCount_x = recvCount;
+	/* grow the arrays */
+	xShift.resize(recvLoc);
+	yShift.resize(recvLoc);
+	zShift.resize(recvLoc);
+	morphRadius.resize(recvLoc);
+	//..............................
+	/* send the morphological radius */
+	Dm->Comm.Irecv(&morphRadius[recvOffset_x],recvCount,Dm->rank_x(),recvtag+0);
+	Dm->Comm.send(&tmpDistance[0],sendCount,Dm->rank_X(),sendtag+0);	
+	/* send the shift values */
+	Dm->Comm.Irecv(&xShift[recvOffset_x],recvCount,Dm->rank_x(),recvtag+1);
+	Dm->Comm.send(&tmpShift_x[0],sendCount,Dm->rank_X(),sendtag+1);
+	Dm->Comm.Irecv(&yShift[recvOffset_x],recvCount,Dm->rank_x(),recvtag+2);
+	Dm->Comm.send(&tmpShift_y[0],sendCount,Dm->rank_X(),sendtag+2);
+	Dm->Comm.Irecv(&zShift[recvOffset_x],recvCount,Dm->rank_x(),recvtag+3);
+	Dm->Comm.send(&tmpShift_z[0],sendCount,Dm->rank_X(),sendtag+3);
+	Dm->Comm.barrier();	
+	//...................................................
+	
+	//...................................................
+	/* y face */
+	sendCount = recvCount = 0;
+	for (size_t k=1; k<Nz-1; k++){
+		for (size_t j=1; j<Ny-1; j++){
+			for (size_t i=1; i<Nx-1; i++){
+				distance = Distance(i,j,k);
+				// Distance to y boundary
+				boundary_distance = double(j-1);
+				if (distance > boundary_distance){
+					tmpShift_x[sendCount] = i;
+					tmpShift_y[sendCount] = Ny + j-2;
+					tmpShift_z[sendCount] = k;
+					tmpDistance[sendCount++] = distance;
+					int n = k*Nx*Ny + j*Nx + i;
+					sendID.push_back(n);
+				}
+			}
+		}
+	}
+	Dm->Comm.Irecv(&recvCount,1,Dm->rank_Y(),recvtag+0);
+	Dm->Comm.send(&sendCount,1,Dm->rank_y(),sendtag+0);	
+	Dm->Comm.barrier();
+	sendOffset_y = sendLoc;
+	recvOffset_Y = recvLoc;
+	sendLoc += sendCount;
+	recvLoc += recvCount;
+	sendCount_y = sendCount;
+	recvCount_Y = recvCount;
+	/* grow the arrays */
+	xShift.resize(recvLoc);
+	yShift.resize(recvLoc);
+	zShift.resize(recvLoc);
+	morphRadius.resize(recvLoc);
+	//..............................
+	/* send the morphological radius */
+	Dm->Comm.Irecv(&morphRadius[recvOffset_Y],recvCount,Dm->rank_Y(),recvtag+0);
+	Dm->Comm.send(&tmpDistance[0],sendCount,Dm->rank_y(),sendtag+0);	
+	/* send the shift values */
+	Dm->Comm.Irecv(&xShift[recvOffset_Y],recvCount,Dm->rank_Y(),recvtag+1);
+	Dm->Comm.send(&tmpShift_x[0],sendCount,Dm->rank_y(),sendtag+1);
+	Dm->Comm.Irecv(&yShift[recvOffset_Y],recvCount,Dm->rank_Y(),recvtag+2);
+	Dm->Comm.send(&tmpShift_y[0],sendCount,Dm->rank_y(),sendtag+2);
+	Dm->Comm.Irecv(&zShift[recvOffset_Y],recvCount,Dm->rank_Y(),recvtag+3);
+	Dm->Comm.send(&tmpShift_z[0],sendCount,Dm->rank_y(),sendtag+3);
+	Dm->Comm.barrier();	
+	//...................................................
+	//...................................................
+	/* X face */
+	sendCount = recvCount = 0;
+	for (size_t k=1; k<Nz-1; k++){
+		for (size_t j=1; j<Ny-1; j++){
+			for (size_t i=1; i<Nx-1; i++){
+				distance = Distance(i,j,k);
+				// Distance to x boundary
+				boundary_distance = double(Ny-j-1);
+				if (distance > boundary_distance){
+					tmpShift_x[sendCount] = i;
+					tmpShift_y[sendCount] = j-(Ny-2);
+					tmpShift_z[sendCount] = k;
+					tmpDistance[sendCount++] = distance;
+					int n = k*Nx*Ny + j*Nx + i;
+					sendID.push_back(n);
+				}
+			}
+		}
+	}
+	Dm->Comm.Irecv(&recvCount,1,Dm->rank_y(),recvtag+0);
+	Dm->Comm.send(&sendCount,1,Dm->rank_Y(),sendtag+0);	
+	Dm->Comm.barrier();
+	sendOffset_Y = sendLoc;
+	recvOffset_y = recvLoc;
+	sendLoc += sendCount;
+	recvLoc += recvCount;
+	sendCount_Y = sendCount;
+	recvCount_y = recvCount;
+	/* grow the arrays */
+	xShift.resize(recvLoc);
+	yShift.resize(recvLoc);
+	zShift.resize(recvLoc);
+	morphRadius.resize(recvLoc);
+	//..............................
+	/* send the morphological radius */
+	Dm->Comm.Irecv(&morphRadius[recvOffset_y],recvCount,Dm->rank_y(),recvtag+0);
+	Dm->Comm.send(&tmpDistance[0],sendCount,Dm->rank_Y(),sendtag+0);	
+	/* send the shift values */
+	Dm->Comm.Irecv(&xShift[recvOffset_y],recvCount,Dm->rank_y(),recvtag+1);
+	Dm->Comm.send(&tmpShift_x[0],sendCount,Dm->rank_Y(),sendtag+1);
+	Dm->Comm.Irecv(&yShift[recvOffset_y],recvCount,Dm->rank_y(),recvtag+2);
+	Dm->Comm.send(&tmpShift_y[0],sendCount,Dm->rank_Y(),sendtag+2);
+	Dm->Comm.Irecv(&zShift[recvOffset_y],recvCount,Dm->rank_y(),recvtag+3);
+	Dm->Comm.send(&tmpShift_z[0],sendCount,Dm->rank_Y(),sendtag+3);
+	Dm->Comm.barrier();	
+	//...................................................
+	
+	//...................................................
+	/* z face */
+	sendCount = recvCount = 0;
+	for (size_t k=1; k<Nz-1; k++){
+		for (size_t j=1; j<Ny-1; j++){
+			for (size_t i=1; i<Nx-1; i++){
+				distance = Distance(i,j,k);
+				// Distance to z boundary
+				boundary_distance = double(k-1);
+				if (distance > boundary_distance){
+					tmpShift_x[sendCount] = i;
+					tmpShift_y[sendCount] = j;
+					tmpShift_z[sendCount] = (Nz-2) + k;
+					tmpDistance[sendCount++] = distance;
+					int n = k*Nx*Ny + j*Nx + i;
+					sendID.push_back(n);
+				}
+			}
+		}
+	}
+	Dm->Comm.Irecv(&recvCount,1,Dm->rank_Z(),recvtag+0);
+	Dm->Comm.send(&sendCount,1,Dm->rank_z(),sendtag+0);	
+	Dm->Comm.barrier();
+	sendOffset_z = sendLoc;
+	recvOffset_Z = recvLoc;
+	sendLoc += sendCount;
+	recvLoc += recvCount;
+	sendCount_z = sendCount;
+	recvCount_Z = recvCount;
+	/* grow the arrays */
+	xShift.resize(recvLoc);
+	yShift.resize(recvLoc);
+	zShift.resize(recvLoc);
+	morphRadius.resize(recvLoc);
+	//..............................
+	/* send the morphological radius */
+	Dm->Comm.Irecv(&morphRadius[recvOffset_Z],recvCount,Dm->rank_Z(),recvtag+0);
+	Dm->Comm.send(&tmpDistance[0],sendCount,Dm->rank_z(),sendtag+0);	
+	/* send the shift values */
+	Dm->Comm.Irecv(&xShift[recvOffset_Z],recvCount,Dm->rank_Z(),recvtag+1);
+	Dm->Comm.send(&tmpShift_x[0],sendCount,Dm->rank_z(),sendtag+1);
+	Dm->Comm.Irecv(&yShift[recvOffset_Z],recvCount,Dm->rank_Z(),recvtag+2);
+	Dm->Comm.send(&tmpShift_y[0],sendCount,Dm->rank_z(),sendtag+2);
+	Dm->Comm.Irecv(&zShift[recvOffset_Z],recvCount,Dm->rank_Z(),recvtag+3);
+	Dm->Comm.send(&tmpShift_z[0],sendCount,Dm->rank_z(),sendtag+3);
+	Dm->Comm.barrier();	
+	//...................................................
+	/* Z face */
+	sendCount = recvCount = 0;
+	for (size_t k=1; k<Nz-1; k++){
+		for (size_t j=1; j<Ny-1; j++){
+			for (size_t i=1; i<Nx-1; i++){
+				distance = Distance(i,j,k);
+				// Distance to x boundary
+				boundary_distance = double(Nz-k-1);
+				if (distance > boundary_distance){
+					tmpShift_x[sendCount] = i;
+					tmpShift_y[sendCount] = j;
+					tmpShift_z[sendCount] = k-(Nz-2);
+					tmpDistance[sendCount++] = distance;
+					int n = k*Nx*Ny + j*Nx + i;
+					sendID.push_back(n);
+				}
+			}
+		}
+	}
+	Dm->Comm.Irecv(&recvCount,1,Dm->rank_z(),recvtag+0);
+	Dm->Comm.send(&sendCount,1,Dm->rank_Z(),sendtag+0);	
+	Dm->Comm.barrier();
+	sendOffset_Z = sendLoc;
+	recvOffset_z = recvLoc;
+	sendLoc += sendCount;
+	recvLoc += recvCount;
+	sendCount_Z = sendCount;
+	recvCount_z = recvCount;
+	/* grow the arrays */
+	xShift.resize(recvLoc);
+	yShift.resize(recvLoc);
+	zShift.resize(recvLoc);
+	morphRadius.resize(recvLoc);
+	//..............................
+	/* send the morphological radius */
+	Dm->Comm.Irecv(&morphRadius[recvOffset_z],recvCount,Dm->rank_z(),recvtag+0);
+	Dm->Comm.send(&tmpDistance[0],sendCount,Dm->rank_Z(),sendtag+0);	
+	/* send the shift values */
+	Dm->Comm.Irecv(&xShift[recvOffset_z],recvCount,Dm->rank_z(),recvtag+1);
+	Dm->Comm.send(&tmpShift_x[0],sendCount,Dm->rank_Z(),sendtag+1);
+	Dm->Comm.Irecv(&yShift[recvOffset_z],recvCount,Dm->rank_z(),recvtag+2);
+	Dm->Comm.send(&tmpShift_y[0],sendCount,Dm->rank_Z(),sendtag+2);
+	Dm->Comm.Irecv(&zShift[recvOffset_z],recvCount,Dm->rank_z(),recvtag+3);
+	Dm->Comm.send(&tmpShift_z[0],sendCount,Dm->rank_Z(),sendtag+3);
+	Dm->Comm.barrier();	
+	//...................................................
+	
+	/* resize the send / recv lists */
+	sendCount = sendLoc;
+	recvCount = recvLoc;
+	sendList.resize(sendLoc);
+	recvList.resize(recvLoc);
+	localID.resize(sendCount);
+	nonlocalID.resize(recvCount);
+	
+	/*printf("  offset %i for send (x) %i \n", sendOffset_x, sendCount_x);
+	printf("  offset %i for send (X) %i \n", sendOffset_X, sendCount_X);
+	printf("  offset %i for send (y) %i \n", sendOffset_y, sendCount_y);
+	printf("  offset %i for send (Y) %i \n", sendOffset_Y, sendCount_Y);
+	printf("  offset %i for send (z) %i \n", sendOffset_z, sendCount_z);
+	printf("  offset %i for send (Z) %i \n", sendOffset_Z, sendCount_Z);
+	*/
+
+}
+
+int Morphology::GetOverlaps(std::shared_ptr <Domain> Dm, signed char *id, const signed char ErodeLabel, const signed char NewLabel){
+	
+	int Nx = Dm->Nx;
+	int Ny = Dm->Ny;
+	int Nz = Dm->Nz;
+	int LocalNumber=0;
+	int i,j,k,ii,jj,kk;
+	int imin,jmin,kmin,imax,jmax,kmax;
+
+	for (int idx=0; idx<sendCount; idx++){
+		int n = sendID[idx];
+		localID[idx] = id[n]; 
+	}
+	//printf("send x -- offset: %i, count: %i \n",sendOffset_x,sendCount_x);
+	Dm->Comm.Irecv(&nonlocalID[recvOffset_X],recvCount_X,Dm->rank_x(),recvtag+2);
+	Dm->Comm.send(&localID[sendOffset_x],sendCount_x,Dm->rank_X(),sendtag+2);
+
+	//printf("send X \n");	
+	Dm->Comm.Irecv(&nonlocalID[recvOffset_x],recvCount_x,Dm->rank_X(),recvtag+3);
+	Dm->Comm.send(&localID[sendOffset_X],sendCount_X,Dm->rank_x(),sendtag+3);
+	
+	//printf("send y \n");
+	Dm->Comm.Irecv(&nonlocalID[recvOffset_Y],recvCount_Y,Dm->rank_y(),recvtag+4);
+	Dm->Comm.send(&localID[sendOffset_y],sendCount_y,Dm->rank_Y(),sendtag+4);
+	
+	//printf("send Y \n");
+	Dm->Comm.Irecv(&nonlocalID[recvOffset_y],recvCount_y,Dm->rank_Y(),recvtag+5);
+	Dm->Comm.send(&localID[sendOffset_Y],sendCount_Y,Dm->rank_y(),sendtag+5);
+	
+	//printf("send z \n");
+	Dm->Comm.Irecv(&nonlocalID[recvOffset_Z],recvCount_Z,Dm->rank_z(),recvtag+6);
+	Dm->Comm.send(&localID[sendOffset_z],sendCount_z,Dm->rank_Z(),sendtag+6);
+	
+	//printf("send Z \n");
+	Dm->Comm.Irecv(&nonlocalID[recvOffset_z],recvCount_z,Dm->rank_Z(),recvtag+7);
+	Dm->Comm.send(&localID[sendOffset_Z],sendCount_Z,Dm->rank_z(),sendtag+7);
+
+	for (int idx=0; idx<recvCount; idx++){
+		double radius = morphRadius[idx];
+		signed char label = nonlocalID[idx];
+		/* get the neighboring site index */
+		i = xShift[idx];
+		j = yShift[idx];
+		k = zShift[idx];
+		int Window = int(radius);
+		// loop over the window and update
+		if (label == NewLabel){
+			imin=max(1,i-Window);
+			jmin=max(1,j-Window);
+			kmin=max(1,k-Window);
+			imax=min(Nx-1,i+Window);
+			jmax=min(Ny-1,j+Window);
+			kmax=min(Nz-1,k+Window);
+			for (kk=kmin; kk<kmax; kk++){
+				for (jj=jmin; jj<jmax; jj++){
+					for (ii=imin; ii<imax; ii++){
+						int nn = kk*Nx*Ny+jj*Nx+ii;
+						double dsq = double((ii-i)*(ii-i)+(jj-j)*(jj-j)+(kk-k)*(kk-k));
+						if (id[nn] == ErodeLabel && dsq <= radius*radius){
+							LocalNumber+=1.0;
+							id[nn]=NewLabel;
+						}
+					}
+				}
+			}
+		}
+	}
+	Dm->Comm.barrier();
+
+	return LocalNumber;
+}
+
 //***************************************************************************************
 double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain> Dm, double VoidFraction, signed char ErodeLabel, signed char NewLabel){
 	// SignDist is the distance to the object that you want to constaing the morphological opening
@@ -60,6 +463,9 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	}
 	Dm->Comm.barrier();
 	
+	Morphology Structure;
+	Structure.Initialize(Dm,SignDist);
+	
 	// total Global is the number of nodes in the pore-space
 	totalGlobal = Dm->Comm.sumReduce( count );
 	maxdistGlobal = Dm->Comm.sumReduce( maxdist );
@@ -68,56 +474,6 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	if (rank==0) printf("Volume fraction for morphological opening: %f \n",volume_fraction);
 	if (rank==0) printf("Maximum pore size: %f \n",maxdistGlobal);
 	final_void_fraction = volume_fraction; //initialize
-
-	// Communication buffers
-	signed char *sendID_x, *sendID_y, *sendID_z, *sendID_X, *sendID_Y, *sendID_Z;
-	signed char *sendID_xy, *sendID_yz, *sendID_xz, *sendID_Xy, *sendID_Yz, *sendID_xZ;
-	signed char *sendID_xY, *sendID_yZ, *sendID_Xz, *sendID_XY, *sendID_YZ, *sendID_XZ;
-	signed char *recvID_x, *recvID_y, *recvID_z, *recvID_X, *recvID_Y, *recvID_Z;
-	signed char *recvID_xy, *recvID_yz, *recvID_xz, *recvID_Xy, *recvID_Yz, *recvID_xZ;
-	signed char *recvID_xY, *recvID_yZ, *recvID_Xz, *recvID_XY, *recvID_YZ, *recvID_XZ;
-	// send buffers
-	sendID_x = new signed char [Dm->sendCount("x")];
-	sendID_y = new signed char [Dm->sendCount("y")];
-	sendID_z = new signed char [Dm->sendCount("z")];
-	sendID_X = new signed char [Dm->sendCount("X")];
-	sendID_Y = new signed char [Dm->sendCount("Y")];
-	sendID_Z = new signed char [Dm->sendCount("Z")];
-	sendID_xy = new signed char [Dm->sendCount("xy")];
-	sendID_yz = new signed char [Dm->sendCount("yz")];
-	sendID_xz = new signed char [Dm->sendCount("xz")];
-	sendID_Xy = new signed char [Dm->sendCount("Xy")];
-	sendID_Yz = new signed char [Dm->sendCount("Yz")];
-	sendID_xZ = new signed char [Dm->sendCount("xZ")];
-	sendID_xY = new signed char [Dm->sendCount("xY")];
-	sendID_yZ = new signed char [Dm->sendCount("yZ")];
-	sendID_Xz = new signed char [Dm->sendCount("Xz")];
-	sendID_XY = new signed char [Dm->sendCount("XY")];
-	sendID_YZ = new signed char [Dm->sendCount("YZ")];
-	sendID_XZ = new signed char [Dm->sendCount("XZ")];
-	//......................................................................................
-	// recv buffers
-	recvID_x = new signed char [Dm->recvCount("x")];
-	recvID_y = new signed char [Dm->recvCount("y")];
-	recvID_z = new signed char [Dm->recvCount("z")];
-	recvID_X = new signed char [Dm->recvCount("X")];
-	recvID_Y = new signed char [Dm->recvCount("Y")];
-	recvID_Z = new signed char [Dm->recvCount("Z")];
-	recvID_xy = new signed char [Dm->recvCount("xy")];
-	recvID_yz = new signed char [Dm->recvCount("yz")];
-	recvID_xz = new signed char [Dm->recvCount("xz")];
-	recvID_Xy = new signed char [Dm->recvCount("Xy")];
-	recvID_xZ = new signed char [Dm->recvCount("xZ")];
-	recvID_xY = new signed char [Dm->recvCount("xY")];
-	recvID_yZ = new signed char [Dm->recvCount("yZ")];
-	recvID_Yz = new signed char [Dm->recvCount("Yz")];
-	recvID_Xz = new signed char [Dm->recvCount("Xz")];
-	recvID_XY = new signed char [Dm->recvCount("XY")];
-	recvID_YZ = new signed char [Dm->recvCount("YZ")];
-	recvID_XZ = new signed char [Dm->recvCount("XZ")];
-	//......................................................................................
-	int sendtag,recvtag;
-	sendtag = recvtag = 7;
 
 	int ii,jj,kk;
 	int imin,jmin,kmin,imax,jmax,kmax;
@@ -138,12 +494,18 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	double Rcrit_old = maxdistGlobal;
 	double Rcrit_new = maxdistGlobal;
 
-	while (void_fraction_new > VoidFraction)
+	int numTry = 0;
+	int maxTry = 100;
+	while (void_fraction_new > VoidFraction && numTry < maxTry)
 	{
+		numTry++;
 		void_fraction_diff_old = void_fraction_diff_new;
 		void_fraction_old = void_fraction_new;
 		Rcrit_old = Rcrit_new;
 		Rcrit_new -= deltaR*Rcrit_old;
+		if (Rcrit_new < 0.5 ){
+			numTry = maxTry;
+		}
 		int Window=round(Rcrit_new);
 		if (Window == 0) Window = 1; // If Window = 0 at the begining, after the following process will have sw=1.0
 		// and sw<Sw will be immediately broken
@@ -178,66 +540,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 				}
 			}
 		}
-		// Pack and send the updated ID values
-		PackID(Dm->sendList("x"), Dm->sendCount("x") ,sendID_x, id);
-		PackID(Dm->sendList("X"), Dm->sendCount("X") ,sendID_X, id);
-		PackID(Dm->sendList("y"), Dm->sendCount("y") ,sendID_y, id);
-		PackID(Dm->sendList("Y"), Dm->sendCount("Y") ,sendID_Y, id);
-		PackID(Dm->sendList("z"), Dm->sendCount("z") ,sendID_z, id);
-		PackID(Dm->sendList("Z"), Dm->sendCount("Z") ,sendID_Z, id);
-		PackID(Dm->sendList("xy"), Dm->sendCount("xy") ,sendID_xy, id);
-		PackID(Dm->sendList("Xy"), Dm->sendCount("Xy") ,sendID_Xy, id);
-		PackID(Dm->sendList("xY"), Dm->sendCount("xY") ,sendID_xY, id);
-		PackID(Dm->sendList("XY"), Dm->sendCount("XY") ,sendID_XY, id);
-		PackID(Dm->sendList("xz"), Dm->sendCount("xz") ,sendID_xz, id);
-		PackID(Dm->sendList("Xz"), Dm->sendCount("Xz") ,sendID_Xz, id);
-		PackID(Dm->sendList("xZ"), Dm->sendCount("xZ") ,sendID_xZ, id);
-		PackID(Dm->sendList("XZ"), Dm->sendCount("XZ") ,sendID_XZ, id);
-		PackID(Dm->sendList("yz"), Dm->sendCount("yz") ,sendID_yz, id);
-		PackID(Dm->sendList("Yz"), Dm->sendCount("Yz") ,sendID_Yz, id);
-		PackID(Dm->sendList("yZ"), Dm->sendCount("yZ") ,sendID_yZ, id);
-		PackID(Dm->sendList("YZ"), Dm->sendCount("YZ") ,sendID_YZ, id);
-		//......................................................................................
-		Dm->Comm.sendrecv(sendID_x,Dm->sendCount("x"),Dm->rank_x(),sendtag,recvID_X,Dm->recvCount("X"),Dm->rank_X(),recvtag);
-		Dm->Comm.sendrecv(sendID_X,Dm->sendCount("X"),Dm->rank_X(),sendtag,recvID_x,Dm->recvCount("x"),Dm->rank_x(),recvtag);
-		Dm->Comm.sendrecv(sendID_y,Dm->sendCount("y"),Dm->rank_y(),sendtag,recvID_Y,Dm->recvCount("Y"),Dm->rank_Y(),recvtag);
-		Dm->Comm.sendrecv(sendID_Y,Dm->sendCount("Y"),Dm->rank_Y(),sendtag,recvID_y,Dm->recvCount("y"),Dm->rank_y(),recvtag);
-		Dm->Comm.sendrecv(sendID_z,Dm->sendCount("z"),Dm->rank_z(),sendtag,recvID_Z,Dm->recvCount("Z"),Dm->rank_Z(),recvtag);
-		Dm->Comm.sendrecv(sendID_Z,Dm->sendCount("Z"),Dm->rank_Z(),sendtag,recvID_z,Dm->recvCount("z"),Dm->rank_z(),recvtag);
-		Dm->Comm.sendrecv(sendID_xy,Dm->sendCount("xy"),Dm->rank_xy(),sendtag,recvID_XY,Dm->recvCount("XY"),Dm->rank_XY(),recvtag);
-		Dm->Comm.sendrecv(sendID_XY,Dm->sendCount("XY"),Dm->rank_XY(),sendtag,recvID_xy,Dm->recvCount("xy"),Dm->rank_xy(),recvtag);
-		Dm->Comm.sendrecv(sendID_Xy,Dm->sendCount("Xy"),Dm->rank_Xy(),sendtag,recvID_xY,Dm->recvCount("xY"),Dm->rank_xY(),recvtag);
-		Dm->Comm.sendrecv(sendID_xY,Dm->sendCount("xY"),Dm->rank_xY(),sendtag,recvID_Xy,Dm->recvCount("Xy"),Dm->rank_Xy(),recvtag);
-		Dm->Comm.sendrecv(sendID_xz,Dm->sendCount("xz"),Dm->rank_xz(),sendtag,recvID_XZ,Dm->recvCount("XZ"),Dm->rank_XZ(),recvtag);
-		Dm->Comm.sendrecv(sendID_XZ,Dm->sendCount("XZ"),Dm->rank_XZ(),sendtag,recvID_xz,Dm->recvCount("xz"),Dm->rank_xz(),recvtag);
-		Dm->Comm.sendrecv(sendID_Xz,Dm->sendCount("Xz"),Dm->rank_Xz(),sendtag,recvID_xZ,Dm->recvCount("xZ"),Dm->rank_xZ(),recvtag);
-		Dm->Comm.sendrecv(sendID_xZ,Dm->sendCount("xZ"),Dm->rank_xZ(),sendtag,recvID_Xz,Dm->recvCount("Xz"),Dm->rank_Xz(),recvtag);
-		Dm->Comm.sendrecv(sendID_yz,Dm->sendCount("yz"),Dm->rank_yz(),sendtag,recvID_YZ,Dm->recvCount("YZ"),Dm->rank_YZ(),recvtag);
-		Dm->Comm.sendrecv(sendID_YZ,Dm->sendCount("YZ"),Dm->rank_YZ(),sendtag,recvID_yz,Dm->recvCount("yz"),Dm->rank_yz(),recvtag);
-		Dm->Comm.sendrecv(sendID_Yz,Dm->sendCount("Yz"),Dm->rank_Yz(),sendtag,recvID_yZ,Dm->recvCount("yZ"),Dm->rank_yZ(),recvtag);
-		Dm->Comm.sendrecv(sendID_yZ,Dm->sendCount("yZ"),Dm->rank_yZ(),sendtag,recvID_Yz,Dm->recvCount("Yz"),Dm->rank_Yz(),recvtag);
-		//......................................................................................
-		UnpackID(Dm->recvList("x"), Dm->recvCount("x") ,recvID_x, id);
-		UnpackID(Dm->recvList("X"), Dm->recvCount("X") ,recvID_X, id);
-		UnpackID(Dm->recvList("y"), Dm->recvCount("y") ,recvID_y, id);
-		UnpackID(Dm->recvList("Y"), Dm->recvCount("Y") ,recvID_Y, id);
-		UnpackID(Dm->recvList("z"), Dm->recvCount("z") ,recvID_z, id);
-		UnpackID(Dm->recvList("Z"), Dm->recvCount("Z") ,recvID_Z, id);
-		UnpackID(Dm->recvList("xy"), Dm->recvCount("xy") ,recvID_xy, id);
-		UnpackID(Dm->recvList("Xy"), Dm->recvCount("Xy") ,recvID_Xy, id);
-		UnpackID(Dm->recvList("xY"), Dm->recvCount("xY") ,recvID_xY, id);
-		UnpackID(Dm->recvList("XY"), Dm->recvCount("XY") ,recvID_XY, id);
-		UnpackID(Dm->recvList("xz"), Dm->recvCount("xz") ,recvID_xz, id);
-		UnpackID(Dm->recvList("Xz"), Dm->recvCount("Xz") ,recvID_Xz, id);
-		UnpackID(Dm->recvList("xZ"), Dm->recvCount("xZ") ,recvID_xZ, id);
-		UnpackID(Dm->recvList("XZ"), Dm->recvCount("XZ") ,recvID_XZ, id);
-		UnpackID(Dm->recvList("yz"), Dm->recvCount("yz") ,recvID_yz, id);
-		UnpackID(Dm->recvList("Yz"), Dm->recvCount("Yz") ,recvID_Yz, id);
-		UnpackID(Dm->recvList("yZ"), Dm->recvCount("yZ") ,recvID_yZ, id);
-		UnpackID(Dm->recvList("YZ"), Dm->recvCount("YZ") ,recvID_YZ, id);
-		//......................................................................................
-
-		//double GlobalNumber = Dm->Comm.sumReduce( LocalNumber );
+		LocalNumber += Structure.GetOverlaps(Dm,id,ErodeLabel,NewLabel);
 
 		count = 0.f;
 		for (int k=1; k<Nz-1; k++){
@@ -253,10 +556,10 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 		countGlobal = Dm->Comm.sumReduce( count );
 		void_fraction_new = countGlobal/totalGlobal;
 		void_fraction_diff_new = abs(void_fraction_new-VoidFraction);
-	/*	if (rank==0){
+		if (rank==0){
 			printf("     %f ",void_fraction_new);
 			printf("     %f\n",Rcrit_new);
-		} */
+		}
 	}
 
 	if (void_fraction_diff_new<void_fraction_diff_old){
@@ -275,30 +578,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	}
 	return final_void_fraction;
 }
-/*
-double morph_open()
-{
 
-	fillHalo<char> fillChar(Dm->Comm,Dm->rank_info,{Nx-2,Ny-2,Nz-2},{1,1,1},0,1);
-
-
-	GlobalNumber = Dm->Comm.sumReduce( LocalNumber );
-
-	count = 0.f;
-	for (int k=1; k<Nz-1; k++){
-		for (int j=1; j<Ny-1; j++){
-			for (int i=1; i<Nx-1; i++){
-				n=k*Nx*Ny+j*Nx+i;
-				if (id[n] == 2){
-					count+=1.0;
-				}
-			}
-		}
-	}
-	countGlobal = Dm->Comm.sumReduce( count );
-	return countGlobal;
-}
-*/
 
 //***************************************************************************************
 double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain> Dm, double VoidFraction){
@@ -306,6 +586,9 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	// VoidFraction is the the empty space where the object inst
 	// id is a labeled map
 	// Dm contains information about the domain structure
+	
+	signed char ErodeLabel = 2;
+	signed char NewLabel = 1;
 	
 	int nx = Dm->Nx;
 	int ny = Dm->Ny;
@@ -319,6 +602,9 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	IntArray phase_label(nx,ny,nz);
 	Array<char> ID(nx,ny,nz);
 	fillHalo<char> fillChar(Dm->Comm,Dm->rank_info,{nx-2,ny-2,nz-2},{1,1,1},0,1);
+	
+	Morphology Structure;
+	Structure.Initialize(Dm,SignDist);
 
 	int n;
 	double final_void_fraction;
@@ -334,7 +620,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 				if ( SignDist(i,j,k) > maxdist) maxdist=SignDist(i,j,k);
 				if ( SignDist(i,j,k) > 0.0 ){
 					count += 1.0;
-					id[n]  = 2;
+					id[n]  = ErodeLabel;
 				}
 				ID(i,j,k) = id[n];
 			}
@@ -351,57 +637,6 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	if (rank==0) printf("Volume fraction for morphological opening: %f \n",volume_fraction);
 	if (rank==0) printf("Maximum pore size: %f \n",maxdistGlobal);
 
-	
-/*	// Communication buffers
-	signed char *sendID_x, *sendID_y, *sendID_z, *sendID_X, *sendID_Y, *sendID_Z;
-	signed char *sendID_xy, *sendID_yz, *sendID_xz, *sendID_Xy, *sendID_Yz, *sendID_xZ;
-	signed char *sendID_xY, *sendID_yZ, *sendID_Xz, *sendID_XY, *sendID_YZ, *sendID_XZ;
-	signed char *recvID_x, *recvID_y, *recvID_z, *recvID_X, *recvID_Y, *recvID_Z;
-	signed char *recvID_xy, *recvID_yz, *recvID_xz, *recvID_Xy, *recvID_Yz, *recvID_xZ;
-	signed char *recvID_xY, *recvID_yZ, *recvID_Xz, *recvID_XY, *recvID_YZ, *recvID_XZ;
-	// send buffers
-	sendID_x = new signed char [Dm->sendCount("x")];
-	sendID_y = new signed char [Dm->sendCount("y")];
-	sendID_z = new signed char [Dm->sendCount("z")];
-	sendID_X = new signed char [Dm->sendCount("X")];
-	sendID_Y = new signed char [Dm->sendCount("Y")];
-	sendID_Z = new signed char [Dm->sendCount("Z")];
-	sendID_xy = new signed char [Dm->sendCount("xy")];
-	sendID_yz = new signed char [Dm->sendCount("yz")];
-	sendID_xz = new signed char [Dm->sendCount("xz")];
-	sendID_Xy = new signed char [Dm->sendCount("Xy")];
-	sendID_Yz = new signed char [Dm->sendCount("Yz")];
-	sendID_xZ = new signed char [Dm->sendCount("xZ")];
-	sendID_xY = new signed char [Dm->sendCount("xY")];
-	sendID_yZ = new signed char [Dm->sendCount("yZ")];
-	sendID_Xz = new signed char [Dm->sendCount("Xz")];
-	sendID_XY = new signed char [Dm->sendCount("XY")];
-	sendID_YZ = new signed char [Dm->sendCount("YZ")];
-	sendID_XZ = new signed char [Dm->sendCount("XZ")];
-	//......................................................................................
-	// recv buffers
-	recvID_x = new signed char [Dm->recvCount("x")];
-	recvID_y = new signed char [Dm->recvCount("y")];
-	recvID_z = new signed char [Dm->recvCount("z")];
-	recvID_X = new signed char [Dm->recvCount("X")];
-	recvID_Y = new signed char [Dm->recvCount("Y")];
-	recvID_Z = new signed char [Dm->recvCount("Z")];
-	recvID_xy = new signed char [Dm->recvCount("xy")];
-	recvID_yz = new signed char [Dm->recvCount("yz")];
-	recvID_xz = new signed char [Dm->recvCount("xz")];
-	recvID_Xy = new signed char [Dm->recvCount("Xy")];
-	recvID_xZ = new signed char [Dm->recvCount("xZ")];
-	recvID_xY = new signed char [Dm->recvCount("xY")];
-	recvID_yZ = new signed char [Dm->recvCount("yZ")];
-	recvID_Yz = new signed char [Dm->recvCount("Yz")];
-	recvID_Xz = new signed char [Dm->recvCount("Xz")];
-	recvID_XY = new signed char [Dm->recvCount("XY")];
-	recvID_YZ = new signed char [Dm->recvCount("YZ")];
-	recvID_XZ = new signed char [Dm->recvCount("XZ")];
-	//......................................................................................
-	int sendtag,recvtag;
-	sendtag = recvtag = 7;
-*/
 	int ii,jj,kk;
 	int imin,jmin,kmin,imax,jmax,kmax;
 	int Nx = nx;
@@ -422,7 +657,6 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	//	if (rank==0) printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);
 	//}
 	Dm->Comm.barrier();
-
 	
 	FILE *DRAIN = fopen("morphdrain.csv","w");
 	fprintf(DRAIN,"sw radius\n");				
@@ -453,86 +687,36 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 							for (jj=jmin; jj<jmax; jj++){
 								for (ii=imin; ii<imax; ii++){
 									double dsq = double((ii-i)*(ii-i)+(jj-j)*(jj-j)+(kk-k)*(kk-k));
-									if (ID(ii,jj,kk) == 2 && dsq <= (Rcrit_new+1)*(Rcrit_new+1)){
+									if (ID(ii,jj,kk) == ErodeLabel && dsq <= (Rcrit_new+1)*(Rcrit_new+1)){
 										LocalNumber+=1.0;
 										//id[nn]=1;
-										ID(ii,jj,kk)=1;
+										ID(ii,jj,kk)=NewLabel;
+										id[kk*Nx*Ny+jj*Nx+ii] = NewLabel;
 									}
 								}
 							}
 						}
-
 					}
 					// move on
 				}
 			}
 		}
+		LocalNumber += Structure.GetOverlaps(Dm,id,ErodeLabel,NewLabel);
+
+		for(int k=1; k<Nz-1; k++){
+			for(int j=1; j<Ny-1; j++){
+				for(int i=1; i<Nx-1; i++){
+					ID(i,j,k) = id[k*Nx*Ny+j*Nx+i];
+				}
+			}
+		}
 		fillChar.fill(ID);
-		// Pack and send the updated ID values
-/*		PackID(Dm->sendList("x"), Dm->sendCount("x") ,sendID_x, id);
-		PackID(Dm->sendList("X"), Dm->sendCount("X") ,sendID_X, id);
-		PackID(Dm->sendList("y"), Dm->sendCount("y") ,sendID_y, id);
-		PackID(Dm->sendList("Y"), Dm->sendCount("Y") ,sendID_Y, id);
-		PackID(Dm->sendList("z"), Dm->sendCount("z") ,sendID_z, id);
-		PackID(Dm->sendList("Z"), Dm->sendCount("Z") ,sendID_Z, id);
-		PackID(Dm->sendList("xy"), Dm->sendCount("xy") ,sendID_xy, id);
-		PackID(Dm->sendList("Xy"), Dm->sendCount("Xy") ,sendID_Xy, id);
-		PackID(Dm->sendList("xY"), Dm->sendCount("xY") ,sendID_xY, id);
-		PackID(Dm->sendList("XY"), Dm->sendCount("XY") ,sendID_XY, id);
-		PackID(Dm->sendList("xz"), Dm->sendCount("xz") ,sendID_xz, id);
-		PackID(Dm->sendList("Xz"), Dm->sendCount("Xz") ,sendID_Xz, id);
-		PackID(Dm->sendList("xZ"), Dm->sendCount("xZ") ,sendID_xZ, id);
-		PackID(Dm->sendList("XZ"), Dm->sendCount("XZ") ,sendID_XZ, id);
-		PackID(Dm->sendList("yz"), Dm->sendCount("yz") ,sendID_yz, id);
-		PackID(Dm->sendList("Yz"), Dm->sendCount("Yz") ,sendID_Yz, id);
-		PackID(Dm->sendList("yZ"), Dm->sendCount("yZ") ,sendID_yZ, id);
-		PackID(Dm->sendList("YZ"), Dm->sendCount("YZ") ,sendID_YZ, id);
-		//......................................................................................
-		Dm->Comm.sendrecv(sendID_x,Dm->sendCount("x"),Dm->rank_x(),sendtag,recvID_X,Dm->recvCount("X"),Dm->rank_X(),recvtag);
-		Dm->Comm.sendrecv(sendID_X,Dm->sendCount("X"),Dm->rank_X(),sendtag,recvID_x,Dm->recvCount("x"),Dm->rank_x(),recvtag);
-		Dm->Comm.sendrecv(sendID_y,Dm->sendCount("y"),Dm->rank_y(),sendtag,recvID_Y,Dm->recvCount("Y"),Dm->rank_Y(),recvtag);
-		Dm->Comm.sendrecv(sendID_Y,Dm->sendCount("Y"),Dm->rank_Y(),sendtag,recvID_y,Dm->recvCount("y"),Dm->rank_y(),recvtag);
-		Dm->Comm.sendrecv(sendID_z,Dm->sendCount("z"),Dm->rank_z(),sendtag,recvID_Z,Dm->recvCount("Z"),Dm->rank_Z(),recvtag);
-		Dm->Comm.sendrecv(sendID_Z,Dm->sendCount("Z"),Dm->rank_Z(),sendtag,recvID_z,Dm->recvCount("z"),Dm->rank_z(),recvtag);
-		Dm->Comm.sendrecv(sendID_xy,Dm->sendCount("xy"),Dm->rank_xy(),sendtag,recvID_XY,Dm->recvCount("XY"),Dm->rank_XY(),recvtag);
-		Dm->Comm.sendrecv(sendID_XY,Dm->sendCount("XY"),Dm->rank_XY(),sendtag,recvID_xy,Dm->recvCount("xy"),Dm->rank_xy(),recvtag);
-		Dm->Comm.sendrecv(sendID_Xy,Dm->sendCount("Xy"),Dm->rank_Xy(),sendtag,recvID_xY,Dm->recvCount("xY"),Dm->rank_xY(),recvtag);
-		Dm->Comm.sendrecv(sendID_xY,Dm->sendCount("xY"),Dm->rank_xY(),sendtag,recvID_Xy,Dm->recvCount("Xy"),Dm->rank_Xy(),recvtag);
-		Dm->Comm.sendrecv(sendID_xz,Dm->sendCount("xz"),Dm->rank_xz(),sendtag,recvID_XZ,Dm->recvCount("XZ"),Dm->rank_XZ(),recvtag);
-		Dm->Comm.sendrecv(sendID_XZ,Dm->sendCount("XZ"),Dm->rank_XZ(),sendtag,recvID_xz,Dm->recvCount("xz"),Dm->rank_xz(),recvtag);
-		Dm->Comm.sendrecv(sendID_Xz,Dm->sendCount("Xz"),Dm->rank_Xz(),sendtag,recvID_xZ,Dm->recvCount("xZ"),Dm->rank_xZ(),recvtag);
-		Dm->Comm.sendrecv(sendID_xZ,Dm->sendCount("xZ"),Dm->rank_xZ(),sendtag,recvID_Xz,Dm->recvCount("Xz"),Dm->rank_Xz(),recvtag);
-		Dm->Comm.sendrecv(sendID_yz,Dm->sendCount("yz"),Dm->rank_yz(),sendtag,recvID_YZ,Dm->recvCount("YZ"),Dm->rank_YZ(),recvtag);
-		Dm->Comm.sendrecv(sendID_YZ,Dm->sendCount("YZ"),Dm->rank_YZ(),sendtag,recvID_yz,Dm->recvCount("yz"),Dm->rank_yz(),recvtag);
-		Dm->Comm.sendrecv(sendID_Yz,Dm->sendCount("Yz"),Dm->rank_Yz(),sendtag,recvID_yZ,Dm->recvCount("yZ"),Dm->rank_yZ(),recvtag);
-		Dm->Comm.sendrecv(sendID_yZ,Dm->sendCount("yZ"),Dm->rank_yZ(),sendtag,recvID_Yz,Dm->recvCount("Yz"),Dm->rank_Yz(),recvtag);
-		//......................................................................................
-		UnpackID(Dm->recvList("x"), Dm->recvCount("x") ,recvID_x, id);
-		UnpackID(Dm->recvList("X"), Dm->recvCount("X") ,recvID_X, id);
-		UnpackID(Dm->recvList("y"), Dm->recvCount("y") ,recvID_y, id);
-		UnpackID(Dm->recvList("Y"), Dm->recvCount("Y") ,recvID_Y, id);
-		UnpackID(Dm->recvList("z"), Dm->recvCount("z") ,recvID_z, id);
-		UnpackID(Dm->recvList("Z"), Dm->recvCount("Z") ,recvID_Z, id);
-		UnpackID(Dm->recvList("xy"), Dm->recvCount("xy") ,recvID_xy, id);
-		UnpackID(Dm->recvList("Xy"), Dm->recvCount("Xy") ,recvID_Xy, id);
-		UnpackID(Dm->recvList("xY"), Dm->recvCount("xY") ,recvID_xY, id);
-		UnpackID(Dm->recvList("XY"), Dm->recvCount("XY") ,recvID_XY, id);
-		UnpackID(Dm->recvList("xz"), Dm->recvCount("xz") ,recvID_xz, id);
-		UnpackID(Dm->recvList("Xz"), Dm->recvCount("Xz") ,recvID_Xz, id);
-		UnpackID(Dm->recvList("xZ"), Dm->recvCount("xZ") ,recvID_xZ, id);
-		UnpackID(Dm->recvList("XZ"), Dm->recvCount("XZ") ,recvID_XZ, id);
-		UnpackID(Dm->recvList("yz"), Dm->recvCount("yz") ,recvID_yz, id);
-		UnpackID(Dm->recvList("Yz"), Dm->recvCount("Yz") ,recvID_Yz, id);
-		UnpackID(Dm->recvList("yZ"), Dm->recvCount("yZ") ,recvID_yZ, id);
-		UnpackID(Dm->recvList("YZ"), Dm->recvCount("YZ") ,recvID_YZ, id);
-		//......................................................................................
-		// double GlobalNumber = Dm->Comm.sumReduce( LocalNumber );
-		*/
+		Dm->Comm.barrier();
+
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
-					n=k*nx*ny+j*nx+i;
-					if (ID(i,j,k) == 1){
+					if (ID(i,j,k) == NewLabel){
 						phase(i,j,k) = 1.0;
 					}
 					else
@@ -551,50 +735,12 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 				for (int i=0; i<nx; i++){
 					n=k*nx*ny+j*nx+i;
 					if (ID(i,j,k) == 1 && phase_label(i,j,k) > 1){
-						ID(i,j,k) = 2;
+						ID(i,j,k) = ErodeLabel;
 					}
 					id[n] = ID(i,j,k);
 				}
 			}
 		}
-		
-		
-		/*
-		* Extract only the connected part of NWP
-		for (int k=1; k<nz-1; k++){
-			for (int j=1; j<ny-1; j++){
-				for (int i=1; i<nx-1; i++){
-					n=k*nx*ny+j*nx+i;
-					if (id[n] == 2){
-						phase(i,j,k) = 1.0;
-					}
-					else if (id[n] == 1){
-						// nwp
-						phase(i,j,k) = -1.0;
-					}
-					else{i
-						// treat solid as WP since films can connect 
-						phase(i,j,k) = 1.0;
-					}
-				}
-			}
-		}
-		
-		ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,SignDist,vF,vS,phase_label,Dm->Comm);
-		Dm->Comm.barrier();
-		
-		for (int k=1; k<nz-1; k++){
-			for (int j=1; j<ny-1; j++){
-				for (int i=1; i<nx-1; i++){
-					n=k*nx*ny+j*nx+i;
-					if (id[n] == 2 && phase_label(i,j,k) > 1){
-						id[n] = 20;
-					}
-				}
-			}
-		}
-		// done
-		*/
 
 		count = 0.f;
 		for (int k=1; k<nz-1; k++){

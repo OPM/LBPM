@@ -34,15 +34,15 @@ int main( int argc, char **argv )
 		// Load the input database
 		auto db = std::make_shared<Database>( argv[1] );
 		if (argc > 2) {
-			SimulationMode = "development";
+			SimulationMode = "legacy";
 		}
 
 		if ( rank == 0 ) {
 			printf( "********************************************************\n" );
 			printf( "Running Color LBM	\n" );
 			printf( "********************************************************\n" );
-			if (SimulationMode == "development")
-				printf("**** DEVELOPMENT MODE ENABLED *************\n");
+			if (SimulationMode == "legacy")
+				printf("**** LEGACY MODE ENABLED *************\n");
 		}
 		// Initialize compute device
 		int device = ScaLBL_SetDevice( rank );
@@ -66,13 +66,16 @@ int main( int argc, char **argv )
 		// structure and allocate variables
 		ColorModel.Initialize(); // initializing the model will set initial conditions for variables
 
-		if (SimulationMode == "development"){
+		if (SimulationMode == "legacy"){
+			ColorModel.Run();        
+		}
+		else {
 			double MLUPS=0.0;
 			int timestep = 0;
 			bool ContinueSimulation = true;
 			
 			/* Variables for simulation protocols */
-			auto PROTOCOL = ColorModel.color_db->getWithDefault<std::string>( "protocol", "none" );
+			auto PROTOCOL = ColorModel.color_db->getWithDefault<std::string>( "protocol", "default" );
 			/* image sequence protocol */
 			int IMAGE_INDEX = 0;
 			int IMAGE_COUNT = 0;
@@ -89,6 +92,8 @@ int main( int argc, char **argv )
 				SKIP_TIMESTEPS = flow_db->getWithDefault<int>( "skip_timesteps", 50000 );
 				ENDPOINT_THRESHOLD = flow_db->getWithDefault<double>( "endpoint_threshold", 0.1);
 				/* protocol specific key values */
+				if (PROTOCOL == "image sequence" || PROTOCOL == "core flooding")
+					SKIP_TIMESTEPS = 0;
 				if (PROTOCOL == "fractional flow")
 					FRACTIONAL_FLOW_INCREMENT = flow_db->getWithDefault<double>( "fractional_flow_increment", 0.05);
 				if (PROTOCOL == "seed water")
@@ -104,10 +109,14 @@ int main( int argc, char **argv )
 			runAnalysis analysis(ColorModel);
 			while (ContinueSimulation){
 				/* this will run steady points */
-				timestep += MAX_STEADY_TIME;
+				if (PROTOCOL == "fractional flow" || PROTOCOL == "seed water" || PROTOCOL == "shell aggregation" || PROTOCOL == "image sequence" )
+					timestep += MAX_STEADY_TIME;
+				else 
+					timestep += ColorModel.timestepMax;
+				/* Run the simulation timesteps*/
 				MLUPS = ColorModel.Run(timestep);
 				if (rank==0) printf("Lattice update rate (per MPI process)= %f MLUPS \n", MLUPS);
-				if (ColorModel.timestep > ColorModel.timestepMax){
+				if (ColorModel.timestep >= ColorModel.timestepMax){
 					ContinueSimulation = false;
 				}
 				
@@ -123,6 +132,7 @@ int main( int argc, char **argv )
 					else{
 						if (rank==0) printf("Finished simulating image sequence \n");
 						ColorModel.timestep =  ColorModel.timestepMax;
+						ContinueSimulation = false;
 					}
 				}
 				/*********************************************************/
@@ -144,7 +154,7 @@ int main( int argc, char **argv )
 				double speedB = sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z);
 				/* stop simulation if previous point was sufficiently close to the endpoint*/
 				if (volA*speedA < ENDPOINT_THRESHOLD*volB*speedB) ContinueSimulation = false;
-				if (ContinueSimulation){
+				if (ContinueSimulation && SKIP_TIMESTEPS > 0 ){
 					while (skip_time < SKIP_TIMESTEPS && fabs(SaturationChange) < fabs(FRACTIONAL_FLOW_INCREMENT) ){
 						timestep += ANALYSIS_INTERVAL;
 						if (PROTOCOL == "fractional flow")	{							
@@ -171,11 +181,13 @@ int main( int argc, char **argv )
 					if (rank==0) printf("  *********************************************************************  \n");
 				}
 				/*********************************************************/
+				if (rank==0) printf("   (flatten density field)  \n");
+				if (PROTOCOL == "fractional flow")	{							
+					Adapt.Flatten(ColorModel);
+				}
 			}
 		}
-		else
-			ColorModel.Run();        
-
+		
 		PROFILE_STOP( "Main" );
 		auto file  = db->getWithDefault<std::string>( "TimerFile", "lbpm_color_simulator" );
 		auto level = db->getWithDefault<int>( "TimerLevel", 1 );

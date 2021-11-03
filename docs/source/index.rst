@@ -12,9 +12,9 @@ LBPM -- Documentation
    :caption: Contents:
 
    install
-   examples/*
    userGuide/*
    developerGuide/*
+   examples/*
    publications/*
 
 Indices and tables

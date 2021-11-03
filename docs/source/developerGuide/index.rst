@@ -15,4 +15,10 @@ into the framework.
 
    testingModels/*
 
- 
+   doxygen/ScaLBL.rst
+
+   doxygen/Domain.rst
+
+   doxygen/Models.rst
+
+   doxygen/Analysis.rst

@@ -3395,7 +3395,6 @@ extern "C" void ScaLBL_FreeLeeModel_PhaseField_Init(int *Map, double *Phi, doubl
 extern "C" void ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map, double *hq, double *Den, double *Phi, double *ColorGrad, double *Vel,
                                                           double rhoA, double rhoB, double tauM, double W, int start, int finish, int Np)
 {
-
 	//hipFuncSetCacheConfig((void*)dvc_ScaLBL_D3Q7_AAodd_FreeLee_PhaseField, hipFuncCachePreferL1);
 	dvc_ScaLBL_D3Q7_AAodd_FreeLee_PhaseField<<<NBLOCKS,NTHREADS >>>(neighborList, Map, hq, Den, Phi, ColorGrad, Vel,
              rhoA,  rhoB, tauM, W, start, finish,  Np);
@@ -3406,10 +3405,9 @@ extern "C" void ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map
 }
 
 extern "C" void ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq, double *Den, double *Phi, double *ColorGrad, double *Vel,
-		double rhoA, double rhoB, double tauM, double W, int start, int finish, int Np){
-
+		double rhoA, double rhoB, double tauM, double W, int start, int finish, int Np)
+{
 	//hipFuncSetCacheConfig((void*)dvc_ScaLBL_D3Q7_AAeven_FreeLee_PhaseField, hipFuncCachePreferL1);
-
 	dvc_ScaLBL_D3Q7_AAeven_FreeLee_PhaseField<<<NBLOCKS,NTHREADS >>>( Map, hq, Den, Phi, ColorGrad, Vel, rhoA, rhoB, tauM, W, start, finish, Np);
 	hipError_t err = hipGetLastError();
 	if (hipSuccess != err){
@@ -3514,9 +3512,8 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK(int *neighborLis
 }
 
 extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK(double *dist, double *Vel, double *Pressure, 
-                                                                 double tau, double rho0, double Fx, double Fy, double Fz, int start, int finish, int Np){
-
-
+                                                                 double tau, double rho0, double Fx, double Fy, double Fz, int start, int finish, int Np)
+{
 	//hipFuncSetCacheConfig((void*)dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK, hipFuncCachePreferL1);
 	dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK<<<NBLOCKS,NTHREADS >>>(dist, Vel, Pressure, 
             tau, rho0,  Fx, Fy, Fz, start, finish, Np);

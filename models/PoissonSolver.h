@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <fstream>
 #include <cmath>
+#include <iterator>
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
@@ -48,6 +49,7 @@ public:
     int BoundaryConditionSolid;
 	double tau;
 	double tolerance;
+    std::string tolerance_method;
     double k2_inv;
     double epsilon0,epsilon0_LB,epsilonR,epsilon_LB;
     double Vin, Vout;
@@ -78,6 +80,7 @@ public:
     IntArray Map;
     DoubleArray Distance;
     DoubleArray Psi_host;
+    DoubleArray Psi_previous;
     int *NeighborList;
     int *dvcMap;
     //signed char *dvcID;
@@ -85,6 +88,7 @@ public:
     double *Psi; 
     double *ElectricField;
     double *ChargeDensityDummy;// for debugging
+    double *ResidualError;
 
 private:
 	Utilities::MPI comm;

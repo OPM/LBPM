@@ -366,7 +366,7 @@ std::vector<MeshDatabase> read( const std::string &filename )
     PROFILE_START( "read" );
     FILE *fid = fopen( filename.c_str(), "rb" );
     if ( fid == NULL )
-        ERROR( "Error opening file" );
+        ERROR( "Error opening file: " + filename );
     char *line = new char[10000];
     while ( std::fgets( line, 1000, fid ) != NULL ) {
         if ( line[0] < 32 ) {

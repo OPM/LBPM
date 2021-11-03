@@ -69,6 +69,8 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	if (electric_db->keyExists( "tolerance" )){
 		tolerance = electric_db->getScalar<double>( "tolerance" );
 	}
+    //'tolerance_method' can be {"MSE","MSE_max"}
+	tolerance_method = electric_db->getWithDefault<std::string>( "tolerance_method", "MSE" );
 	if (electric_db->keyExists( "epsilonR" )){
 		epsilonR = electric_db->getScalar<double>( "epsilonR" );
 	}
@@ -122,6 +124,15 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	if (rank==0) printf("LB-Poisson Solver: steady-state MaxTimeStep = %i; steady-state tolerance = %.3g \n", timestepMax,tolerance);
 	if (rank==0) printf("                   LB relaxation tau = %.5g \n", tau);
 	if (rank==0) printf("***********************************************************************************\n");
+    if (tolerance_method.compare("MSE")==0){
+        if (rank==0) printf("LB-Poisson Solver: Use averaged MSE to check solution convergence.\n");
+    }
+    else if (tolerance_method.compare("MSE_max")==0){
+        if (rank==0) printf("LB-Poisson Solver: Use maximum MSE to check solution convergence.\n");
+    }
+    else{
+        if (rank==0) printf("LB-Poisson Solver: tolerance_method=%s cannot be identified!\n",tolerance_method.c_str());
+    }
 
     switch (BoundaryConditionSolid){
         case 1:
@@ -150,6 +161,7 @@ void ScaLBL_Poisson::SetDomain(){
 	N = Nx*Ny*Nz;
 	Distance.resize(Nx,Ny,Nz);
 	Psi_host.resize(Nx,Ny,Nz);
+	Psi_previous.resize(Nx,Ny,Nz);
 
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
@@ -338,6 +350,7 @@ void ScaLBL_Poisson::Create(){
 	ScaLBL_AllocateDeviceMemory((void **) &fq, 7*dist_mem_size);  
 	ScaLBL_AllocateDeviceMemory((void **) &Psi, sizeof(double)*Nx*Ny*Nz);
 	ScaLBL_AllocateDeviceMemory((void **) &ElectricField, 3*sizeof(double)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &ResidualError, sizeof(double)*Np);
 	//...........................................................................
 	
 	// Update GPU data structures
@@ -541,12 +554,10 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, int timestep_from_Study){
 
 	timestep=0;
 	double error = 1.0;
-	double psi_avg_previous = 0.0;
 	while (timestep < timestepMax && error > tolerance) {
 		//************************************************************************/
 		// *************ODD TIMESTEP*************//
         timestep++;
-        
         SolveElectricPotentialAAodd(timestep_from_Study);//update electric potential
         SolvePoissonAAodd(ChargeDensity);//perform collision
 		ScaLBL_Comm->Barrier(); comm.barrier();
@@ -559,33 +570,86 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, int timestep_from_Study){
 		//************************************************************************/
 
         // Check convergence of steady-state solution
+        if (timestep==2){
+            //save electric potential for convergence check
+            ScaLBL_CopyToHost(Psi_previous.data(),Psi,sizeof(double)*Nx*Ny*Nz);
+        }
         if (timestep%analysis_interval==0){
-        
-			//ScaLBL_Comm->RegularLayout(Map,Psi,Psi_host);
-            ScaLBL_CopyToHost(Psi_host.data(),Psi,sizeof(double)*Nx*Ny*Nz);
-			double count_loc=0;
-			double count;
-            double psi_avg;
-            double psi_loc=0.f;
+            if (tolerance_method.compare("MSE")==0){
+                double count_loc=0;
+                double count;
+                double MSE_loc=0.0;
+                ScaLBL_CopyToHost(Psi_host.data(),Psi,sizeof(double)*Nx*Ny*Nz);
+                for (int k=1; k<Nz-1; k++){
+                    for (int j=1; j<Ny-1; j++){
+                        for (int i=1; i<Nx-1; i++){
+                            if (Distance(i,j,k) > 0){
+                                MSE_loc += (Psi_host(i,j,k) - Psi_previous(i,j,k))*(Psi_host(i,j,k) - Psi_previous(i,j,k));
+                                count_loc+=1.0;
+                            }
+                        }
+                    }
+                }
+                error=Dm->Comm.sumReduce(MSE_loc);
+                count=Dm->Comm.sumReduce(count_loc);
+                error /= count;
+            }
+            else if (tolerance_method.compare("MSE_max")==0){
+                vector<double>MSE_loc;
+                double MSE_loc_max;
+                ScaLBL_CopyToHost(Psi_host.data(),Psi,sizeof(double)*Nx*Ny*Nz);
+                for (int k=1; k<Nz-1; k++){
+                    for (int j=1; j<Ny-1; j++){
+                        for (int i=1; i<Nx-1; i++){
+                            if (Distance(i,j,k) > 0){
+                                MSE_loc.push_back((Psi_host(i,j,k) - Psi_previous(i,j,k))*(Psi_host(i,j,k) - Psi_previous(i,j,k)));
+                            }
+                        }
+                    }
+                }
+                vector<double>::iterator it_max = max_element(MSE_loc.begin(),MSE_loc.end());
+                unsigned int idx_max=distance(MSE_loc.begin(),it_max);
+                MSE_loc_max=MSE_loc[idx_max];
+                error=Dm->Comm.maxReduce(MSE_loc_max);
+            }
+            else{
+		        ERROR("Error: user-specified tolerance_method cannot be identified; check you input database! \n");
+            }
+            ScaLBL_CopyToHost(Psi_previous.data(),Psi,sizeof(double)*Nx*Ny*Nz);
 
-			for (int k=1; k<Nz-1; k++){
-				for (int j=1; j<Ny-1; j++){
-					for (int i=1; i<Nx-1; i++){
-						if (Distance(i,j,k) > 0){
-							psi_loc += Psi_host(i,j,k);
-							count_loc+=1.0;
-						}
-					}
-				}
-			}
-			psi_avg=Dm->Comm.sumReduce(  psi_loc);
-			count=Dm->Comm.sumReduce(  count_loc);
 
-			psi_avg /= count;
-            double psi_avg_mag=psi_avg;
-		    if (psi_avg==0.0) psi_avg_mag=1.0;
-            error = fabs(psi_avg-psi_avg_previous)/fabs(psi_avg_mag);
-			psi_avg_previous = psi_avg;
+
+
+
+            //legacy code that tried to use residual to check convergence
+            //ScaLBL_D3Q7_PoissonResidualError(NeighborList,dvcMap,ResidualError,Psi,ChargeDensity,epsilon_LB,Nx,Nx*Ny,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior());
+            //ScaLBL_D3Q7_PoissonResidualError(NeighborList,dvcMap,ResidualError,Psi,ChargeDensity,epsilon_LB,Nx,Nx*Ny,0, ScaLBL_Comm->LastExterior());
+		    //ScaLBL_Comm->Barrier(); comm.barrier();
+
+            //vector<double> ResidualError_host(Np);
+            //double error_loc_max;
+            ////calculate the maximum residual error
+            //ScaLBL_CopyToHost(&ResidualError_host[0],ResidualError,sizeof(double)*Np);
+
+            //vector<double>::iterator it_temp1,it_temp2;
+            //it_temp1=ResidualError_host.begin();
+            //advance(it_temp1,ScaLBL_Comm->LastExterior());
+            //vector<double>::iterator it_max = max_element(ResidualError_host.begin(),it_temp1);
+            //unsigned int idx_max1 = distance(ResidualError_host.begin(),it_max);
+
+            //it_temp1=ResidualError_host.begin();
+            //it_temp2=ResidualError_host.begin();
+            //advance(it_temp1,ScaLBL_Comm->FirstInterior());
+            //advance(it_temp2,ScaLBL_Comm->LastInterior());
+            //it_max = max_element(it_temp1,it_temp2);
+            //unsigned int idx_max2 = distance(ResidualError_host.begin(),it_max);
+            //if (ResidualError_host[idx_max1]>ResidualError_host[idx_max2]){
+            //    error_loc_max=ResidualError_host[idx_max1];
+            //}
+            //else{
+            //    error_loc_max=ResidualError_host[idx_max2];
+            //}
+			//error = Dm->Comm.maxReduce(error_loc_max);
         }
 	}
     if(WriteLog==true){

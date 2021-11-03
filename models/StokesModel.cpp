@@ -297,7 +297,7 @@ void ScaLBL_StokesModel::AssignZetaPotentialSolid(double *zeta_potential_solid)
 
 	NLABELS=LabelList.size();
 	if (NLABELS != AffinityList.size()){
-		ERROR("Error: LB Stokes Solver: SolidLabels and ZetaPotentialSolidList must be the same length! \n");
+		ERROR("Error: LB Single-Fluid Solver: SolidLabels and ZetaPotentialSolidList must be the same length! \n");
 	}
 
 	double *label_count;
@@ -331,7 +331,7 @@ void ScaLBL_StokesModel::AssignZetaPotentialSolid(double *zeta_potential_solid)
 		label_count_global[idx]=Dm->Comm.sumReduce(  label_count[idx]);
 
 	if (rank==0){
-		printf("LB Stokes Solver: number of solid labels: %lu \n",NLABELS);
+		printf("LB Single-Fluid Solver: number of solid labels: %lu \n",NLABELS);
 		for (unsigned int idx=0; idx<NLABELS; idx++){
 			VALUE=LabelList[idx];
 			AFFINITY=AffinityList[idx];

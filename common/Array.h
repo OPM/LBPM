@@ -10,6 +10,7 @@
 #include <iostream>
 #include <memory>
 #include <stdint.h>
+#include <string>
 #include <vector>
 
 
@@ -76,13 +77,7 @@ public: // Constructors / assignment operators
      * @param N             Number of elements in each dimension
      * @param data          Optional raw array to copy the src data
      */
-    explicit Array( const std::vector<size_t> &N, const TYPE *data = NULL );
-
-    /*!
-     * Create a 1D Array with the range
-     * @param range         Range of the data
-     */
-    explicit Array( const Range<TYPE> &range );
+    explicit Array( const std::vector<size_t> &N, const TYPE *data = nullptr );
 
     /*!
      * Create a 1D Array using a string that mimic's MATLAB
@@ -95,6 +90,12 @@ public: // Constructors / assignment operators
      * @param data          Input data
      */
     Array( std::initializer_list<TYPE> data );
+
+    /*!
+     * Create a 2D Array with the given initializer lists
+     * @param data          Input data
+     */
+    Array( std::initializer_list<std::initializer_list<TYPE>> data );
 
 
     /*!
@@ -146,7 +147,7 @@ public: // Views/copies/subset
      * @param N             Number of elements in each dimension
      * @param data          Pointer to the data
      */
-    static std::unique_ptr<Array> view( const ArraySize &N, std::shared_ptr<TYPE> &data );
+    static std::unique_ptr<Array> view( const ArraySize &N, std::shared_ptr<TYPE> data );
 
 
     /*!
@@ -154,8 +155,8 @@ public: // Views/copies/subset
      * @param N             Number of elements in each dimension
      * @param data          Pointer to the data
      */
-    static std::unique_ptr<const Array> constView(
-        const ArraySize &N, std::shared_ptr<const TYPE> const &data );
+    static std::unique_ptr<const Array> constView( const ArraySize &N,
+                                                   std::shared_ptr<const TYPE> const &data );
 
 
     /*!
@@ -169,7 +170,7 @@ public: // Views/copies/subset
      * @param N             Number of elements in each dimension
      * @param data          Pointer to the data
      */
-    void view2( const ArraySize &N, std::shared_ptr<TYPE> const &data );
+    void view2( const ArraySize &N, std::shared_ptr<TYPE> data );
 
     /*!
      * Make this object a view of the raw data (expert use only).
@@ -204,14 +205,30 @@ public: // Views/copies/subset
      */
     void viewRaw( const ArraySize &N, TYPE *data, bool isCopyable = true, bool isFixedSize = true );
 
+    /*!
+     * Create an array view of the given data (expert use only).
+     * Use view2( N, shared_ptr(data,[](TYPE*){}) ) instead.
+     *   Note: this interface is not recommended as it does not protect from
+     *   the src data being deleted while still being used by the Array.
+     *   Additionally for maximum performance it does not set the internal shared_ptr
+     *   so functions like getPtr and resize will not work correctly.
+     * @param N             Number of elements in each dimension
+     * @param data          Pointer to the data
+     */
+    static inline Array staticView( const ArraySize &N, TYPE *data )
+    {
+        Array x;
+        x.viewRaw( N, data, true, true );
+        return x;
+    }
 
     /*!
      * Convert an array of one type to another.  This may or may not allocate new memory.
      * @param array         Input array
      */
     template<class TYPE2>
-    static inline std::unique_ptr<Array<TYPE2, FUN, Allocator>> convert(
-        std::shared_ptr<Array<TYPE, FUN, Allocator>> array )
+    static inline std::unique_ptr<Array<TYPE2, FUN, Allocator>>
+    convert( std::shared_ptr<Array<TYPE, FUN, Allocator>> array )
     {
         auto array2 = std::make_unique<Array<TYPE2>>( array->size() );
         array2.copy( *array );
@@ -224,8 +241,8 @@ public: // Views/copies/subset
      * @param array         Input array
      */
     template<class TYPE2>
-    static inline std::unique_ptr<const Array<TYPE2, FUN, Allocator>> convert(
-        std::shared_ptr<const Array<TYPE, FUN, Allocator>> array )
+    static inline std::unique_ptr<const Array<TYPE2, FUN, Allocator>>
+    convert( std::shared_ptr<const Array<TYPE, FUN, Allocator>> array )
     {
         auto array2 = std::make_unique<Array<TYPE2>>( array->size() );
         array2.copy( *array );
@@ -237,8 +254,8 @@ public: // Views/copies/subset
      * Copy and convert data from another array to this array
      * @param array         Source array
      */
-    template<class TYPE2>
-    void inline copy( const Array<TYPE2, FUN, Allocator> &array )
+    template<class TYPE2, class FUN2, class Allocator2>
+    void inline copy( const Array<TYPE2, FUN2, Allocator2> &array )
     {
         resize( array.size() );
         copy( array.data() );
@@ -247,51 +264,55 @@ public: // Views/copies/subset
     /*!
      * Copy and convert data from a raw vector to this array.
      *    Note: The current array must be allocated to the proper size first.
-     * @param array         Source array
+     * @param data          Source data
      */
     template<class TYPE2>
-    void inline copy( const TYPE2 *data )
-    {
-        for ( size_t i = 0; i < d_size.length(); i++ )
-            d_data[i] = static_cast<TYPE>( data[i] );
-    }
+    inline void copy( const TYPE2 *data );
 
     /*!
      * Copy and convert data from this array to a raw vector.
-     * @param array         Source array
+     * @param data          Source data
      */
     template<class TYPE2>
-    void inline copyTo( TYPE2 *data ) const
-    {
-        for ( size_t i = 0; i < d_size.length(); i++ )
-            data[i] = static_cast<TYPE2>( d_data[i] );
-    }
+    inline void copyTo( TYPE2 *data ) const;
 
     /*!
      * Copy and convert data from this array to a new array
      */
     template<class TYPE2>
-    Array<TYPE2, FUN, Allocator> inline cloneTo() const
+    Array<TYPE2, FUN, std::allocator<TYPE2>> inline cloneTo() const
     {
-        Array<TYPE2, FUN> dst( this->size() );
+        Array<TYPE2, FUN, std::allocator<TYPE2>> dst( this->size() );
         copyTo( dst.data() );
         return dst;
     }
 
+
     /*! swap the raw data pointers for the Arrays after checking for compatibility */
     void swap( Array &other );
 
+
     /*!
      * Fill the array with the given value
-     * @param value         Value to fill
+     * @param y         Value to fill
      */
-    void fill( const TYPE &value );
+    inline void fill( const TYPE &y )
+    {
+        for ( auto &x : *this )
+            x = y;
+    }
 
     /*!
      * Scale the array by the given value
-     * @param scale         Value to scale by
+     * @param y         Value to scale by
      */
-    void scale( const TYPE &scale );
+    template<class TYPE2>
+    inline void scale( const TYPE2 &y )
+    {
+        for ( auto &x : *this )
+            x *= y;
+    }
+
 
     /*!
      * Set the values of this array to pow(base, exp)
@@ -299,6 +320,7 @@ public: // Views/copies/subset
      * @param exp         Exponent value
      */
     void pow( const Array &base, const TYPE &exp );
+
 
     //! Destructor
     ~Array();
@@ -326,6 +348,10 @@ public: // Views/copies/subset
 
     //! Return true if the Array is empty
     inline bool empty() const { return d_size.length() == 0; }
+
+
+    //! Return true if the Array is not empty
+    inline operator bool() const { return d_size.length() != 0; }
 
 
     /*!
@@ -371,6 +397,12 @@ public: // Views/copies/subset
      * @param N             Number of elements in each dimension
      */
     void reshape( const ArraySize &N );
+
+
+    /*!
+     * Remove singleton dimensions.
+     */
+    void squeeze();
 
 
     /*!
@@ -501,8 +533,8 @@ public: // Accessors
      * @param i3            The third index
      * @param i4            The fourth index
      */
-    ARRAY_ATTRIBUTE inline const TYPE &operator()(
-        size_t i1, size_t i2, size_t i3, size_t i4 ) const
+    ARRAY_ATTRIBUTE inline const TYPE &
+    operator()( size_t i1, size_t i2, size_t i3, size_t i4 ) const
     {
         return d_data[d_size.index( i1, i2, i3, i4 )];
     }
@@ -528,8 +560,8 @@ public: // Accessors
      * @param i4            The fourth index
      * @param i5            The fifth index
      */
-    ARRAY_ATTRIBUTE inline const TYPE &operator()(
-        size_t i1, size_t i2, size_t i3, size_t i4, size_t i5 ) const
+    ARRAY_ATTRIBUTE inline const TYPE &
+    operator()( size_t i1, size_t i2, size_t i3, size_t i4, size_t i5 ) const
     {
         return d_data[d_size.index( i1, i2, i3, i4, i5 )];
     }
@@ -602,11 +634,17 @@ public: // Math operations
     //! Concatenates the arrays along the dimension dim.
     static Array cat( const std::vector<Array> &x, int dim = 0 );
 
+    //! Concatenates the arrays along the dimension dim.
+    static Array cat( const std::initializer_list<Array> &x, int dim = 0 );
+
+    //! Concatenates the arrays along the dimension dim.
+    static Array cat( size_t N_array, const Array *x, int dim );
+
     //! Concatenates a given array with the current array
     void cat( const Array &x, int dim = 0 );
 
     //! Initialize the array with random values (defined from the function table)
-    void rand();
+    //void rand();
 
     //! Return true if NaNs are present
     bool NaNs() const;
@@ -657,19 +695,36 @@ public: // Math operations
     TYPE mean( const std::vector<Range<size_t>> &index ) const;
 
     //! Find all elements that match the operator
-    std::vector<size_t> find(
-        const TYPE &value, std::function<bool( const TYPE &, const TYPE & )> compare ) const;
+    std::vector<size_t> find( const TYPE &value,
+                              std::function<bool( const TYPE &, const TYPE & )> compare ) const;
 
 
     //! Print an array
-    void print(
-        std::ostream &os, const std::string &name = "A", const std::string &prefix = "" ) const;
-
-    //! Multiply two arrays
-    static Array multiply( const Array &a, const Array &b );
+    void
+    print( std::ostream &os, const std::string &name = "A", const std::string &prefix = "" ) const;
 
     //! Transpose an array
     Array reverseDim() const;
+
+    /*!
+     * @brief  Shift dimensions
+     * @details  Shifts the dimensions of the array by N.  When N is positive,
+     *    shiftDim shifts the dimensions to the left and wraps the
+     *    N leading dimensions to the end.  When N is negative,
+     *    shiftDim shifts the dimensions to the right and pads with singletons.
+     * @param N             Desired shift
+     */
+    Array shiftDim( int N ) const;
+
+    /*!
+     * @brief   Permute array dimensions
+     * @details  Rearranges the dimensions of the array so that they
+     *    are in the order specified by the vector index.
+     *    The array produced has the same values as A but the order of the subscripts
+     *    needed to access any particular element are rearranged as specified.
+     * @param index        Desired order of the subscripts
+     */
+    Array permute( const std::vector<uint8_t> &index ) const;
 
     //! Replicate an array a given number of times in each direction
     Array repmat( const std::vector<size_t> &N ) const;
@@ -678,8 +733,8 @@ public: // Math operations
     Array coarsen( const Array &filter ) const;
 
     //! Coarsen an array using the given filter
-    Array coarsen(
-        const std::vector<size_t> &ratio, std::function<TYPE( const Array & )> filter ) const;
+    Array coarsen( const std::vector<size_t> &ratio,
+                   std::function<TYPE( const Array & )> filter ) const;
 
     /*!
      * Perform a element-wise operation y = f(x)
@@ -694,8 +749,9 @@ public: // Math operations
      * @param[in] x             The first array
      * @param[in] y             The second array
      */
-    static Array transform(
-        std::function<TYPE( const TYPE &, const TYPE & )> fun, const Array &x, const Array &y );
+    static Array transform( std::function<TYPE( const TYPE &, const TYPE & )> fun,
+                            const Array &x,
+                            const Array &y );
 
     /*!
      * axpby operation: this = alpha*x + beta*this
@@ -709,7 +765,13 @@ public: // Math operations
      * Linear interpolation
      * @param[in] x             Position as a decimal index
      */
-    TYPE interp( const std::vector<double> &x ) const;
+    inline TYPE interp( const std::vector<double> &x ) const { return interp( x.data() ); }
+
+    /*!
+     * Linear interpolation
+     * @param[in] x             Position as a decimal index
+     */
+    TYPE interp( const double *x ) const;
 
     /**
      * \fn equals (Array & const rhs, TYPE tol )
@@ -732,8 +794,10 @@ private:
     inline void checkSubsetIndex( const std::vector<Range<size_t>> &range ) const;
     inline std::vector<Range<size_t>> convert( const std::vector<size_t> &index ) const;
     static inline void getSubsetArrays( const std::vector<Range<size_t>> &range,
-        std::array<size_t, 5> &first, std::array<size_t, 5> &last, std::array<size_t, 5> &inc,
-        std::array<size_t, 5> &N );
+                                        std::array<size_t, 5> &first,
+                                        std::array<size_t, 5> &last,
+                                        std::array<size_t, 5> &inc,
+                                        std::array<size_t, 5> &N );
 };
 
 
@@ -758,8 +822,8 @@ inline Array<TYPE, FUN, Allocator> operator+(
     const Array<TYPE, FUN, Allocator> &a, const Array<TYPE, FUN, Allocator> &b )
 {
     Array<TYPE, FUN, Allocator> c;
-    const auto &fun = []( const TYPE &a, const TYPE &b ) { return a + b; };
-    FUN::transform( fun, a, b, c );
+    const auto &op = []( const TYPE &a, const TYPE &b ) { return a + b; };
+    FUN::transform( op, a, b, c );
     return c;
 }
 template<class TYPE, class FUN, class Allocator>
@@ -767,30 +831,78 @@ inline Array<TYPE, FUN, Allocator> operator-(
     const Array<TYPE, FUN, Allocator> &a, const Array<TYPE, FUN, Allocator> &b )
 {
     Array<TYPE, FUN, Allocator> c;
-    const auto &fun = []( const TYPE &a, const TYPE &b ) { return a - b; };
-    FUN::transform( fun, a, b, c );
+    const auto &op = []( const TYPE &a, const TYPE &b ) { return a - b; };
+    FUN::transform( op, a, b, c );
     return c;
 }
 template<class TYPE, class FUN, class Allocator>
 inline Array<TYPE, FUN, Allocator> operator*(
     const Array<TYPE, FUN, Allocator> &a, const Array<TYPE, FUN, Allocator> &b )
 {
-    return Array<TYPE, FUN, Allocator>::multiply( a, b );
+    Array<TYPE, FUN, Allocator> c;
+    FUN::multiply( a, b, c );
+    return c;
 }
 template<class TYPE, class FUN, class Allocator>
 inline Array<TYPE, FUN, Allocator> operator*(
     const Array<TYPE, FUN, Allocator> &a, const std::vector<TYPE> &b )
 {
-    Array<TYPE, FUN, Allocator> b2;
+    Array<TYPE, FUN, Allocator> b2, c;
     b2.viewRaw( { b.size() }, const_cast<TYPE *>( b.data() ) );
-    return Array<TYPE, FUN, Allocator>::multiply( a, b2 );
+    FUN::multiply( a, b2, c );
+    return c;
+}
+template<class TYPE, class FUN, class Allocator>
+inline Array<TYPE, FUN, Allocator> operator*( const TYPE &a,
+                                              const Array<TYPE, FUN, Allocator> &b )
+{
+    auto c = b;
+    c.scale( a );
+    return c;
+}
+template<class TYPE, class FUN, class Allocator>
+inline Array<TYPE, FUN, Allocator> operator*( const Array<TYPE, FUN, Allocator> &a,
+                                              const TYPE &b )
+{
+    auto c = a;
+    c.scale( b );
+    return c;
+}
+
+
+/********************************************************
+ *  Copy array                                           *
+ ********************************************************/
+template<class TYPE, class FUN, class Allocator>
+template<class TYPE2>
+inline void Array<TYPE, FUN, Allocator>::copy( const TYPE2 *data )
+{
+    if ( std::is_same<TYPE, TYPE2>::value ) {
+        std::copy( data, data + d_size.length(), d_data );
+    } else {
+        for ( size_t i = 0; i < d_size.length(); i++ )
+            d_data[i] = static_cast<TYPE>( data[i] );
+    }
+}
+template<class TYPE, class FUN, class Allocator>
+template<class TYPE2>
+inline void Array<TYPE, FUN, Allocator>::copyTo( TYPE2 *data ) const
+{
+    if ( std::is_same<TYPE, TYPE2>::value ) {
+        std::copy( d_data, d_data + d_size.length(), data );
+    } else {
+        for ( size_t i = 0; i < d_size.length(); i++ )
+            data[i] = static_cast<TYPE2>( d_data[i] );
+    }
 }
 
 
 /********************************************************
  *  Convience typedefs                                   *
+ *  Copy array                                           *
  ********************************************************/
 typedef Array<double> DoubleArray;
 typedef Array<int> IntArray;
+
 
 #endif

@@ -132,7 +132,7 @@ extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, int *Map, double *d
 		f6 = dist[nr6];
 		
 		Ex = (f1-f2)*rlx*4.0;//NOTE the unit of electric field here is V/lu
-		Ey = (f3-f4)*rlx*4.0;//factor 4.0 is D3Q7 lattice speed of sound
+		Ey = (f3-f4)*rlx*4.0;//factor 4.0 is D3Q7 lattice squared speed of sound
 		Ez = (f5-f6)*rlx*4.0;
         ElectricField[n+0*Np] = Ex;
         ElectricField[n+1*Np] = Ey;
@@ -189,7 +189,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_Poisson(int *Map, double *dist, double *Den_c
 
 
 		Ex = (f1-f2)*rlx*4.0;//NOTE the unit of electric field here is V/lu
-		Ey = (f3-f4)*rlx*4.0;//factor 4.0 is D3Q7 lattice speed of sound
+		Ey = (f3-f4)*rlx*4.0;//factor 4.0 is D3Q7 lattice squared speed of sound
 		Ez = (f5-f6)*rlx*4.0;
         ElectricField[n+0*Np] = Ex;
         ElectricField[n+1*Np] = Ey;
@@ -235,6 +235,87 @@ extern "C" void ScaLBL_D3Q7_Poisson_Init(int *Map, double *dist, double *Psi, in
 	}
 }
 
+extern "C" void ScaLBL_D3Q7_PoissonResidualError(int *neighborList, int *Map, double *ResidualError, double *Psi, double *Den_charge, double epsilon_LB,int strideY, int strideZ,int start, int finish){
+
+	int n,nn,ijk;
+	double psi;//electric potential
+    double rho_e;//local charge density
+	// neighbors of electric potential psi
+	double m1,m2,m4,m6,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;
+	double m3,m5,m7;
+    double psi_Laplacian;
+    double residual_error;
+
+	for (n=start; n<finish; n++){
+
+        //Load data
+        rho_e = Den_charge[n];
+        ijk=Map[n];
+        psi = Psi[ijk];
+
+		//					COMPUTE THE COLOR GRADIENT
+		//........................................................................
+		//.................Read Phase Indicator Values............................
+		//........................................................................
+		nn = ijk-1;							// neighbor index (get convention)
+		m1 = Psi[nn];						// get neighbor for phi - 1
+		//........................................................................
+		nn = ijk+1;							// neighbor index (get convention)
+		m2 = Psi[nn];						// get neighbor for phi - 2
+		//........................................................................
+		nn = ijk-strideY;							// neighbor index (get convention)
+		m3 = Psi[nn];					// get neighbor for phi - 3
+		//........................................................................
+		nn = ijk+strideY;							// neighbor index (get convention)
+		m4 = Psi[nn];					// get neighbor for phi - 4
+		//........................................................................
+		nn = ijk-strideZ;						// neighbor index (get convention)
+		m5 = Psi[nn];					// get neighbor for phi - 5
+		//........................................................................
+		nn = ijk+strideZ;						// neighbor index (get convention)
+		m6 = Psi[nn];					// get neighbor for phi - 6
+		//........................................................................
+		nn = ijk-strideY-1;						// neighbor index (get convention)
+		m7 = Psi[nn];					// get neighbor for phi - 7
+		//........................................................................
+		nn = ijk+strideY+1;						// neighbor index (get convention)
+		m8 = Psi[nn];					// get neighbor for phi - 8
+		//........................................................................
+		nn = ijk+strideY-1;						// neighbor index (get convention)
+		m9 = Psi[nn];					// get neighbor for phi - 9
+		//........................................................................
+		nn = ijk-strideY+1;						// neighbor index (get convention)
+		m10 = Psi[nn];					// get neighbor for phi - 10
+		//........................................................................
+		nn = ijk-strideZ-1;						// neighbor index (get convention)
+		m11 = Psi[nn];					// get neighbor for phi - 11
+		//........................................................................
+		nn = ijk+strideZ+1;						// neighbor index (get convention)
+		m12 = Psi[nn];					// get neighbor for phi - 12
+		//........................................................................
+		nn = ijk+strideZ-1;						// neighbor index (get convention)
+		m13 = Psi[nn];					// get neighbor for phi - 13
+		//........................................................................
+		nn = ijk-strideZ+1;						// neighbor index (get convention)
+		m14 = Psi[nn];					// get neighbor for phi - 14
+		//........................................................................
+		nn = ijk-strideZ-strideY;					// neighbor index (get convention)
+		m15 = Psi[nn];					// get neighbor for phi - 15
+		//........................................................................
+		nn = ijk+strideZ+strideY;					// neighbor index (get convention)
+		m16 = Psi[nn];					// get neighbor for phi - 16
+		//........................................................................
+		nn = ijk+strideZ-strideY;					// neighbor index (get convention)
+		m17 = Psi[nn];					// get neighbor for phi - 17
+		//........................................................................
+		nn = ijk-strideZ+strideY;					// neighbor index (get convention)
+		m18 = Psi[nn];					// get neighbor for phi - 18
+
+		psi_Laplacian = 2.0*3.0/18.0*(m1+m2+m3+m4+m5+m6-6*psi+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*psi));//Laplacian of electric potential
+        residual_error = psi_Laplacian+rho_e/epsilon_LB;
+		ResidualError[n] = residual_error;
+	}
+}
 //extern "C" void ScaLBL_D3Q7_Poisson_ElectricField(int *neighborList, int *Map, signed char *ID, double *Psi, double *ElectricField, int SolidBC,
 //        int strideY, int strideZ,int start, int finish, int Np){
 //

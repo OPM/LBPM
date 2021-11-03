@@ -25,7 +25,10 @@ void Med3D( const Array<float> &Input, Array<float> &Output );
  * @details  This routine performs a non-linear local means filter
  * @param[in] Input     Input image
  * @param[in] Mean      Mean value
+ * @param[in] Distance  Distance
  * @param[out] Output   Output image
+ * @param[in] d
+ * @param[in] h
  */
 int NLM3D( const Array<float> &Input, Array<float> &Mean, 
     const Array<float> &Distance, Array<float> &Output, const int d, const float h);

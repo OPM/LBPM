@@ -4,8 +4,9 @@
 #include <vector>
 #include "analysis/pmmc.h"
 
-/* 
-Doubly-connected edge list (DECL) 
+/**
+ * \class Vertex
+ * @brief store vertex for DCEL data structure
 */
 
 // Vertex structure
@@ -34,8 +35,10 @@ private:
 };
 
 
-// Halfedge structure
-// Face
+/**
+ * \class Halfedge
+ * @brief store half edge for DCEL data structure
+*/
 class Halfedge{
 public:
 	Halfedge() = default;
@@ -60,11 +63,14 @@ private:
 	std::vector<std::array<int,6>> d_data;
 };
 
-// DECL
-class DECL{
+/**
+ * \class DCEL
+ * @details doubly connected edge list data structure 
+*/
+class DCEL{
 public:
-	DECL();
-	~DECL();
+	DCEL();
+	~DCEL();
 	
 	int face();
 	Vertex vertex;

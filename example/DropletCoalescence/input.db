@@ -1,0 +1,51 @@
+MRT {
+    timestepMax = 10000
+    tau = 0.7
+    F = 1e-05, 0, 0
+    Restart = false
+    din = 1.0
+    dout = 1.0
+    flux = 0.0
+}
+
+Color {
+    tauA = 0.7;  
+    tauB = 1.0;  
+    rhoA   = 1.0;  
+    rhoB   = 1.0;  
+    alpha = 5e-3;
+    beta  = 0.95;
+    F = 0, 0, 0
+    Restart = false
+    timestepMax = 40000
+    ComponentLabels = -2
+    ComponentAffinity = -0.5
+}
+
+Domain {
+    Filename = "Droplets.raw"
+    nproc = 1, 1, 2     // Number of processors (Npx,Npy,Npz)
+    n = 200, 200, 200      // Size of local domain (Nx,Ny,Nz)
+    N = 200, 200, 400      // size of the input image
+    voxel_length = 1.0 
+    BC = 0              // Boundary condition type
+    Sw = 0.15
+    ReadType = "8bit"
+    ReadValues = -2, 1, 2
+    WriteValues = -2, 1, 2
+    ComponentLabels = -2
+    HistoryLabels = -2
+}
+
+Analysis {
+    analysis_interval = 1000    // Frequency to perform analysis
+    subphase_analysis_interval = 5000    // Frequency to perform analysis
+    restart_interval = 60000    // Frequency to write restart data
+    visualization_interval = 100000        // Frequency to write visualization data
+    restart_file = "Restart"    // Filename to use for restart file (will append rank)
+    N_threads    = 4            // Number of threads to use
+    load_balance = "independent" // Load balance method to use: "none", "default", "independent"
+}
+
+Visualization {
+}

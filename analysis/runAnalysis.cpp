@@ -296,15 +296,21 @@ public:
             fillData.copy( Averages.Vel_z, VelzData );
         }
 
+        if ( vis_db->getWithDefault<bool>( "save_dissipation", false ) ) {
+            ASSERT( visData[0].vars[5]->name == "ViscousDissipation" );
+            Array<double> &ViscousDissipation = visData[0].vars[5]->data;
+            fillData.copy( Averages.Dissipation, ViscousDissipation );
+        }
+
         if ( vis_db->getWithDefault<bool>( "save_distance", false ) ) {
-            ASSERT( visData[0].vars[5]->name == "SignDist" );
-            Array<double> &SignData = visData[0].vars[5]->data;
+            ASSERT( visData[0].vars[6]->name == "SignDist" );
+            Array<double> &SignData = visData[0].vars[6]->data;
             fillData.copy( Averages.SDs, SignData );
         }
 
         if ( vis_db->getWithDefault<bool>( "save_connected_components", false ) ) {
-            ASSERT( visData[0].vars[6]->name == "BlobID" );
-            Array<double> &BlobData = visData[0].vars[6]->data;
+            ASSERT( visData[0].vars[7]->name == "BlobID" );
+            Array<double> &BlobData = visData[0].vars[7]->data;
             fillData.copy( Averages.morph_n->label, BlobData );
         }
 
@@ -618,8 +624,8 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> input_db, const RankInfoStru
     d_N[1] = Dm->Ny;
     d_N[2] = Dm->Nz;
 
-    d_restart_interval           = db->getScalar<int>( "restart_interval" );
-    d_analysis_interval          = db->getScalar<int>( "analysis_interval" );
+    d_restart_interval           = db->getWithDefault<int>( "restart_interval", 100000 );
+    d_analysis_interval          = db->getWithDefault<int>( "analysis_interval", 1000 );
     d_subphase_analysis_interval = INT_MAX;
     d_visualization_interval     = INT_MAX;
     d_blobid_interval            = INT_MAX;
@@ -633,7 +639,7 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> input_db, const RankInfoStru
         d_subphase_analysis_interval = db->getScalar<int>( "subphase_analysis_interval" );
     }
 
-    auto restart_file = db->getScalar<std::string>( "restart_file" );
+    auto restart_file = db->getWithDefault<std::string>( "restart_file", "Restart");
     d_restartFile     = restart_file + "." + rankString;
 
 
@@ -652,6 +658,7 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> input_db, const RankInfoStru
     auto VxVar       = std::make_shared<IO::Variable>();
     auto VyVar       = std::make_shared<IO::Variable>();
     auto VzVar       = std::make_shared<IO::Variable>();
+    auto ViscousDissipationVar = std::make_shared<IO::Variable>();
     auto SignDistVar = std::make_shared<IO::Variable>();
     auto BlobIDVar   = std::make_shared<IO::Variable>();
 
@@ -687,6 +694,14 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> input_db, const RankInfoStru
         VzVar->dim  = 1;
         VzVar->data.resize( d_n[0], d_n[1], d_n[2] );
         d_meshData[0].vars.push_back( VzVar );
+    }
+    
+    if ( vis_db->getWithDefault<bool>( "save_dissipation", false ) ) {
+        ViscousDissipationVar->name = "ViscousDissipation";
+    	ViscousDissipationVar->type = IO::VariableType::VolumeVariable;
+    	ViscousDissipationVar->dim  = 1;
+    	ViscousDissipationVar->data.resize( d_n[0], d_n[1], d_n[2] );
+        d_meshData[0].vars.push_back( ViscousDissipationVar );
     }
 
     if ( vis_db->getWithDefault<bool>( "save_distance", false ) ) {
@@ -750,8 +765,8 @@ runAnalysis::runAnalysis(  ScaLBL_ColorModel &ColorModel)
     d_N[1] = ColorModel.Dm->Ny;
     d_N[2] = ColorModel.Dm->Nz;
 
-    d_restart_interval           = db->getScalar<int>( "restart_interval" );
-    d_analysis_interval          = db->getScalar<int>( "analysis_interval" );
+    d_restart_interval           = db->getWithDefault<int>( "restart_interval", 100000 );
+    d_analysis_interval          = db->getWithDefault<int>( "analysis_interval", 1000 );
     d_subphase_analysis_interval = INT_MAX;
     d_visualization_interval     = INT_MAX;
     d_blobid_interval            = INT_MAX;
@@ -765,10 +780,9 @@ runAnalysis::runAnalysis(  ScaLBL_ColorModel &ColorModel)
         d_subphase_analysis_interval = db->getScalar<int>( "subphase_analysis_interval" );
     }
 
-    auto restart_file = db->getScalar<std::string>( "restart_file" );
+    auto restart_file = db->getWithDefault<std::string>( "restart_file", "Restart");
     d_restartFile     = restart_file + "." + rankString;
-
-
+    
     d_rank = d_comm.getRank();
     writeIDMap( ID_map_struct(), 0, id_map_filename );
     // Initialize IO for silo
