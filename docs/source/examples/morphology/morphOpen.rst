@@ -100,3 +100,11 @@ Successful output looks like the following
 
 The final configuration can be visualized in python by loading the output file
 ``discs_3x128x128.raw.morphdrain.raw``.
+
+
+.. figure:: ../../_static/images/DiscPack-morphdrain.png
+    :width: 600
+    :alt: morphdrain
+
+    Fluid configuration resulting from orphological drainage algorithm applied to a 2D disc pack.
+
