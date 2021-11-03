@@ -263,7 +263,7 @@ ENDMACRO ()
 # Macro to configure LBPM specific options
 MACRO ( CONFIGURE_LBPM )
     # Set the maximum number of processors for the tests
-    IF ( NOT TEST_MAX_PROCS )
+    IF ( NOT DEFINED TEST_MAX_PROCS )
         SET( TEST_MAX_PROCS 32 )
     ENDIF()
     # Add the correct paths to rpath in case we build shared libraries
