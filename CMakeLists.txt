@@ -135,6 +135,7 @@ ENDIF()
 IF ( NOT ONLY_BUILD_DOCS )
     CONFIGURE_MPI()     # MPI must be before other libraries
     CONFIGURE_MIC()
+    CONFIGURE_HDF5()
     CONFIGURE_NETCDF()
     CONFIGURE_SILO()
     CONFIGURE_LBPM()

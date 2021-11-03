@@ -245,7 +245,9 @@ std::vector<IO::MeshDatabase> writeMeshesSilo(
 {
     return std::vector<IO::MeshDatabase>();
 }
-void writeSiloSummary( const std::vector<IO::MeshDatabase> &, const std::string & );
+void writeSiloSummary( const std::vector<IO::MeshDatabase> &, const std::string & )
+{
+}
 
 
 #endif
