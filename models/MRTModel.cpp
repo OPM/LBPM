@@ -36,6 +36,7 @@ void ScaLBL_MRTModel::ReadParams(string filename){
 	db = std::make_shared<Database>( filename );
 	domain_db = db->getDatabase( "Domain" );
 	mrt_db = db->getDatabase( "MRT" );
+	vis_db = db->getDatabase( "Visualization" );
 	
 	tau = 1.0;
 	timestepMax = 100000;
@@ -387,11 +388,7 @@ void ScaLBL_MRTModel::Run(){
 
 void ScaLBL_MRTModel::VelocityField(){
 
-/*	Minkowski Morphology(Mask);
-	int SIZE=Np*sizeof(double);
-	ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
-	ScaLBL_DeviceBarrier(); comm.barrier();
-	ScaLBL_CopyToHost(&VELOCITY[0],&Velocity[0],3*SIZE);
+    auto format = vis_db->getWithDefault<string>( "format", "silo" );
 
 	memcpy(Morphology.SDn.data(), Distance.data(), Nx*Ny*Nz*sizeof(double));
 	Morphology.Initialize();
@@ -442,7 +439,7 @@ void ScaLBL_MRTModel::VelocityField(){
 	auto VzVar = std::make_shared<IO::Variable>();
 	auto SignDistVar = std::make_shared<IO::Variable>();
 
-	IO::initialize("","silo","false");
+	IO::initialize("",format,"false");
 	// Create the MeshDataStruct	
 	visData.resize(1);
 	visData[0].meshName = "domain";

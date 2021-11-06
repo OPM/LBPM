@@ -116,6 +116,8 @@ private:
     int d_subphase_analysis_interval;
     double d_beta;
     bool d_regular;
+    std::string  format; // IO format string "silo" or "hdf5"
+    
     ThreadPool d_tpool;
     RankInfoStruct d_rank_info;
     IntArray d_Map;

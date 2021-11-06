@@ -623,6 +623,9 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> input_db, const RankInfoStru
 
     auto db     = input_db->getDatabase( "Analysis" );
     auto vis_db = input_db->getDatabase( "Visualization" );
+    
+	/* set the I/O format */
+    format = vis_db->getWithDefault<bool>( "format", "silo" );
 
     // Ids of work items to use for dependencies
     ThreadPool::thread_id_t d_wait_blobID;
@@ -661,8 +664,10 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> input_db, const RankInfoStru
 
     d_rank = d_comm.getRank();
     writeIDMap( ID_map_struct(), 0, id_map_filename );
+    
     // Initialize IO for silo
-    IO::initialize( "", "silo", "false" );
+    //std::string  format = "silo";
+    IO::initialize( "", format, "false" );
     // Create the MeshDataStruct
     d_meshData.resize( 1 );
 
@@ -802,7 +807,11 @@ runAnalysis::runAnalysis(  ScaLBL_ColorModel &ColorModel)
     d_rank = d_comm.getRank();
     writeIDMap( ID_map_struct(), 0, id_map_filename );
     // Initialize IO for silo
-    IO::initialize( "", "silo", "false" );
+    //std::string  format = "silo";
+    
+    format = vis_db->getWithDefault<bool>( "format", "silo" );
+ 
+    IO::initialize( "", format, "false" );
     // Create the MeshDataStruct
     d_meshData.resize( 1 );
 
