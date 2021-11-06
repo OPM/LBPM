@@ -20,6 +20,7 @@ void ScaLBL_MRTModel::ReadParams(string filename){
 	db = std::make_shared<Database>( filename );
 	domain_db = db->getDatabase( "Domain" );
 	mrt_db = db->getDatabase( "MRT" );
+	vis_db = db->getDatabase( "Visualization" );
 	
 	tau = 1.0;
 	timestepMax = 100000;
@@ -371,51 +372,8 @@ void ScaLBL_MRTModel::Run(){
 
 void ScaLBL_MRTModel::VelocityField(){
 
-/*	Minkowski Morphology(Mask);
-	int SIZE=Np*sizeof(double);
-	ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
-	ScaLBL_DeviceBarrier(); comm.barrier();
-	ScaLBL_CopyToHost(&VELOCITY[0],&Velocity[0],3*SIZE);
+    auto format = vis_db->getWithDefault<string>( "format", "silo" );
 
-	memcpy(Morphology.SDn.data(), Distance.data(), Nx*Ny*Nz*sizeof(double));
-	Morphology.Initialize();
-	Morphology.UpdateMeshValues();
-	Morphology.ComputeLocal();
-	Morphology.Reduce();
-	
-	double count_loc=0;
-	double count;
-	double vax,vay,vaz;
-	double vax_loc,vay_loc,vaz_loc;
-	vax_loc = vay_loc = vaz_loc = 0.f;
-	for (int n=0; n<ScaLBL_Comm->LastExterior(); n++){
-		vax_loc += VELOCITY[n];
-		vay_loc += VELOCITY[Np+n];
-		vaz_loc += VELOCITY[2*Np+n];
-		count_loc+=1.0;
-	}
-	
-	for (int n=ScaLBL_Comm->FirstInterior(); n<ScaLBL_Comm->LastInterior(); n++){
-		vax_loc += VELOCITY[n];
-		vay_loc += VELOCITY[Np+n];
-		vaz_loc += VELOCITY[2*Np+n];
-		count_loc+=1.0;
-	}
-	MPI_Allreduce(&vax_loc,&vax,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	MPI_Allreduce(&vay_loc,&vay,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	MPI_Allreduce(&vaz_loc,&vaz,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	MPI_Allreduce(&count_loc,&count,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	
-	vax /= count;
-	vay /= count;
-	vaz /= count;
-	
-	double mu = (tau-0.5)/3.f;
-	if (rank==0) printf("Fx Fy Fz mu Vs As Js Xs vx vy vz\n");
-	if (rank==0) printf("%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",Fx, Fy, Fz, mu, 
-						Morphology.V(),Morphology.A(),Morphology.J(),Morphology.X(),vax,vay,vaz);
-						*/
-	
 	std::vector<IO::MeshDataStruct> visData;
 	fillHalo<double> fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1);
 
@@ -424,7 +382,7 @@ void ScaLBL_MRTModel::VelocityField(){
 	auto VzVar = std::make_shared<IO::Variable>();
 	auto SignDistVar = std::make_shared<IO::Variable>();
 
-	IO::initialize("","silo","false");
+	IO::initialize("",format,"false");
 	// Create the MeshDataStruct	
 	visData.resize(1);
 	visData[0].meshName = "domain";

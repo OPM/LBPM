@@ -49,6 +49,7 @@ public:
     std::shared_ptr<Database> db;
     std::shared_ptr<Database> domain_db;
     std::shared_ptr<Database> mrt_db;
+    std::shared_ptr<Database> vis_db;
 
     IntArray Map;
     DoubleArray Distance;
