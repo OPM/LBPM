@@ -390,7 +390,7 @@ void ScaLBL_MRTModel::VelocityField(){
 
     auto format = vis_db->getWithDefault<string>( "format", "silo" );
 
-	memcpy(Morphology.SDn.data(), Distance.data(), Nx*Ny*Nz*sizeof(double));
+    /*	memcpy(Morphology.SDn.data(), Distance.data(), Nx*Ny*Nz*sizeof(double));
 	Morphology.Initialize();
 	Morphology.UpdateMeshValues();
 	Morphology.ComputeLocal();
