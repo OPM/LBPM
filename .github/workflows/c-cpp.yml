@@ -103,6 +103,7 @@ jobs:
         -D CMAKE_C_FLAGS="-fPIC"                    \
         -D CMAKE_CXX_FLAGS="-fPIC"                  \
         -D CMAKE_CXX_STD=14                         \
+        -D TEST_MAX_PROCS=1    \
         -D USE_TIMER=0                              \
           -D TIMER_DIRECTORY=$LBPM_TIMER_DIR     \
         -D USE_NETCDF=0                             \
