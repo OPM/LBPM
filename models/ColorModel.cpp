@@ -745,6 +745,8 @@ double ScaLBL_ColorModel::Run(int returntime){
 			if (CURRENT_TIMESTEP >= MAX_STEADY_TIMESTEPS)
 				isSteady = true;
 			
+			if (BC != 0 ) isSteady = false; // Never rescale unsteady simulation cases
+			
 			if (isSteady && (Ca > maxCa || Ca < minCa) && SET_CAPILLARY_NUMBER ){
 				/* re-run the point if the actual Ca is too far from the target Ca */
 				isSteady = false;
