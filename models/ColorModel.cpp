@@ -723,7 +723,7 @@ double ScaLBL_ColorModel::Run(int returntime){
 		analysis.basic(timestep, current_db, *Averages, Phi, Pressure, Velocity, fq, Den );		// allow initial ramp-up to get closer to steady state
 
 		CURRENT_TIMESTEP += 2;
-		if (CURRENT_TIMESTEP > MIN_STEADY_TIMESTEPS){
+		if (CURRENT_TIMESTEP > MIN_STEADY_TIMESTEPS && BC == 0){
 			analysis.finish();
 
 			double volB = Averages->gwb.V; 
@@ -760,7 +760,7 @@ double ScaLBL_ColorModel::Run(int returntime){
 				isSteady = true;
 			if (CURRENT_TIMESTEP >= MAX_STEADY_TIMESTEPS)
 				isSteady = true;
-			
+						
 			if (isSteady && (Ca > maxCa || Ca < minCa) && SET_CAPILLARY_NUMBER ){
 				/* re-run the point if the actual Ca is too far from the target Ca */
 				isSteady = false;
