@@ -723,7 +723,7 @@ double ScaLBL_ColorModel::Run(int returntime){
 		analysis.basic(timestep, current_db, *Averages, Phi, Pressure, Velocity, fq, Den );		// allow initial ramp-up to get closer to steady state
 
 		CURRENT_TIMESTEP += 2;
-		if (CURRENT_TIMESTEP > MIN_STEADY_TIMESTEPS && BC == 0){
+		if (CURRENT_TIMESTEP > MIN_STEADY_TIMESTEPS && BoundaryCondition == 0){
 			analysis.finish();
 
 			double volB = Averages->gwb.V; 
