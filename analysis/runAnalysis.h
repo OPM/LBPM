@@ -26,42 +26,42 @@
 #include "models/ColorModel.h"
 #include <limits.h>
 
-
 // Types of analysis
 enum class AnalysisType : uint64_t {
-    AnalyzeNone        = 0,
-    IdentifyBlobs      = 0x01,
+    AnalyzeNone = 0,
+    IdentifyBlobs = 0x01,
     CopyPhaseIndicator = 0x02,
-    CopySimState       = 0x04,
-    ComputeAverages    = 0x08,
-    CreateRestart      = 0x10,
-    WriteVis           = 0x20,
-    ComputeSubphase    = 0x40
+    CopySimState = 0x04,
+    ComputeAverages = 0x08,
+    CreateRestart = 0x10,
+    WriteVis = 0x20,
+    ComputeSubphase = 0x40
 };
 
-
 //! Class to run the analysis in multiple threads
-class runAnalysis
-{
+class runAnalysis {
 public:
     //! Constructor
-    runAnalysis( std::shared_ptr<Database> db, const RankInfoStruct &rank_info,
-        std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr<Domain> dm, int Np,
-        bool Regular, IntArray Map );
-    
-    runAnalysis( ScaLBL_ColorModel &ColorModel);
+    runAnalysis(std::shared_ptr<Database> db, const RankInfoStruct &rank_info,
+                std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm,
+                std::shared_ptr<Domain> dm, int Np, bool Regular, IntArray Map);
+
+    runAnalysis(ScaLBL_ColorModel &ColorModel);
 
     //! Destructor
     ~runAnalysis();
 
     //! Run the next analysis
-    void run( int timestep, std::shared_ptr<Database> db, TwoPhase &Averages, const double *Phi,
-        double *Pressure, double *Velocity, double *fq, double *Den );
+    void run(int timestep, std::shared_ptr<Database> db, TwoPhase &Averages,
+             const double *Phi, double *Pressure, double *Velocity, double *fq,
+             double *Den);
 
-    void basic( int timestep, std::shared_ptr<Database> db, SubPhase &Averages, const double *Phi,
-        double *Pressure, double *Velocity, double *fq, double *Den );
-    void WriteVisData( int timestep, std::shared_ptr<Database> vis_db, SubPhase &Averages,
-        const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den );
+    void basic(int timestep, std::shared_ptr<Database> db, SubPhase &Averages,
+               const double *Phi, double *Pressure, double *Velocity,
+               double *fq, double *Den);
+    void WriteVisData(int timestep, std::shared_ptr<Database> vis_db,
+                      SubPhase &Averages, const double *Phi, double *Pressure,
+                      double *Velocity, double *fq, double *Den);
 
     //! Finish all active analysis
     void finish();
@@ -80,27 +80,26 @@ public:
      *                                that all threads run on independent cores
      * @param[in] N_threads Number of threads, only used by some of the methods
      */
-    void createThreads( const std::string &method = "default", int N_threads = 4 );
-
+    void createThreads(const std::string &method = "default",
+                       int N_threads = 4);
 
 private:
     runAnalysis();
 
     // Determine the analysis to perform
-    AnalysisType computeAnalysisType( int timestep );
+    AnalysisType computeAnalysisType(int timestep);
 
 public:
-    class commWrapper
-    {
+    class commWrapper {
     public:
         Utilities::MPI comm;
         int tag;
         runAnalysis *analysis;
-        commWrapper( int tag, const Utilities::MPI &comm, runAnalysis *analysis );
-        commWrapper()                         = delete;
-        commWrapper( const commWrapper &rhs ) = delete;
-        commWrapper &operator=( const commWrapper &rhs ) = delete;
-        commWrapper( commWrapper &&rhs );
+        commWrapper(int tag, const Utilities::MPI &comm, runAnalysis *analysis);
+        commWrapper() = delete;
+        commWrapper(const commWrapper &rhs) = delete;
+        commWrapper &operator=(const commWrapper &rhs) = delete;
+        commWrapper(commWrapper &&rhs);
         ~commWrapper();
     };
 
@@ -112,12 +111,13 @@ private:
     std::array<int, 3> d_N; // Number of local cells with ghosts
     int d_Np;
     int d_rank;
-    int d_restart_interval, d_analysis_interval, d_blobid_interval, d_visualization_interval;
+    int d_restart_interval, d_analysis_interval, d_blobid_interval,
+        d_visualization_interval;
     int d_subphase_analysis_interval;
     double d_beta;
     bool d_regular;
-    std::string  format; // IO format string "silo" or "hdf5"
-    
+    std::string format; // IO format string "silo" or "hdf5"
+
     ThreadPool d_tpool;
     RankInfoStruct d_rank_info;
     IntArray d_Map;

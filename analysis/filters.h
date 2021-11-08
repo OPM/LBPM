@@ -17,7 +17,6 @@
 #ifndef Filters_H_INC
 #define Filters_H_INC
 
-
 #include "common/Array.h"
 
 /*!
@@ -26,7 +25,7 @@
  * @param[in] Input     Input image
  * @param[out] Output   Output image
  */
-void Mean3D( const Array<double> &Input, Array<double> &Output );
+void Mean3D(const Array<double> &Input, Array<double> &Output);
 
 /*!
  * @brief  Filter image
@@ -34,7 +33,7 @@ void Mean3D( const Array<double> &Input, Array<double> &Output );
  * @param[in] Input     Input image
  * @param[out] Output   Output image
  */
-void Med3D( const Array<float> &Input, Array<float> &Output );
+void Med3D(const Array<float> &Input, Array<float> &Output);
 
 /*!
  * @brief  Filter image
@@ -46,8 +45,8 @@ void Med3D( const Array<float> &Input, Array<float> &Output );
  * @param[in] d
  * @param[in] h
  */
-int NLM3D( const Array<float> &Input, Array<float> &Mean, 
-    const Array<float> &Distance, Array<float> &Output, const int d, const float h);
-
+int NLM3D(const Array<float> &Input, Array<float> &Mean,
+          const Array<float> &Distance, Array<float> &Output, const int d,
+          const float h);
 
 #endif

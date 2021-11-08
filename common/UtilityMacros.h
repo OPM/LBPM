@@ -24,14 +24,12 @@
 #include <sstream>
 #include <stdexcept>
 
-
 /*! \defgroup Macros Set of utility macro functions
  *  \details  These functions are a list of C++ macros that are used
  *     for common operations, including checking for errors.
  *  \addtogroup Macros
  *  @{
  */
-
 
 /*! \def NULL_STATEMENT
  *  \brief    A null statement
@@ -40,16 +38,15 @@
  */
 #ifndef NULL_STATEMENT
 #ifdef __INSURE__
-#define NULL_STATEMENT            \
-    do {                          \
-        if ( 0 )                  \
-            int nullstatement = 0 \
-    } while ( 0 )
+#define NULL_STATEMENT                                                         \
+    do {                                                                       \
+        if (0)                                                                 \
+            int nullstatement = 0                                              \
+    } while (0)
 #else
 #define NULL_STATEMENT
 #endif
 #endif
-
 
 /*! \def NULL_USE(variable)
  *  \brief    A null use of a variable
@@ -57,15 +54,14 @@
  *  \param variable  Variable to pretend to use
  */
 #ifndef NULL_USE
-#define NULL_USE( variable )                \
-    do {                                    \
-        if ( 0 ) {                          \
-            auto temp = (char *) &variable; \
-            temp++;                         \
-        }                                   \
-    } while ( 0 )
+#define NULL_USE(variable)                                                     \
+    do {                                                                       \
+        if (0) {                                                               \
+            auto temp = (char *)&variable;                                     \
+            temp++;                                                            \
+        }                                                                      \
+    } while (0)
 #endif
-
 
 /*! \def ERROR(MSG)
  *  \brief      Throw error
@@ -74,25 +70,23 @@
  *     line number of the abort are also printed.
  *  \param MSG  Error message to print
  */
-#define ERROR(MSG)                                                \
-    do {                                                          \
-        ::Utilities::abort( MSG, __FILE__, __LINE__ );            \
-    } while ( 0 )
-
+#define ERROR(MSG)                                                             \
+    do {                                                                       \
+        ::Utilities::abort(MSG, __FILE__, __LINE__);                           \
+    } while (0)
 
 /*! \def WARNING(MSG)
  *  \brief   Print a warning
  *  \details Print a warning without exit.  Print file and line number of the warning.
  *  \param MSG  Warning message to print
  */
-#define WARNING(MSG)                                                    \
-    do {                                                                \
-        std::stringstream tboxos;                                       \
-        tboxos << MSG << std::ends;                                     \
-        printf("WARNING: %s\n   Warning called in %s on line %i\n",     \
-            tboxos.str().c_str(),__FILE__,__LINE__);                    \
-    }while(0)
-
+#define WARNING(MSG)                                                           \
+    do {                                                                       \
+        std::stringstream tboxos;                                              \
+        tboxos << MSG << std::ends;                                            \
+        printf("WARNING: %s\n   Warning called in %s on line %i\n",            \
+               tboxos.str().c_str(), __FILE__, __LINE__);                      \
+    } while (0)
 
 /*! \def ASSERT(EXP)
  *  \brief Assert error
@@ -102,15 +96,14 @@
  *     The file and line number of the abort are printed along with the stack trace (if availible).
  *  \param EXP  Expression to evaluate
  */
-#define ASSERT(EXP)                                                     \
-    do {                                                                \
-        if ( !(EXP) ) {                                                 \
-            std::stringstream tboxos;                                   \
-            tboxos << "Failed assertion: " << #EXP << std::ends;        \
-            ::Utilities::abort(tboxos.str(), __FILE__, __LINE__);       \
-        }                                                               \
-    }while(0)
-
+#define ASSERT(EXP)                                                            \
+    do {                                                                       \
+        if (!(EXP)) {                                                          \
+            std::stringstream tboxos;                                          \
+            tboxos << "Failed assertion: " << #EXP << std::ends;               \
+            ::Utilities::abort(tboxos.str(), __FILE__, __LINE__);              \
+        }                                                                      \
+    } while (0)
 
 /*! \def INSIST(EXP,MSG)
  *  \brief Insist error
@@ -121,15 +114,15 @@
  *  \param EXP  Expression to evaluate
  *  \param MSG  Debug message to print
  */
-#define INSIST(EXP,MSG) do {                                        \
-    if ( !(EXP) ) {                                                 \
-        std::stringstream tboxos;                                   \
-        tboxos << "Failed insist: " << #EXP << std::endl;           \
-        tboxos << "Message: " << MSG << std::ends;                  \
-        ::Utilities::abort(tboxos.str(), __FILE__, __LINE__);         \
-    }                                                               \
-}while(0)
-
+#define INSIST(EXP, MSG)                                                       \
+    do {                                                                       \
+        if (!(EXP)) {                                                          \
+            std::stringstream tboxos;                                          \
+            tboxos << "Failed insist: " << #EXP << std::endl;                  \
+            tboxos << "Message: " << MSG << std::ends;                         \
+            ::Utilities::abort(tboxos.str(), __FILE__, __LINE__);              \
+        }                                                                      \
+    } while (0)
 
 /**
  * Macro for use when assertions are to be included
@@ -143,11 +136,10 @@
  *  \param EXP  Expression to evaluate
  */
 #ifdef DEBUG_CHECK_ASSERTIONS
-    #define CHECK_ASSERT(EXP) ASSERT(EXP)
+#define CHECK_ASSERT(EXP) ASSERT(EXP)
 #else
-    #define CHECK_ASSERT(EXP) 
+#define CHECK_ASSERT(EXP)
 #endif
-
 
 /*! \def DISABLE_WARNINGS
  *  \brief Reenable warnings
@@ -190,9 +182,6 @@
 #endif
 // clang-format on
 
-
-
 /*! @} */
-
 
 #endif
