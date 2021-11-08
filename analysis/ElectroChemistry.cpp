@@ -192,14 +192,15 @@ void ElectroChemistryAnalyzer::WriteVis(ScaLBL_IonModel &Ion,
 
     auto vis_db = input_db->getDatabase("Visualization");
     char VisName[40];
+    auto format = vis_db->getWithDefault<string>( "format", "hdf5" );
 
     std::vector<IO::MeshDataStruct> visData;
     fillHalo<double> fillData(Dm->Comm, Dm->rank_info,
                               {Dm->Nx - 2, Dm->Ny - 2, Dm->Nz - 2}, {1, 1, 1},
                               0, 1);
 
-    IO::initialize("", "silo", "false");
-    // Create the MeshDataStruct
+    IO::initialize("",format,"false");
+    // Create the MeshDataStruct    
     visData.resize(1);
 
     visData[0].meshName = "domain";
