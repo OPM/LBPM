@@ -33,7 +33,6 @@ Implementation of color lattice boltzmann model
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
-
 #ifndef ScaLBL_ColorModel_INC
 #define ScaLBL_ColorModel_INC
 
@@ -46,7 +45,7 @@ Implementation of color lattice boltzmann model
  * Mass transport equations are described by D3Q7 scheme
  */
 
-class ScaLBL_ColorModel{
+class ScaLBL_ColorModel {
 public:
     /**
     * \brief Constructor
@@ -54,81 +53,81 @@ public:
     * @param NP        number of processors 
     * @param COMM        MPI communicator 
     */
-	ScaLBL_ColorModel(int RANK, int NP, const Utilities::MPI& COMM);
-	~ScaLBL_ColorModel();	
-	
+    ScaLBL_ColorModel(int RANK, int NP, const Utilities::MPI &COMM);
+    ~ScaLBL_ColorModel();
+
     /**
     * \brief Read simulation parameters
     * @param filename       input database file that includes "Color" section 
-    */	
-	void ReadParams(string filename);
-	
+    */
+    void ReadParams(string filename);
+
     /**
     * \brief Read simulation parameters
     * @param db0       input database that includes "Color" section 
     */
-	void ReadParams(std::shared_ptr<Database> db0);
-	
+    void ReadParams(std::shared_ptr<Database> db0);
+
     /**
     * \brief Create domain data structures
     */
-	void SetDomain();
-	
+    void SetDomain();
+
     /**
     * \brief Read image data
     */
-	void ReadInput();
-	
+    void ReadInput();
+
     /**
     * \brief Create color model data structures
     */
-	void Create();
-	
+    void Create();
+
     /**
     * \brief Initialize the simulation
     */
-	void Initialize();
-	
+    void Initialize();
+
     /**
     * \brief Run the simulation
     */
-	void Run();
-	
+    void Run();
+
     /**
     * \brief Run the simulation
     * @param returntime -  timestep at which the routine will return
     */
-	double Run(int returntime);
-	
+    double Run(int returntime);
+
     /**
     * \brief Debugging function to dump simulation state to disk
     */
-	void WriteDebug();
-	
+    void WriteDebug();
+
     /**
     * \brief Copy the phase field for use by external methods 
     * @param f   - DoubleArray to hold the phase field
     */
-	void getPhaseField(DoubleArray &f);
-	
-	bool Restart,pBC;
-	bool REVERSE_FLOW_DIRECTION;
-	int timestep,timestepMax;
-	int BoundaryCondition;
-	double tauA,tauB,rhoA,rhoB,alpha,beta;
-	double Fx,Fy,Fz,flux;
-	double din,dout,inletA,inletB,outletA,outletB;
-	
-	int Nx,Ny,Nz,N,Np;
-	int rank,nprocx,nprocy,nprocz,nprocs;
-	double Lx,Ly,Lz;
+    void getPhaseField(DoubleArray &f);
 
-	std::shared_ptr<Domain> Dm;   // this domain is for analysis
-	std::shared_ptr<Domain> Mask; // this domain is for lbm
-	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
-	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular;
+    bool Restart, pBC;
+    bool REVERSE_FLOW_DIRECTION;
+    int timestep, timestepMax;
+    int BoundaryCondition;
+    double tauA, tauB, rhoA, rhoB, alpha, beta;
+    double Fx, Fy, Fz, flux;
+    double din, dout, inletA, inletB, outletA, outletB;
+
+    int Nx, Ny, Nz, N, Np;
+    int rank, nprocx, nprocy, nprocz, nprocs;
+    double Lx, Ly, Lz;
+
+    std::shared_ptr<Domain> Dm;   // this domain is for analysis
+    std::shared_ptr<Domain> Mask; // this domain is for lbm
+    std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
+    std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular;
     std::shared_ptr<SubPhase> Averages;
-    
+
     // input database
     std::shared_ptr<Database> db;
     std::shared_ptr<Database> domain_db;
@@ -137,33 +136,32 @@ public:
     std::shared_ptr<Database> vis_db;
 
     IntArray Map;
-    signed char *id;    
-	int *NeighborList;
-	int *dvcMap;
-	double *fq, *Aq, *Bq;
-	double *Den, *Phi;
-	double *ColorGrad;
-	double *Velocity;
-	double *Pressure;
+    signed char *id;
+    int *NeighborList;
+    int *dvcMap;
+    double *fq, *Aq, *Bq;
+    double *Den, *Phi;
+    double *ColorGrad;
+    double *Velocity;
+    double *Pressure;
 
     /**
     * \brief Assign wetting affinity values 
     */
-	void AssignComponentLabels(double *phase);
-		
-private:
-	Utilities::MPI comm;
+    void AssignComponentLabels(double *phase);
 
-	int dist_mem_size;
-	int neighborSize;
-	// filenames
+private:
+    Utilities::MPI comm;
+
+    int dist_mem_size;
+    int neighborSize;
+    // filenames
     char LocalRankString[8];
     char LocalRankFilename[40];
     char LocalRestartFile[40];
-   
+
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);
 };
 
 #endif
-

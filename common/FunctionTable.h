@@ -17,12 +17,9 @@
 #ifndef included_FunctionTable
 #define included_FunctionTable
 
-
 #include "common/ArraySize.h"
 
 #include <functional>
-
-
 
 /*!
  * Class FunctionTable is a serial function table class that defines
@@ -30,15 +27,13 @@
  *   Users can impliment additional versions of the function table that match
  *   the interface to change the behavior of the array class.
  */
-class FunctionTable final
-{
+class FunctionTable final {
 public:
     /*!
      * Initialize the array with random values
      * @param[in] x         The array to operate on
      */
-    template<class TYPE, class FUN>
-    static void rand( Array<TYPE, FUN> &x );
+    template <class TYPE, class FUN> static void rand(Array<TYPE, FUN> &x);
 
     /*!
      * Perform a reduce operator y = f(x)
@@ -49,8 +44,9 @@ public:
      * ...)
      * @return                  The reduction
      */
-    template<class TYPE, class FUN, typename LAMBDA>
-    static inline TYPE reduce( LAMBDA &op, const Array<TYPE, FUN> &A, const TYPE &initialValue );
+    template <class TYPE, class FUN, typename LAMBDA>
+    static inline TYPE reduce(LAMBDA &op, const Array<TYPE, FUN> &A,
+                              const TYPE &initialValue);
 
     /*!
      * Perform a reduce operator z = f(x,y)
@@ -62,11 +58,10 @@ public:
      * ...)
      * @return                  The reduction
      */
-    template<class TYPE, class FUN, typename LAMBDA>
-    static inline TYPE reduce( LAMBDA &op,
-                               const Array<TYPE, FUN> &A,
-                               const Array<TYPE, FUN> &B,
-                               const TYPE &initialValue );
+    template <class TYPE, class FUN, typename LAMBDA>
+    static inline TYPE reduce(LAMBDA &op, const Array<TYPE, FUN> &A,
+                              const Array<TYPE, FUN> &B,
+                              const TYPE &initialValue);
 
     /*!
      * Perform a element-wise operation y = f(x)
@@ -75,8 +70,9 @@ public:
      * @param[in,out] x         The array to operate on
      * @param[out] y            The output array
      */
-    template<class TYPE, class FUN, typename LAMBDA>
-    static inline void transform( LAMBDA &fun, const Array<TYPE, FUN> &x, Array<TYPE, FUN> &y );
+    template <class TYPE, class FUN, typename LAMBDA>
+    static inline void transform(LAMBDA &fun, const Array<TYPE, FUN> &x,
+                                 Array<TYPE, FUN> &y);
 
     /*!
      * Perform a element-wise operation z = f(x,y)
@@ -86,11 +82,10 @@ public:
      * @param[in] y             The second array
      * @param[out] z            The output array
      */
-    template<class TYPE, class FUN, typename LAMBDA>
-    static inline void transform( LAMBDA &fun,
-                                  const Array<TYPE, FUN> &x,
-                                  const Array<TYPE, FUN> &y,
-                                  Array<TYPE, FUN> &z );
+    template <class TYPE, class FUN, typename LAMBDA>
+    static inline void transform(LAMBDA &fun, const Array<TYPE, FUN> &x,
+                                 const Array<TYPE, FUN> &y,
+                                 Array<TYPE, FUN> &z);
 
     /*!
      * Multiply two arrays
@@ -98,9 +93,9 @@ public:
      * @param[in] b             The second array
      * @param[out] c            The output array
      */
-    template<class TYPE, class FUN>
-    static void
-    multiply( const Array<TYPE, FUN> &a, const Array<TYPE, FUN> &b, Array<TYPE, FUN> &c );
+    template <class TYPE, class FUN>
+    static void multiply(const Array<TYPE, FUN> &a, const Array<TYPE, FUN> &b,
+                         Array<TYPE, FUN> &c);
 
     /*!
      * Perform dgemv/dgemm equavalent operation ( C = alpha*A*B + beta*C )
@@ -110,12 +105,10 @@ public:
      * @param[in] beta          The scalar value alpha
      * @param[in,out] C         The output array C
      */
-    template<class TYPE, class FUN>
-    static void gemm( const TYPE alpha,
-                      const Array<TYPE, FUN> &A,
-                      const Array<TYPE, FUN> &B,
-                      const TYPE beta,
-                      Array<TYPE, FUN> &C );
+    template <class TYPE, class FUN>
+    static void gemm(const TYPE alpha, const Array<TYPE, FUN> &A,
+                     const Array<TYPE, FUN> &B, const TYPE beta,
+                     Array<TYPE, FUN> &C);
 
     /*!
      * Perform axpy equavalent operation ( y = alpha*x + y )
@@ -123,8 +116,9 @@ public:
      * @param[in] x             The input array x
      * @param[in,out] y         The output array y
      */
-    template<class TYPE, class FUN>
-    static void axpy( const TYPE alpha, const Array<TYPE, FUN> &x, Array<TYPE, FUN> &y );
+    template <class TYPE, class FUN>
+    static void axpy(const TYPE alpha, const Array<TYPE, FUN> &x,
+                     Array<TYPE, FUN> &y);
 
     /*!
      * Check if two arrays are approximately equal
@@ -132,24 +126,15 @@ public:
      * @param[in] B             The second array
      * @param[in] tol           The tolerance
      */
-    template<class TYPE, class FUN>
-    static bool equals( const Array<TYPE, FUN> &A, const Array<TYPE, FUN> &B, TYPE tol );
+    template <class TYPE, class FUN>
+    static bool equals(const Array<TYPE, FUN> &A, const Array<TYPE, FUN> &B,
+                       TYPE tol);
 
-    template<class TYPE>
-    static inline void gemmWrapper( char TRANSA,
-                                    char TRANSB,
-                                    int M,
-                                    int N,
-                                    int K,
-                                    TYPE alpha,
-                                    const TYPE *A,
-                                    int LDA,
-                                    const TYPE *B,
-                                    int LDB,
-                                    TYPE beta,
-                                    TYPE *C,
-                                    int LDC );
-
+    template <class TYPE>
+    static inline void gemmWrapper(char TRANSA, char TRANSB, int M, int N,
+                                   int K, TYPE alpha, const TYPE *A, int LDA,
+                                   const TYPE *B, int LDB, TYPE beta, TYPE *C,
+                                   int LDC);
 
     /* Specialized Functions */
 
@@ -158,62 +143,66 @@ public:
      * @param[in] A             The input array
      * @param[out] B            The output array
      */
-    template<class TYPE, class FUN, class ALLOC>
-    static void transformReLU( const Array<TYPE, FUN, ALLOC> &A, Array<TYPE, FUN, ALLOC> &B );
+    template <class TYPE, class FUN, class ALLOC>
+    static void transformReLU(const Array<TYPE, FUN, ALLOC> &A,
+                              Array<TYPE, FUN, ALLOC> &B);
 
     /*!
      * Perform a element-wise operation B = |A|
      * @param[in] A             The array to operate on
      * @param[out] B            The output array
      */
-    template<class TYPE, class FUN, class ALLOC>
-    static void transformAbs( const Array<TYPE, FUN, ALLOC> &A, Array<TYPE, FUN, ALLOC> &B );
+    template <class TYPE, class FUN, class ALLOC>
+    static void transformAbs(const Array<TYPE, FUN, ALLOC> &A,
+                             Array<TYPE, FUN, ALLOC> &B);
 
     /*!
      * Perform a element-wise operation B = tanh(A)
      * @param[in] A             The array to operate on
      * @param[out] B            The output array
      */
-    template<class TYPE, class FUN, class ALLOC>
-    static void transformTanh( const Array<TYPE, FUN, ALLOC> &A, Array<TYPE, FUN, ALLOC> &B );
+    template <class TYPE, class FUN, class ALLOC>
+    static void transformTanh(const Array<TYPE, FUN, ALLOC> &A,
+                              Array<TYPE, FUN, ALLOC> &B);
 
     /*!
      * Perform a element-wise operation B = max(-1 , min(1 , A) )
      * @param[in] A             The array to operate on
      * @param[out] B            The output array
      */
-    template<class TYPE, class FUN, class ALLOC>
-    static void transformHardTanh( const Array<TYPE, FUN, ALLOC> &A, Array<TYPE, FUN, ALLOC> &B );
+    template <class TYPE, class FUN, class ALLOC>
+    static void transformHardTanh(const Array<TYPE, FUN, ALLOC> &A,
+                                  Array<TYPE, FUN, ALLOC> &B);
 
     /*!
      * Perform a element-wise operation B = 1 / (1 + exp(-A))
      * @param[in] A             The array to operate on
      * @param[out] B            The output array
      */
-    template<class TYPE, class FUN, class ALLOC>
-    static void transformSigmoid( const Array<TYPE, FUN, ALLOC> &A, Array<TYPE, FUN, ALLOC> &B );
+    template <class TYPE, class FUN, class ALLOC>
+    static void transformSigmoid(const Array<TYPE, FUN, ALLOC> &A,
+                                 Array<TYPE, FUN, ALLOC> &B);
 
     /*!
      * Perform a element-wise operation B = log(exp(A) + 1)
      * @param[in] A             The array to operate on
      * @param[out] B            The output array
      */
-    template<class TYPE, class FUN, class ALLOC>
-    static void transformSoftPlus( const Array<TYPE, FUN, ALLOC> &A, Array<TYPE, FUN, ALLOC> &B );
+    template <class TYPE, class FUN, class ALLOC>
+    static void transformSoftPlus(const Array<TYPE, FUN, ALLOC> &A,
+                                  Array<TYPE, FUN, ALLOC> &B);
 
     /*!
      * Sum the elements of the Array
      * @param[in] A             The array to sum
      */
-    template<class TYPE, class FUN, class ALLOC>
-    static TYPE sum( const Array<TYPE, FUN, ALLOC> &A );
+    template <class TYPE, class FUN, class ALLOC>
+    static TYPE sum(const Array<TYPE, FUN, ALLOC> &A);
 
 private:
     FunctionTable();
 
-    template<class T>
-    static inline void rand( size_t N, T *x );
+    template <class T> static inline void rand(size_t N, T *x);
 };
-
 
 #endif

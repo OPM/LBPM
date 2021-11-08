@@ -16,100 +16,92 @@
 */
 #include "common/Communication.h"
 
-
 /********************************************************
 *  Structure to store the rank info                     *
 ********************************************************/
-int RankInfoStruct::getRankForBlock( int i, int j, int k ) const
-{
-	int i2 = (i+nx)%nx;
-	int j2 = (j+ny)%ny;
-	int k2 = (k+nz)%nz;
-	return i2 + j2*nx + k2*nx*ny;
+int RankInfoStruct::getRankForBlock(int i, int j, int k) const {
+    int i2 = (i + nx) % nx;
+    int j2 = (j + ny) % ny;
+    int k2 = (k + nz) % nz;
+    return i2 + j2 * nx + k2 * nx * ny;
 }
-RankInfoStruct::RankInfoStruct()
-{
+RankInfoStruct::RankInfoStruct() {
     nx = 0;
     ny = 0;
     nz = 0;
     ix = -1;
     jy = -1;
     kz = -1;
-    for (int i=-1; i<=1; i++) {
-        for (int j=-1; j<=1; j++) {
-            for (int k=-1; k<=1; k++) {
-                rank[i+1][j+1][k+1] = -1;
+    for (int i = -1; i <= 1; i++) {
+        for (int j = -1; j <= 1; j++) {
+            for (int k = -1; k <= 1; k++) {
+                rank[i + 1][j + 1][k + 1] = -1;
             }
         }
     }
 }
-RankInfoStruct::RankInfoStruct( int rank0, int nprocx, int nprocy, int nprocz )
-{
-    memset(this,0,sizeof(RankInfoStruct));
+RankInfoStruct::RankInfoStruct(int rank0, int nprocx, int nprocy, int nprocz) {
+    memset(this, 0, sizeof(RankInfoStruct));
     nx = nprocx;
     ny = nprocy;
     nz = nprocz;
-    if ( rank0 >= nprocx * nprocy * nprocz ) {
-	    ix = -1;
-	    jy = -1;
-	    kz = -1;
-        for (int i=-1; i<=1; i++) {
-            for (int j=-1; j<=1; j++) {
-                for (int k=-1; k<=1; k++) {
-                    rank[i+1][j+1][k+1] = -1;
+    if (rank0 >= nprocx * nprocy * nprocz) {
+        ix = -1;
+        jy = -1;
+        kz = -1;
+        for (int i = -1; i <= 1; i++) {
+            for (int j = -1; j <= 1; j++) {
+                for (int k = -1; k <= 1; k++) {
+                    rank[i + 1][j + 1][k + 1] = -1;
                 }
             }
         }
     } else {
-	    ix = rank0%nprocx;
-	    jy = (rank0/nprocx)%nprocy;
-	    kz = rank0/(nprocx*nprocy);
-        for (int i=-1; i<=1; i++) {
-            for (int j=-1; j<=1; j++) {
-                for (int k=-1; k<=1; k++) {
-                    rank[i+1][j+1][k+1] = getRankForBlock(ix+i,jy+j,kz+k);
+        ix = rank0 % nprocx;
+        jy = (rank0 / nprocx) % nprocy;
+        kz = rank0 / (nprocx * nprocy);
+        for (int i = -1; i <= 1; i++) {
+            for (int j = -1; j <= 1; j++) {
+                for (int k = -1; k <= 1; k++) {
+                    rank[i + 1][j + 1][k + 1] =
+                        getRankForBlock(ix + i, jy + j, kz + k);
                 }
             }
         }
-        ASSERT(rank[1][1][1]==rank0);
+        ASSERT(rank[1][1][1] == rank0);
     }
 }
-
 
 /********************************************************
 *  Deprecated functions                                 *
 ********************************************************/
-void InitializeRanks( const int rank, const int nprocx, const int nprocy, const int nprocz,
-	int& iproc, int& jproc, int& kproc, 
-	int& rank_x, int& rank_y, int& rank_z, 
-	int& rank_X, int& rank_Y, int& rank_Z,
-	int& rank_xy, int& rank_XY, int& rank_xY, int& rank_Xy,
-	int& rank_xz, int& rank_XZ, int& rank_xZ, int& rank_Xz,
-	int& rank_yz, int& rank_YZ, int& rank_yZ, int& rank_Yz )
-{
-    const RankInfoStruct data(rank,nprocx,nprocy,nprocz);
-	iproc = data.ix;
+void InitializeRanks(const int rank, const int nprocx, const int nprocy,
+                     const int nprocz, int &iproc, int &jproc, int &kproc,
+                     int &rank_x, int &rank_y, int &rank_z, int &rank_X,
+                     int &rank_Y, int &rank_Z, int &rank_xy, int &rank_XY,
+                     int &rank_xY, int &rank_Xy, int &rank_xz, int &rank_XZ,
+                     int &rank_xZ, int &rank_Xz, int &rank_yz, int &rank_YZ,
+                     int &rank_yZ, int &rank_Yz) {
+    const RankInfoStruct data(rank, nprocx, nprocy, nprocz);
+    iproc = data.ix;
     jproc = data.jy;
     kproc = data.kz;
-	rank_X = data.rank[2][1][1];
-	rank_x = data.rank[0][1][1];
-	rank_Y = data.rank[1][2][1];
-	rank_y = data.rank[1][0][1];
-	rank_Z = data.rank[1][1][2];
-	rank_z = data.rank[1][1][0];
-	rank_XY = data.rank[2][2][1];
-	rank_xy = data.rank[0][0][1];
-	rank_Xy = data.rank[2][0][1];
-	rank_xY = data.rank[0][2][1];
-	rank_XZ = data.rank[2][1][2];
-	rank_xz = data.rank[0][1][0];
-	rank_Xz = data.rank[2][1][0];
-	rank_xZ = data.rank[0][1][2];
-	rank_YZ = data.rank[1][2][2];
-	rank_yz = data.rank[1][0][0];
-	rank_Yz = data.rank[1][2][0];
-	rank_yZ = data.rank[1][0][2];
+    rank_X = data.rank[2][1][1];
+    rank_x = data.rank[0][1][1];
+    rank_Y = data.rank[1][2][1];
+    rank_y = data.rank[1][0][1];
+    rank_Z = data.rank[1][1][2];
+    rank_z = data.rank[1][1][0];
+    rank_XY = data.rank[2][2][1];
+    rank_xy = data.rank[0][0][1];
+    rank_Xy = data.rank[2][0][1];
+    rank_xY = data.rank[0][2][1];
+    rank_XZ = data.rank[2][1][2];
+    rank_xz = data.rank[0][1][0];
+    rank_Xz = data.rank[2][1][0];
+    rank_xZ = data.rank[0][1][2];
+    rank_YZ = data.rank[1][2][2];
+    rank_yz = data.rank[1][0][0];
+    rank_Yz = data.rank[1][2][0];
+    rank_yZ = data.rank[1][0][2];
 }
-
-
-
