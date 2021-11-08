@@ -25,7 +25,6 @@
 #include "mpi.h"
 #endif
 
-
 /*!
  * @brief Class UnitTest is simple utility for running unit tests.
  * It provides basic routines for tracing success or failure of tests,
@@ -44,8 +43,7 @@
  * \endcode
 
  */
-class UnitTest
-{
+class UnitTest {
 public:
     //! Constructor
     UnitTest();
@@ -54,13 +52,13 @@ public:
     virtual ~UnitTest();
 
     //! Indicate a passed test (thread-safe)
-    virtual void passes( const std::string &in );
+    virtual void passes(const std::string &in);
 
     //! Indicate a failed test (thread-safe)
-    virtual void failure( const std::string &in );
+    virtual void failure(const std::string &in);
 
     //! Indicate an expected failed test (thread-safe)
-    virtual void expected_failure( const std::string &in );
+    virtual void expected_failure(const std::string &in);
 
     //! Return the number of passed tests locally
     virtual size_t NumPassLocal() const { return pass_messages.size(); }
@@ -69,7 +67,9 @@ public:
     virtual size_t NumFailLocal() const { return fail_messages.size(); }
 
     //! Return the number of expected failed tests locally
-    virtual size_t NumExpectedFailLocal() const { return expected_fail_messages.size(); }
+    virtual size_t NumExpectedFailLocal() const {
+        return expected_fail_messages.size();
+    }
 
     //! Return the number of passed tests locally
     virtual size_t NumPassGlobal() const;
@@ -98,7 +98,7 @@ public:
      *                     failed tests (if <=50) or the number passed otherwise.
      *                  2: Report all passed, failed, and expected failed tests.
      */
-    virtual void report( const int level = 1 ) const;
+    virtual void report(const int level = 1) const;
 
     //! Clear the messages
     void reset();
@@ -114,23 +114,24 @@ protected:
 
 private:
     // Make the copy constructor private
-    UnitTest( const UnitTest & ) {}
+    UnitTest(const UnitTest &) {}
 
     // Function to pack the messages into a single data stream and send to the given processor
     // Note: This function does not return until the message stream has been sent
-    void pack_message_stream(
-        const std::vector<std::string> &messages, const int rank, const int tag ) const;
+    void pack_message_stream(const std::vector<std::string> &messages,
+                             const int rank, const int tag) const;
 
     // Function to unpack the messages from a single data stream
     // Note: This function does not return until the message stream has been received
-    std::vector<std::string> unpack_message_stream( const int rank, const int tag ) const;
+    std::vector<std::string> unpack_message_stream(const int rank,
+                                                   const int tag) const;
 
     // Helper functions
     inline void barrier() const;
-    inline std::vector<int> allGather( int value ) const;
-    inline std::vector<std::vector<std::string>> gatherMessages(
-        const std::vector<std::string> &local_messages, int tag ) const;
+    inline std::vector<int> allGather(int value) const;
+    inline std::vector<std::vector<std::string>>
+    gatherMessages(const std::vector<std::string> &local_messages,
+                   int tag) const;
 };
-
 
 #endif

@@ -17,19 +17,22 @@
 #include "analysis/Minkowski.h"
 #include "ProfilerApp.h"
 
-class ScaLBL_Multiphys_Controller{
+class ScaLBL_Multiphys_Controller {
 public:
-	ScaLBL_Multiphys_Controller(int RANK, int NP, const Utilities::MPI& COMM);
-	~ScaLBL_Multiphys_Controller();	
-	
-	void ReadParams(string filename);
-	void ReadParams(std::shared_ptr<Database> db0);
-    int getStokesNumIter_PNP_coupling(double StokesTimeConv,const vector<double> &IonTimeConv);
-    vector<int> getIonNumIter_PNP_coupling(double StokesTimeConv,const vector<double> &IonTimeConv);
+    ScaLBL_Multiphys_Controller(int RANK, int NP, const Utilities::MPI &COMM);
+    ~ScaLBL_Multiphys_Controller();
+
+    void ReadParams(string filename);
+    void ReadParams(std::shared_ptr<Database> db0);
+    int getStokesNumIter_PNP_coupling(double StokesTimeConv,
+                                      const vector<double> &IonTimeConv);
+    vector<int> getIonNumIter_PNP_coupling(double StokesTimeConv,
+                                           const vector<double> &IonTimeConv);
     //void getIonNumIter_PNP_coupling(double StokesTimeConv,vector<double> &IonTimeConv,vector<int> &IonTimeMax);
-    void getTimeConvMax_PNP_coupling(double StokesTimeConv,const vector<double> &IonTimeConv);
-	
-	bool Restart;
+    void getTimeConvMax_PNP_coupling(double StokesTimeConv,
+                                     const vector<double> &IonTimeConv);
+
+    bool Restart;
     int timestepMax;
     int num_iter_Stokes;
     vector<int> num_iter_Ion;
@@ -39,20 +42,20 @@ public:
     double time_conv_max;
     //double SchmidtNum;//Schmidt number = kinematic_viscosity/mass_diffusivity
 
-	int rank,nprocs;
+    int rank, nprocs;
 
     // input database
     std::shared_ptr<Database> db;
     std::shared_ptr<Database> study_db;
 
 private:
-	Utilities::MPI comm;
-	
-	// filenames
+    Utilities::MPI comm;
+
+    // filenames
     char LocalRankString[8];
     char LocalRankFilename[40];
     char LocalRestartFile[40];
-   
+
     //int rank,nprocs;
-    void LoadParams(std::shared_ptr<Database> db0);    	
+    void LoadParams(std::shared_ptr<Database> db0);
 };

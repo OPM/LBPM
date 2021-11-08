@@ -20,18 +20,19 @@
 #include "common/Domain.h"
 #include "common/Array.hpp"
 
-
 struct Vec {
     double x;
     double y;
     double z;
-    inline Vec(): x(0), y(0), z(0) {}
-    inline Vec( double x_, double y_, double z_ ): x(x_), y(y_), z(z_) {}
-    inline double norm() const { return sqrt(x*x+y*y+z*z); }
-    inline double norm2() const { return x*x+y*y+z*z; }
+    inline Vec() : x(0), y(0), z(0) {}
+    inline Vec(double x_, double y_, double z_) : x(x_), y(y_), z(z_) {}
+    inline double norm() const { return sqrt(x * x + y * y + z * z); }
+    inline double norm2() const { return x * x + y * y + z * z; }
 };
-inline bool operator<(const Vec& l, const Vec& r){ return l.x*l.x+l.y*l.y+l.z*l.z < r.x*r.x+r.y*r.y+r.z*r.z; }
-
+inline bool operator<(const Vec &l, const Vec &r) {
+    return l.x * l.x + l.y * l.y + l.z * l.z <
+           r.x * r.x + r.y * r.y + r.z * r.z;
+}
 
 /*!
  * @brief  Calculate the distance using a simple method
@@ -42,9 +43,10 @@ inline bool operator<(const Vec& l, const Vec& r){ return l.x*l.x+l.y*l.y+l.z*l.
  * @param[in] periodic      Directions that are periodic
  * @param[in] dx            Cell size
  */
-template<class TYPE>
-void CalcDist( Array<TYPE> &Distance, const Array<char> &ID, const Domain &Dm,
-    const std::array<bool,3>& periodic = {true,true,true}, const std::array<double,3>& dx = {1,1,1} );
+template <class TYPE>
+void CalcDist(Array<TYPE> &Distance, const Array<char> &ID, const Domain &Dm,
+              const std::array<bool, 3> &periodic = {true, true, true},
+              const std::array<double, 3> &dx = {1, 1, 1});
 
 /*!
  * @brief  Calculate the distance using a simple method
@@ -55,7 +57,8 @@ void CalcDist( Array<TYPE> &Distance, const Array<char> &ID, const Domain &Dm,
  * @param[in] periodic      Directions that are periodic
  * @param[in] dx            Cell size
  */
-void CalcVecDist( Array<Vec> &Distance, const Array<int> &ID, const Domain &Dm,
-    const std::array<bool,3>& periodic = {true,true,true}, const std::array<double,3>& dx = {1,1,1} );
+void CalcVecDist(Array<Vec> &Distance, const Array<int> &ID, const Domain &Dm,
+                 const std::array<bool, 3> &periodic = {true, true, true},
+                 const std::array<double, 3> &dx = {1, 1, 1});
 
 #endif
