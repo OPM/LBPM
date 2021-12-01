@@ -192,6 +192,143 @@ void ScaLBL_ColorModel::ReadParams(string filename) {
         }
         domain_db->putScalar<int>("BC", BoundaryCondition);
     }
+    File.close();
+}
+ */
+void ScaLBL_ColorModel::ReadParams(string filename){
+	// read the input database 
+	db = std::make_shared<Database>( filename );
+	domain_db = db->getDatabase( "Domain" );
+	color_db =  db->getDatabase( "Color" );
+	analysis_db = db->getDatabase( "Analysis" );
+	vis_db = db->getDatabase( "Visualization" );
+
+	// set defaults
+	timestepMax = 100000;
+	tauA = tauB = 1.0;
+	rhoA = rhoB = 1.0;
+	Fx = Fy = Fz = 0.0;
+	alpha=1e-3;
+	beta=0.95;
+	Restart=false;
+	din=dout=1.0;
+	flux=0.0;
+	
+	// Color Model parameters
+	if (color_db->keyExists( "timestepMax" )){
+		timestepMax = color_db->getScalar<int>( "timestepMax" );
+	}
+	if (color_db->keyExists( "tauA" )){
+		tauA = color_db->getScalar<double>( "tauA" );
+	}
+	if (color_db->keyExists( "tauB" )){
+		tauB = color_db->getScalar<double>( "tauB" );
+	}
+	if (color_db->keyExists( "rhoA" )){
+		rhoA = color_db->getScalar<double>( "rhoA" );
+	}
+	if (color_db->keyExists( "rhoB" )){
+		rhoB = color_db->getScalar<double>( "rhoB" );
+	}
+	if (color_db->keyExists( "F" )){
+		Fx = color_db->getVector<double>( "F" )[0];
+		Fy = color_db->getVector<double>( "F" )[1];
+		Fz = color_db->getVector<double>( "F" )[2];
+	}
+	if (color_db->keyExists( "alpha" )){
+		alpha = color_db->getScalar<double>( "alpha" );
+	}
+	if (color_db->keyExists( "beta" )){
+		beta = color_db->getScalar<double>( "beta" );
+	}
+	if (color_db->keyExists( "Restart" )){
+		Restart = color_db->getScalar<bool>( "Restart" );
+	}
+	if (color_db->keyExists( "din" )){
+		din = color_db->getScalar<double>( "din" );
+	}
+	if (color_db->keyExists( "dout" )){
+		dout = color_db->getScalar<double>( "dout" );
+	}
+	if (color_db->keyExists( "flux" )){
+		flux = color_db->getScalar<double>( "flux" );
+	}
+	inletA=1.f;
+	inletB=0.f;
+	outletA=0.f;
+	outletB=1.f;
+	//if (BoundaryCondition==4) flux *= rhoA; // mass flux must adjust for density (see formulation for details)
+
+	BoundaryCondition = 0;
+	if (color_db->keyExists( "BC" )){
+		BoundaryCondition = color_db->getScalar<int>( "BC" );
+	}
+	else if (domain_db->keyExists( "BC" )){
+		BoundaryCondition = domain_db->getScalar<int>( "BC" );
+	}
+	if (domain_db->keyExists( "InletLayersPhase" )){
+		int inlet_layers_phase = domain_db->getScalar<int>( "InletLayersPhase" );
+		if (inlet_layers_phase == 2 ) {
+		  inletA = 0.0;
+		  inletB = 1.0;
+		}
+	}
+	if (domain_db->keyExists( "OutletLayersPhase" )){
+		int outlet_layers_phase = domain_db->getScalar<int>( "OutletLayersPhase" );
+		if (outlet_layers_phase == 1 ) {
+		  inletA = 1.0;
+		  inletB = 0.0;
+		}
+	}
+	
+	// Override user-specified boundary condition for specific protocols
+	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
+	if (protocol == "seed water"){
+		if (BoundaryCondition != 0 && BoundaryCondition != 5){
+			BoundaryCondition = 0;
+			if (rank==0) printf("WARNING: protocol (seed water) supports only full periodic boundary condition \n");
+		}
+		domain_db->putScalar<int>( "BC", BoundaryCondition );
+	}
+	else if (protocol == "open connected oil"){
+		if (BoundaryCondition != 0 && BoundaryCondition != 5){
+			BoundaryCondition = 0;
+			if (rank==0) printf("WARNING: protocol (open connected oil) supports only full periodic boundary condition \n");
+		}
+		domain_db->putScalar<int>( "BC", BoundaryCondition );
+	}
+	else if (protocol == "shell aggregation"){
+		if (BoundaryCondition != 0 && BoundaryCondition != 5){
+			BoundaryCondition = 0;
+			if (rank==0) printf("WARNING: protocol (shell aggregation) supports only full periodic boundary condition \n");
+		}
+		domain_db->putScalar<int>( "BC", BoundaryCondition );
+	}  
+	else if (protocol == "fractional flow"){
+		if (rank == 0) printf("Using fractional flow protocol \n");
+		if (BoundaryCondition != 0 && BoundaryCondition != 5){
+			BoundaryCondition = 0;
+			if (rank==0) printf("WARNING: protocol (fractional flow) supports only full periodic boundary condition \n");
+		}
+		domain_db->putScalar<int>( "BC", BoundaryCondition );
+	}  	
+	else if (protocol == "centrifuge"){
+		if (rank == 0) printf("Using centrifuge protocol \n");
+		if (BoundaryCondition != 3 ){
+			BoundaryCondition = 3;
+			if (rank==0) printf("WARNING: protocol (centrifuge) supports only constant pressure boundary condition \n");
+		}
+		domain_db->putScalar<int>( "BC", BoundaryCondition );
+	} 
+	else if (protocol == "core flooding"){
+		if (rank == 0) printf("Using core flooding protocol \n");
+		if (BoundaryCondition != 4){
+			BoundaryCondition = 4;
+			if (rank==0) printf("WARNING: protocol (core flooding) supports only volumetric flux boundary condition \n");
+		}
+		domain_db->putScalar<int>( "BC", BoundaryCondition );
+	} 
+>>>>>>> e6fa7d40656ceb490140496f39955a2ee628e4ca
 }
 
 
@@ -581,6 +718,365 @@ void ScaLBL_ColorModel::Initialize() {
 
         comm.barrier();
     }
+double ScaLBL_ColorModel::Run(int returntime){
+	int nprocs=nprocx*nprocy*nprocz;
+	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
+	//************ MAIN ITERATION LOOP ***************************************/
+	comm.barrier();
+	PROFILE_START("Loop");
+	//std::shared_ptr<Database> analysis_db;
+	bool Regular = false;
+	bool RESCALE_FORCE = false;
+	bool SET_CAPILLARY_NUMBER = false;
+	bool TRIGGER_FORCE_RESCALE = false;
+	double tolerance = 0.01;
+	auto current_db = db->cloneDatabase();
+    auto flow_db = db->getDatabase( "FlowAdaptor" );
+	int MIN_STEADY_TIMESTEPS = flow_db->getWithDefault<int>( "min_steady_timesteps", 1000000 );
+	int MAX_STEADY_TIMESTEPS = flow_db->getWithDefault<int>( "max_steady_timesteps", 1000000 );
+	int RESCALE_FORCE_AFTER_TIMESTEP = MAX_STEADY_TIMESTEPS*2;
+	int INITIAL_TIMESTEP = timestep;
+
+	double capillary_number = 1.0e-5;
+	double Ca_previous = 0.0;
+	double minCa = 8.0e-6;
+	double maxCa = 1.0;
+	if (color_db->keyExists( "capillary_number" )){
+		capillary_number = color_db->getScalar<double>( "capillary_number" );
+		SET_CAPILLARY_NUMBER=true;
+		maxCa = 2.0*capillary_number;
+		minCa = 0.8*capillary_number;
+	}
+	if (color_db->keyExists( "rescale_force_after_timestep" )){
+		RESCALE_FORCE_AFTER_TIMESTEP = color_db->getScalar<int>( "rescale_force_after_timestep" );
+		RESCALE_FORCE = true;
+	}
+	if (analysis_db->keyExists( "tolerance" )){
+		tolerance = analysis_db->getScalar<double>( "tolerance" );
+	}
+	
+	auto WettingConvention = color_db->getWithDefault<std::string>( "WettingConvention", "none" );
+
+	
+	runAnalysis analysis( current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
+	auto t1 = std::chrono::system_clock::now();
+	int CURRENT_TIMESTEP = 0;
+	int EXIT_TIMESTEP = min(timestepMax,returntime);
+	while (timestep < EXIT_TIMESTEP ) {
+		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
+		PROFILE_START("Update");
+		// *************ODD TIMESTEP*************
+		timestep++;
+		// Compute the Phase indicator field
+		// Read for Aq, Bq happens in this routine (requires communication)
+		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
+		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+		ScaLBL_Comm->Barrier();
+		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
+
+		// Perform the collision operation
+		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
+		if (BoundaryCondition > 0 && BoundaryCondition < 5){
+			ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
+			ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
+		}
+		// Halo exchange for phase field
+		ScaLBL_Comm_Regular->SendHalo(Phi);
+
+		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
+				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm_Regular->RecvHalo(Phi);
+		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+		ScaLBL_Comm->Barrier();
+		// Set BCs
+		if (BoundaryCondition == 3){
+			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+		}
+		if (BoundaryCondition == 4){
+			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+		}
+		else if (BoundaryCondition == 5){
+			ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
+			ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
+		}
+		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
+				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->Barrier(); 
+
+		// *************EVEN TIMESTEP*************
+		timestep++;
+		// Compute the Phase indicator field
+		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
+		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+		ScaLBL_Comm->Barrier();
+		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
+
+		// Perform the collision operation
+		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
+		// Halo exchange for phase field
+		if (BoundaryCondition > 0 && BoundaryCondition < 5){
+			ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
+			ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
+		}
+		ScaLBL_Comm_Regular->SendHalo(Phi);
+		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
+				alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm_Regular->RecvHalo(Phi);
+		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+		ScaLBL_Comm->Barrier();
+		// Set boundary conditions
+		if (BoundaryCondition == 3){
+			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+		}
+		else if (BoundaryCondition == 4){
+			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+		}
+		else if (BoundaryCondition == 5){
+			ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
+			ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
+		}
+		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
+				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->Barrier(); 
+		//************************************************************************
+		analysis.basic(timestep, current_db, *Averages, Phi, Pressure, Velocity, fq, Den );		// allow initial ramp-up to get closer to steady state
+
+		CURRENT_TIMESTEP += 2;
+		if (CURRENT_TIMESTEP > MIN_STEADY_TIMESTEPS && BoundaryCondition == 0){
+			analysis.finish();
+
+			double volB = Averages->gwb.V; 
+			double volA = Averages->gnb.V; 
+			volA /= Dm->Volume;
+			volB /= Dm->Volume;;
+			//initial_volume = volA*Dm->Volume;
+			double vA_x = Averages->gnb.Px/Averages->gnb.M; 
+			double vA_y = Averages->gnb.Py/Averages->gnb.M; 
+			double vA_z = Averages->gnb.Pz/Averages->gnb.M; 
+			double vB_x = Averages->gwb.Px/Averages->gwb.M; 
+			double vB_y = Averages->gwb.Py/Averages->gwb.M; 
+			double vB_z = Averages->gwb.Pz/Averages->gwb.M;
+			double muA = rhoA*(tauA-0.5)/3.f; 
+			double muB = rhoB*(tauB-0.5)/3.f;				
+			double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
+			double dir_x = Fx/force_mag;
+			double dir_y = Fy/force_mag;
+			double dir_z = Fz/force_mag;
+			if (force_mag == 0.0){
+				// default to z direction
+				dir_x = 0.0;
+				dir_y = 0.0;
+				dir_z = 1.0;
+				force_mag = 1.0;
+			}
+			double current_saturation = volB/(volA+volB);
+			double flow_rate_A = volA*(vA_x*dir_x + vA_y*dir_y + vA_z*dir_z);
+			double flow_rate_B = volB*(vB_x*dir_x + vB_y*dir_y + vB_z*dir_z);
+			double Ca = fabs(muA*flow_rate_A + muB*flow_rate_B)/(5.796*alpha);
+
+			bool isSteady = false;
+			if ( (fabs((Ca - Ca_previous)/Ca) < tolerance &&  CURRENT_TIMESTEP > MIN_STEADY_TIMESTEPS))
+				isSteady = true;
+			if (CURRENT_TIMESTEP >= MAX_STEADY_TIMESTEPS)
+				isSteady = true;
+						
+			if (isSteady && (Ca > maxCa || Ca < minCa) && SET_CAPILLARY_NUMBER ){
+				/* re-run the point if the actual Ca is too far from the target Ca */
+				isSteady = false;
+				RESCALE_FORCE = true;
+				t1 = std::chrono::system_clock::now();
+				CURRENT_TIMESTEP = 0;
+				timestep = INITIAL_TIMESTEP;
+				TRIGGER_FORCE_RESCALE = true;
+				if (rank == 0) printf("    Capillary number missed target value = %f (measured value was Ca = %f) \n ",capillary_number, Ca);
+			}
+	
+			if (RESCALE_FORCE == true && SET_CAPILLARY_NUMBER == true && CURRENT_TIMESTEP > RESCALE_FORCE_AFTER_TIMESTEP){
+				TRIGGER_FORCE_RESCALE = true;
+			}
+			
+			if (TRIGGER_FORCE_RESCALE){
+				RESCALE_FORCE = false;
+				TRIGGER_FORCE_RESCALE = false;
+				double RESCALE_FORCE_FACTOR = capillary_number / Ca;
+				if (RESCALE_FORCE_FACTOR > 2.0) RESCALE_FORCE_FACTOR = 2.0;
+				if (RESCALE_FORCE_FACTOR < 0.5) RESCALE_FORCE_FACTOR = 0.5;
+				Fx *= RESCALE_FORCE_FACTOR;
+				Fy *= RESCALE_FORCE_FACTOR;
+				Fz *= RESCALE_FORCE_FACTOR;
+				force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
+				if (force_mag > 1e-3){
+					Fx *= 1e-3/force_mag;   // impose ceiling for stability
+					Fy *= 1e-3/force_mag;   
+					Fz *= 1e-3/force_mag;   
+				}
+				if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
+				Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
+				color_db->putVector<double>("F",{Fx,Fy,Fz});
+			}
+			if ( isSteady ){
+				Averages->Full();
+				Averages->Write(timestep);
+				analysis.WriteVisData(timestep, current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
+				analysis.finish();
+
+				if (rank==0){
+					printf("** WRITE STEADY POINT *** ");
+					printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
+					double h = Dm->voxel_length;		
+					// pressures
+					double pA = Averages->gnb.p;
+					double pB = Averages->gwb.p;
+					double pAc = Averages->gnc.p;
+					double pBc = Averages->gwc.p;
+					double pAB = (pA-pB)/(h*6.0*alpha);
+					double pAB_connected = (pAc-pBc)/(h*6.0*alpha);
+					// connected contribution
+					double Vol_nc = Averages->gnc.V/Dm->Volume;
+					double Vol_wc = Averages->gwc.V/Dm->Volume;
+					double Vol_nd = Averages->gnd.V/Dm->Volume;
+					double Vol_wd = Averages->gwd.V/Dm->Volume;
+					double Mass_n = Averages->gnc.M + Averages->gnd.M;
+					double Mass_w = Averages->gwc.M + Averages->gwd.M;
+					double vAc_x = Averages->gnc.Px/Mass_n; 
+					double vAc_y = Averages->gnc.Py/Mass_n; 
+					double vAc_z = Averages->gnc.Pz/Mass_n; 
+					double vBc_x = Averages->gwc.Px/Mass_w; 
+					double vBc_y = Averages->gwc.Py/Mass_w; 
+					double vBc_z = Averages->gwc.Pz/Mass_w;
+					// disconnected contribution
+					double vAd_x = Averages->gnd.Px/Mass_n; 
+					double vAd_y = Averages->gnd.Py/Mass_n; 
+					double vAd_z = Averages->gnd.Pz/Mass_n; 
+					double vBd_x = Averages->gwd.Px/Mass_w; 
+					double vBd_y = Averages->gwd.Py/Mass_w; 
+					double vBd_z = Averages->gwd.Pz/Mass_w;
+					// film contribution
+					double Mfn = Averages->gifs.Mn; 
+					double Mfw = Averages->gifs.Mw; 
+					double vfn_x = Averages->gifs.Pnx; 
+					double vfn_y = Averages->gifs.Pny; 
+					double vfn_z = Averages->gifs.Pnz; 
+					double vfw_x = Averages->gifs.Pwx; 
+					double vfw_y = Averages->gifs.Pwy; 
+					double vfw_z = Averages->gifs.Pwz;
+					
+					double flow_rate_A_connected = Vol_nc*(vAc_x*dir_x + vAc_y*dir_y + vAc_z*dir_z);
+					double flow_rate_B_connected = Vol_wc*(vBc_x*dir_x + vBc_y*dir_y + vBc_z*dir_z);
+					double flow_rate_A_disconnected = (Vol_nd)*(vAd_x*dir_x + vAd_y*dir_y + vAd_z*dir_z);
+					double flow_rate_B_disconnected = (Vol_wd)*(vBd_x*dir_x + vBd_y*dir_y + vBd_z*dir_z);
+
+					double kAeff_connected = h*h*muA*flow_rate_A_connected/(force_mag);
+					double kBeff_connected = h*h*muB*flow_rate_B_connected/(force_mag);
+
+					double kAeff_disconnected = h*h*muA*flow_rate_A_disconnected/(force_mag);
+					double kBeff_disconnected = h*h*muB*flow_rate_B_disconnected/(force_mag);
+
+					double kAeff = h*h*muA*(flow_rate_A)/(force_mag);
+					double kBeff = h*h*muB*(flow_rate_B)/(force_mag);
+
+					/* flow rate = [volume of fluid] x [momentum of fluid] / [mass of fluid] */
+					/* fluid A eats the films */
+					double flow_rate_A_filmA = (flow_rate_A*Averages->gnb.M + volA*(vfn_x*dir_x + vfn_y*dir_y + vfn_z*dir_z))/(Averages->gnb.M + Mfn);
+					double flow_rate_B_filmA = (flow_rate_B*Averages->gwb.M - volB*(vfn_x*dir_x + vfn_y*dir_y + vfn_z*dir_z))/(Averages->gwb.M - (rhoB/rhoA)*Mfn);
+					/* fluid B eats the films */
+					double flow_rate_A_filmB = (flow_rate_A*Averages->gnb.M - volA*(vfw_x*dir_x + vfw_y*dir_y + vfw_z*dir_z))/(Averages->gnb.M - (rhoA/rhoB)*Mfw);
+					double flow_rate_B_filmB = (flow_rate_B*Averages->gwb.M + volB*(vfw_x*dir_x + vfw_y*dir_y + vfw_z*dir_z))/(Averages->gwb.M + Mfw);
+					/* effective permeability uncertainty limits */
+					double kAeff_filmA = h*h*muA*(flow_rate_A_filmA)/(force_mag);
+					double kBeff_filmA = h*h*muB*(flow_rate_B_filmA)/(force_mag);
+					double kAeff_filmB = h*h*muA*(flow_rate_A_filmB)/(force_mag);
+					double kBeff_filmB = h*h*muB*(flow_rate_B_filmB)/(force_mag);
+					
+					double viscous_pressure_drop = (rhoA*volA + rhoB*volB)*force_mag;
+					double Mobility = muA/muB;
+
+					bool WriteHeader=false;
+					FILE * kr_log_file = fopen("relperm.csv","r");
+					if (kr_log_file != NULL)
+						fclose(kr_log_file);
+					else
+						WriteHeader=true;
+					kr_log_file = fopen("relperm.csv","a");
+					if (WriteHeader){
+						fprintf(kr_log_file,"timesteps sat.water eff.perm.oil eff.perm.water eff.perm.oil.connected eff.perm.water.connected eff.perm.oil.disconnected eff.perm.water.disconnected ");
+						fprintf(kr_log_file,"eff.perm.oil.upper.bound eff.perm.water.lower.bound eff.perm.oil.lower.bound eff.perm.water.upper.bound ");
+						fprintf(kr_log_file,"cap.pressure cap.pressure.connected pressure.drop Ca M\n");
+					}
+					fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g ",CURRENT_TIMESTEP,current_saturation,kAeff,kBeff,kAeff_connected,kBeff_connected,kAeff_disconnected,kBeff_disconnected);
+					fprintf(kr_log_file,"%.5g %.5g %.5g %.5g ",kAeff_filmA, kBeff_filmA, kAeff_filmB,kBeff_filmB);
+					fprintf(kr_log_file,"%.5g %.5g %.5g %.5g %.5g\n",pAB,pAB_connected,viscous_pressure_drop,Ca,Mobility);
+					fclose(kr_log_file);
+					
+					/* SCAL file */				
+					if (WettingConvention == "SCAL"){
+						WriteHeader=false;
+						FILE * scal_log_file = fopen("SCAL.csv","r");
+						if (scal_log_file != NULL)
+							fclose(scal_log_file);
+						else
+							WriteHeader=true;
+						scal_log_file = fopen("SCAL.csv","a");
+						if (WriteHeader){
+							fprintf(scal_log_file,"timesteps sat.water eff.perm.oil eff.perm.water eff.perm.oil.connected eff.perm.water.connected eff.perm.oil.disconnected eff.perm.water.disconnected ");
+							fprintf(scal_log_file,"eff.perm.oil.upper.bound eff.perm.water.lower.bound eff.perm.oil.lower.bound eff.perm.water.upper.bound ");
+							fprintf(scal_log_file,"cap.pressure cap.pressure.connected pressure.drop Ca M\n");
+						}
+						fprintf(scal_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g ",CURRENT_TIMESTEP,current_saturation,kAeff,kBeff,kAeff_connected,kBeff_connected,kAeff_disconnected,kBeff_disconnected);
+						fprintf(scal_log_file,"%.5g %.5g %.5g %.5g ",kAeff_filmA, kBeff_filmA, kAeff_filmB,kBeff_filmB);
+						fprintf(scal_log_file,"%.5g %.5g %.5g %.5g %.5g\n",pAB,pAB_connected,viscous_pressure_drop,Ca,Mobility);
+						fclose(scal_log_file);
+						/****************/
+					}
+					
+					printf("  Measured capillary number %f \n ",Ca);
+				}
+				if (SET_CAPILLARY_NUMBER ){
+					Fx *= capillary_number / Ca;
+					Fy *= capillary_number / Ca;
+					Fz *= capillary_number / Ca;
+					if (force_mag > 1e-3){
+						Fx *= 1e-3/force_mag;   // impose ceiling for stability
+						Fy *= 1e-3/force_mag;   
+						Fz *= 1e-3/force_mag;   
+					}
+					if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
+					Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
+					color_db->putVector<double>("F",{Fx,Fy,Fz});
+				}
+				else{
+					if (rank==0){
+						printf("** Continue to simulate steady *** \n ");
+						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
+					}
+				}
+			}
+		}
+	}
+	analysis.finish();
+	PROFILE_STOP("Update");
+
+	PROFILE_STOP("Loop");
+	PROFILE_SAVE("lbpm_color_simulator",1);
+	//************************************************************************
+	// Compute the walltime per timestep
+	auto t2 = std::chrono::system_clock::now();
+	double cputime = std::chrono::duration<double>( t2 - t1 ).count() / CURRENT_TIMESTEP;
+	// Performance obtained from each node
+	double MLUPS = double(Np)/cputime/1000000;
+
+	if (rank==0) printf("********************************************************\n");
+	if (rank==0) printf("CPU time = %f \n", cputime);
+	if (rank==0) printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
+	return(MLUPS);
+	MLUPS *= nprocs;
+>>>>>>> e6fa7d40656ceb490140496f39955a2ee628e4ca
 
     if (rank == 0)
         printf("Initializing phase field \n");
