@@ -972,7 +972,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
                     		fclose(scal_log_file);
                     	else
                     		WriteHeader = true;
-                    	scal_log_file = fopen("relperm.csv", "a");
+                    	scal_log_file = fopen("SCAL.csv", "a");
                     	if (WriteHeader) {
                     		fprintf(scal_log_file, "timesteps sat.water ");
                     		fprintf(scal_log_file, "eff.perm.oil.upper.bound "
