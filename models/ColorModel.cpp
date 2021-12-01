@@ -184,6 +184,7 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 		domain_db->putScalar<int>( "BC", BoundaryCondition );
 	}  
 	else if (protocol == "fractional flow"){
+		if (rank == 0) printf("Using fractional flow protocol \n");
 		if (BoundaryCondition != 0 && BoundaryCondition != 5){
 			BoundaryCondition = 0;
 			if (rank==0) printf("WARNING: protocol (fractional flow) supports only full periodic boundary condition \n");
@@ -191,6 +192,7 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 		domain_db->putScalar<int>( "BC", BoundaryCondition );
 	}  	
 	else if (protocol == "centrifuge"){
+		if (rank == 0) printf("Using centrifuge protocol \n");
 		if (BoundaryCondition != 3 ){
 			BoundaryCondition = 3;
 			if (rank==0) printf("WARNING: protocol (centrifuge) supports only constant pressure boundary condition \n");
@@ -617,6 +619,9 @@ double ScaLBL_ColorModel::Run(int returntime){
 		tolerance = analysis_db->getScalar<double>( "tolerance" );
 	}
 	
+	auto WettingConvention = color_db->getWithDefault<std::string>( "WettingConvention", "none" );
+
+	
 	runAnalysis analysis( current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
 	auto t1 = std::chrono::system_clock::now();
 	int CURRENT_TIMESTEP = 0;
@@ -872,7 +877,28 @@ double ScaLBL_ColorModel::Run(int returntime){
 					fprintf(kr_log_file,"%.5g %.5g %.5g %.5g ",kAeff_filmA, kBeff_filmA, kAeff_filmB,kBeff_filmB);
 					fprintf(kr_log_file,"%.5g %.5g %.5g %.5g %.5g\n",pAB,pAB_connected,viscous_pressure_drop,Ca,Mobility);
 					fclose(kr_log_file);
-
+					
+					/* SCAL file */				
+					if (WettingConvention == "SCAL"){
+						WriteHeader=false;
+						FILE * scal_log_file = fopen("SCAL.csv","r");
+						if (scal_log_file != NULL)
+							fclose(scal_log_file);
+						else
+							WriteHeader=true;
+						scal_log_file = fopen("SCAL.csv","a");
+						if (WriteHeader){
+							fprintf(scal_log_file,"timesteps sat.water eff.perm.oil eff.perm.water eff.perm.oil.connected eff.perm.water.connected eff.perm.oil.disconnected eff.perm.water.disconnected ");
+							fprintf(scal_log_file,"eff.perm.oil.upper.bound eff.perm.water.lower.bound eff.perm.oil.lower.bound eff.perm.water.upper.bound ");
+							fprintf(scal_log_file,"cap.pressure cap.pressure.connected pressure.drop Ca M\n");
+						}
+						fprintf(scal_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g ",CURRENT_TIMESTEP,current_saturation,kAeff,kBeff,kAeff_connected,kBeff_connected,kAeff_disconnected,kBeff_disconnected);
+						fprintf(scal_log_file,"%.5g %.5g %.5g %.5g ",kAeff_filmA, kBeff_filmA, kAeff_filmB,kBeff_filmB);
+						fprintf(scal_log_file,"%.5g %.5g %.5g %.5g %.5g\n",pAB,pAB_connected,viscous_pressure_drop,Ca,Mobility);
+						fclose(scal_log_file);
+						/****************/
+					}
+					
 					printf("  Measured capillary number %f \n ",Ca);
 				}
 				if (SET_CAPILLARY_NUMBER ){
