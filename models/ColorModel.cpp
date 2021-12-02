@@ -977,32 +977,24 @@ double ScaLBL_ColorModel::Run(int returntime) {
                     		fprintf(scal_log_file, "timesteps sat.water ");
                     		fprintf(scal_log_file, "eff.perm.oil.upper.bound "
                     				"eff.perm.water.upper.bound ");
-                    		fprintf(scal_log_file, "eff.perm.oil.lower.bound "
+                    		fprintf(scal_log_file,
+                    				"eff.perm.oil.lower.bound "
                     				"eff.perm.water.lower.bound ");
-                    		fprintf(scal_log_file,
-                    				"eff.perm.oil.connected.upper.bound "
-                    				"eff.perm.water.connected.upper.bound ");
-                    		fprintf(scal_log_file,
-                    				"eff.perm.oil.connected.lower.bound "
-                    				"eff.perm.water.connected.lower.bound ");
                     		fprintf(scal_log_file, "eff.perm.oil.disconnected "
                     				"eff.perm.water.disconnected ");
                     		fprintf(scal_log_file,
                     				"cap.pressure cap.pressure.connected "
-                    				"pressure.drop Ca M eff.pressure\n");
+                    				"Ca eff.pressure\n");
                     	}
                     	fprintf(scal_log_file, "%i %.5g ", CURRENT_TIMESTEP,
                     			current_saturation);
-                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff, kBeff);
                     	fprintf(scal_log_file, "%.5g %.5g ", kAeff_low, kBeff_low);
-                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_connected,
-                    			kBeff_connected);
                     	fprintf(scal_log_file, "%.5g %.5g ", kAeff_connected_low,
                     			kBeff_connected_low);
                     	fprintf(scal_log_file, "%.5g %.5g ", kAeff_disconnected,
                     			kBeff_disconnected);
-                    	fprintf(scal_log_file, "%.5g %.5g %.5g %.5g %.5g ", pAB,
-                    			pAB_connected, viscous_pressure_drop, Ca, Mobility);
+                    	fprintf(scal_log_file, "%.5g %.5g %.5g ", pAB,
+                    			pAB_connected, Ca);
                     	fprintf(scal_log_file, "%.5g\n", eff_pres);
                     	fclose(scal_log_file);
 
