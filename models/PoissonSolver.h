@@ -46,7 +46,7 @@ public:
     int analysis_interval;
 	int BoundaryConditionInlet;
 	int BoundaryConditionOutlet;
-    int BoundaryConditionSolid;
+    vector<int> BoundaryConditionSolidList;
 	double tau;
 	double tolerance;
     std::string tolerance_method;
@@ -86,6 +86,7 @@ public:
     //signed char *dvcID;
     double *fq;
     double *Psi; 
+    int *Psi_BCLabel;
     double *ElectricField;
     double *ChargeDensityDummy;// for debugging
     double *ResidualError;
