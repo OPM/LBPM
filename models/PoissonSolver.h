@@ -104,7 +104,7 @@ private:
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);    	
-    void AssignSolidBoundary(double *poisson_solid);
+    void AssignSolidBoundary(double *poisson_solid, int *poisson_solid_label);
     void Potential_Init(double *psi_init);
     void ElectricField_LB_to_Phys(DoubleArray &Efield_reg);
     void SolveElectricPotentialAAodd(int timestep_from_Study);
