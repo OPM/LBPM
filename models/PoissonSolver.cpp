@@ -1,4 +1,3 @@
-    sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 /*
  * Multi-relaxation time LBM Model
  */
