@@ -55,8 +55,8 @@ public:
     double Vin, Vout;
     double chargeDen_dummy;//for debugging
     bool WriteLog;
-    double Vin0,freqIn,t0_In,Vin_Type;
-    double Vout0,freqOut,t0_Out,Vout_Type;
+    double Vin0,freqIn,t0_In,PhaseShift_In;
+    double Vout0,freqOut,t0_Out,PhaseShift_Out;
     bool   TestPeriodic;
     double TestPeriodicTime;//unit: [sec]
     double TestPeriodicTimeConv; //unit [sec/lt]
@@ -113,7 +113,7 @@ private:
     void SolvePoissonAAodd(double *ChargeDensity);
     void SolvePoissonAAeven(double *ChargeDensity);
     void getConvergenceLog(int timestep,double error);
-    double getBoundaryVoltagefromPeriodicBC(double V0,double freq,double t0,int V_type,int time_step);
+    double getBoundaryVoltagefromPeriodicBC(double V0,double freq,double t0,int time_step);
     
 };
 #endif
