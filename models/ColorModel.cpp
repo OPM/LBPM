@@ -618,7 +618,6 @@ double ScaLBL_ColorModel::Run(int returntime) {
     bool SET_CAPILLARY_NUMBER = false;
     bool TRIGGER_FORCE_RESCALE = false;
     double tolerance = 0.01;
-    auto WettingConvention = color_db->getWithDefault<std::string>( "WettingConvention", "none" );
     auto current_db = db->cloneDatabase();
     auto flow_db = db->getDatabase("FlowAdaptor");
     int MIN_STEADY_TIMESTEPS =
@@ -646,7 +645,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
     if (analysis_db->keyExists("tolerance")) {
         tolerance = analysis_db->getScalar<double>("tolerance");
     }
-    
+
     runAnalysis analysis(current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular,
                          Map);
     auto t1 = std::chrono::system_clock::now();
@@ -964,41 +963,6 @@ double ScaLBL_ColorModel::Run(int returntime) {
                             pAB_connected, viscous_pressure_drop, Ca, Mobility);
                     fprintf(kr_log_file, "%.5g\n", eff_pres);
                     fclose(kr_log_file);
-
-                    if (WettingConvention == "SCAL"){
-                    	WriteHeader = false;
-                    	FILE *scal_log_file = fopen("SCAL.csv", "r");
-                    	if (scal_log_file != NULL)
-                    		fclose(scal_log_file);
-                    	else
-                    		WriteHeader = true;
-                    	scal_log_file = fopen("SCAL.csv", "a");
-                    	if (WriteHeader) {
-                    		fprintf(scal_log_file, "timesteps sat.water ");
-                    		fprintf(scal_log_file, "eff.perm.oil.upper.bound "
-                    				"eff.perm.water.upper.bound ");
-                    		fprintf(scal_log_file,
-                    				"eff.perm.oil.lower.bound "
-                    				"eff.perm.water.lower.bound ");
-                    		fprintf(scal_log_file, "eff.perm.oil.disconnected "
-                    				"eff.perm.water.disconnected ");
-                    		fprintf(scal_log_file,
-                    				"cap.pressure cap.pressure.connected "
-                    				"Ca eff.pressure\n");
-                    	}
-                    	fprintf(scal_log_file, "%i %.5g ", CURRENT_TIMESTEP,
-                    			current_saturation);
-                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_low, kBeff_low);
-                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_connected_low,
-                    			kBeff_connected_low);
-                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_disconnected,
-                    			kBeff_disconnected);
-                    	fprintf(scal_log_file, "%.5g %.5g %.5g ", pAB,
-                    			pAB_connected, Ca);
-                    	fprintf(scal_log_file, "%.5g\n", eff_pres);
-                    	fclose(scal_log_file);
-
-                    }
 
                     printf("  Measured capillary number %f \n ", Ca);
                 }
