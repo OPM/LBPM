@@ -46,7 +46,7 @@ public:
     int analysis_interval;
 	int BoundaryConditionInlet;
 	int BoundaryConditionOutlet;
-    int BoundaryConditionSolid;
+    vector<int> BoundaryConditionSolidList;
 	double tau;
 	double tolerance;
     std::string tolerance_method;
@@ -55,8 +55,8 @@ public:
     double Vin, Vout;
     double chargeDen_dummy;//for debugging
     bool WriteLog;
-    double Vin0,freqIn,t0_In,Vin_Type;
-    double Vout0,freqOut,t0_Out,Vout_Type;
+    double Vin0,freqIn,t0_In,PhaseShift_In;
+    double Vout0,freqOut,t0_Out,PhaseShift_Out;
     bool   TestPeriodic;
     double TestPeriodicTime;//unit: [sec]
     double TestPeriodicTimeConv; //unit [sec/lt]
@@ -86,6 +86,7 @@ public:
     //signed char *dvcID;
     double *fq;
     double *Psi; 
+    int *Psi_BCLabel;
     double *ElectricField;
     double *ChargeDensityDummy;// for debugging
     double *ResidualError;
@@ -103,7 +104,7 @@ private:
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);    	
-    void AssignSolidBoundary(double *poisson_solid);
+    void AssignSolidBoundary(double *poisson_solid, int *poisson_solid_label);
     void Potential_Init(double *psi_init);
     void ElectricField_LB_to_Phys(DoubleArray &Efield_reg);
     void SolveElectricPotentialAAodd(int timestep_from_Study);
@@ -112,7 +113,7 @@ private:
     void SolvePoissonAAodd(double *ChargeDensity);
     void SolvePoissonAAeven(double *ChargeDensity);
     void getConvergenceLog(int timestep,double error);
-    double getBoundaryVoltagefromPeriodicBC(double V0,double freq,double t0,int V_type,int time_step);
+    double getBoundaryVoltagefromPeriodicBC(double V0,double freq,double t0,int time_step);
     
 };
 #endif

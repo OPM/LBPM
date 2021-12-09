@@ -1356,6 +1356,14 @@ void ScaLBL_Communicator::SolidNeumannD3Q7(double *fq, double *BoundaryValue){
     ScaLBL_Solid_Neumann_D3Q7(fq,BoundaryValue,bb_dist,bb_interactions,n_bb_d3q7);
 }
 
+void ScaLBL_Communicator::SolidDirichletAndNeumannD3Q7(double *fq, double *BoundaryValue, int *BoundaryLabel){
+	// fq is a D3Q7 distribution
+	// BoundaryValues is a list of values to assign at bounce-back solid sites
+    // BoundaryLabel: is a list of integer labels indicating the type of BCs
+    //                1-> Dirichlet BC; 2-> Neumann BC.
+    ScaLBL_Solid_DirichletAndNeumann_D3Q7(fq,BoundaryValue,BoundaryLabel,bb_dist,bb_interactions,n_bb_d3q7);
+}
+
 void ScaLBL_Communicator::SolidSlippingVelocityBCD3Q19(double *fq, double *zeta_potential, double *ElectricField, double *SolidGrad,
                                                        double epsilon_LB, double tau, double rho0, double den_scale,double h, double time_conv){
 	// fq is a D3Q19 distribution

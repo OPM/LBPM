@@ -593,6 +593,8 @@ extern "C" void ScaLBL_Solid_Dirichlet_D3Q7(double *dist,double *BoundaryValue,i
 
 extern "C" void ScaLBL_Solid_Neumann_D3Q7(double *dist,double *BoundaryValue,int *BounceBackDist_list,int *BounceBackSolid_list,int N);
 
+extern "C" void ScaLBL_Solid_DirichletAndNeumann_D3Q7(double *dist,double *BoundaryValue,int *BoundaryLabel,int *BounceBackDist_list,int *BounceBackSolid_list,int N);
+
 extern "C" void ScaLBL_Solid_SlippingVelocityBC_D3Q19(double *dist, double *zeta_potential, double *ElectricField, double *SolidGrad,
                                                double epsilon_LB, double tau, double rho0,double den_scale, double h, double time_conv,
                                                int *BounceBackDist_list, int *BounceBackSolid_list, int *FluidBoundary_list,
@@ -700,6 +702,7 @@ public:
 	void SetupBounceBackList(IntArray &Map, signed char *id, int Np, bool SlippingVelBC=false);
     void SolidDirichletD3Q7(double *fq, double *BoundaryValue);
     void SolidNeumannD3Q7(double *fq, double *BoundaryValue);
+    void SolidDirichletAndNeumannD3Q7(double *fq, double *BoundaryValue, int *BoundaryLabel);
     void SolidSlippingVelocityBCD3Q19(double *fq, double *zeta_potential, double *ElectricField, double *SolidGrad,
                                       double epslion_LB, double tau, double rho0, double den_scale,double h, double time_conv);
 
