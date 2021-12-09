@@ -17,7 +17,9 @@ FlowAdaptor::FlowAdaptor(ScaLBL_ColorModel &M) {
     phi_t.fill(0); // time derivative for the phase indicator field
 }
 
-FlowAdaptor::~FlowAdaptor() {}
+FlowAdaptor::~FlowAdaptor() {
+	
+}
 
 double FlowAdaptor::ImageInit(ScaLBL_ColorModel &M, std::string Filename) {
     int rank = M.rank;
@@ -71,6 +73,7 @@ double FlowAdaptor::ImageInit(ScaLBL_ColorModel &M, std::string Filename) {
     ScaLBL_CopyToHost(M.Averages->Phi.data(), M.Phi,
                       Nx * Ny * Nz * sizeof(double));
 
+    delete PhaseLabel;
     double saturation = Count / PoreCount;
     return saturation;
 }
@@ -234,6 +237,13 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M) {
     //ScaLBL_CopyToDevice(Phi,phase.data(),7*Np*sizeof(double));
     ScaLBL_CopyToDevice(M.Aq, Aq_tmp, 7 * Np * sizeof(double));
     ScaLBL_CopyToDevice(M.Bq, Bq_tmp, 7 * Np * sizeof(double));
+    
+    delete Aq_tmp; 
+    delete Bq_tmp;
+    delete Vel_x; 
+    delete Vel_y; 
+    delete Vel_z; 
+    delete Phase;
 
     return (TOTAL_MASS_CHANGE);
 }
@@ -403,7 +413,6 @@ double FlowAdaptor::ShellAggregation(ScaLBL_ColorModel &M,
             }
         }
     }
-
     if (rank == 0)
         printf("Pathway volume / next largest ganglion %f \n",
                volume_connected / second_biggest);
@@ -585,6 +594,8 @@ double FlowAdaptor::SeedPhaseField(ScaLBL_ColorModel &M,
     //ScaLBL_CopyToDevice(Phi,phase.data(),7*Np*sizeof(double));
     ScaLBL_CopyToDevice(M.Aq, Aq_tmp, 7 * Np * sizeof(double));
     ScaLBL_CopyToDevice(M.Bq, Bq_tmp, 7 * Np * sizeof(double));
-
+    
+    delete Aq_tmp; 
+    delete Bq_tmp;
     return (mass_loss);
 }
