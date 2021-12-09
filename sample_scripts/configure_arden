@@ -19,5 +19,5 @@ cmake -D CMAKE_C_COMPILER:PATH=/opt/arden/openmpi/3.1.2/bin/mpicc          \
     -D NETCDF_DIRECTORY="/opt/arden/netcdf/4.6.1" \
     -D USE_CUDA=0                        \
     -D USE_TIMER=0 \
-    ~/Programs/LBPM-WIA
+    ~/Programs/LBPM
 
