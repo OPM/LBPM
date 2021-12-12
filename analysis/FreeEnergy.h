@@ -27,36 +27,36 @@
  * 
  */
 
-class FreeEnergyAnalyzer{
+class FreeEnergyAnalyzer {
 public:
-	std::shared_ptr <Domain> Dm;
-	double Volume;
-	// input variables
-	double rho_n, rho_w;
-	double nu_n, nu_w;
-	double gamma_wn, beta;
-	double Fx, Fy, Fz;
+    std::shared_ptr<Domain> Dm;
+    double Volume;
+    // input variables
+    double rho_n, rho_w;
+    double nu_n, nu_w;
+    double gamma_wn, beta;
+    double Fx, Fy, Fz;
 
     //...........................................................................
-    int Nx,Ny,Nz;
-	DoubleArray Rho;	           
-	DoubleArray Phi;			
-	DoubleArray ChemicalPotential;	    
-	DoubleArray Pressure; 	
-	DoubleArray Vel_x;		
-	DoubleArray Vel_y;
-	DoubleArray Vel_z;
-	DoubleArray SDs;
+    int Nx, Ny, Nz;
+    DoubleArray Rho;
+    DoubleArray Phi;
+    DoubleArray ChemicalPotential;
+    DoubleArray Pressure;
+    DoubleArray Vel_x;
+    DoubleArray Vel_y;
+    DoubleArray Vel_z;
+    DoubleArray SDs;
 
-	FreeEnergyAnalyzer(std::shared_ptr <Domain> Dm);
-	~FreeEnergyAnalyzer();
-	
-	void SetParams();
-	void Basic( ScaLBL_FreeLeeModel &LeeModel, int timestep);
-	void WriteVis( ScaLBL_FreeLeeModel &LeeModel, std::shared_ptr<Database> input_db, int timestep);
+    FreeEnergyAnalyzer(std::shared_ptr<Domain> Dm);
+    ~FreeEnergyAnalyzer();
+
+    void SetParams();
+    void Basic(ScaLBL_FreeLeeModel &LeeModel, int timestep);
+    void WriteVis(ScaLBL_FreeLeeModel &LeeModel,
+                  std::shared_ptr<Database> input_db, int timestep);
 
 private:
-	FILE *TIMELOG;
+    FILE *TIMELOG;
 };
 #endif
-

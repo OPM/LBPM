@@ -2,6 +2,9 @@
 Visualizing simulation data with visit
 ======================================
 
+
+(Paraview > v 5.6 also works)
+
 Control over visualization options is set within the ``Visualization`` section of the input file
 
 .. code:: c

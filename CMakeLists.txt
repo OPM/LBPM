@@ -14,7 +14,6 @@ MESSAGE("====================")
 SET( PROJ LBPM )          # Set the project name for CMake
 SET( LBPM_LIB lbpm-wia )  # Set the final library name
 SET( LBPM_INC  )          # Set an optional subfolder for includes (e.g. include/name/...)
-SET( TEST_MAX_PROCS 16 )
 
 
 # Initialize the project

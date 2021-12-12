@@ -402,10 +402,14 @@ int main( int argc, char **argv )
     // Run the tests
     testWriter( "old", meshData, ut );
     testWriter( "new", meshData, ut );
+#ifdef USE_SILO
     testWriter( "silo-double", meshData, ut );
     testWriter( "silo-float", meshData, ut );
+#endif
+#ifdef USE_HDF5
     testWriter( "hdf5-double", meshData, ut );
     testWriter( "hdf5-float", meshData, ut );
+#endif
 
     // Finished
     ut.report();

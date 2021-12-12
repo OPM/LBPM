@@ -1,3 +1,19 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright Equnior ASA
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 /** @file  ScaLBL.h */
 /*  \details Header file for Scalable Lattice Boltzmann Library
  *  Separate implementations for GPU and CPU must both follow the conventions defined in this header
@@ -593,6 +609,8 @@ extern "C" void ScaLBL_Solid_Dirichlet_D3Q7(double *dist,double *BoundaryValue,i
 
 extern "C" void ScaLBL_Solid_Neumann_D3Q7(double *dist,double *BoundaryValue,int *BounceBackDist_list,int *BounceBackSolid_list,int N);
 
+extern "C" void ScaLBL_Solid_DirichletAndNeumann_D3Q7(double *dist,double *BoundaryValue,int *BoundaryLabel,int *BounceBackDist_list,int *BounceBackSolid_list,int N);
+
 extern "C" void ScaLBL_Solid_SlippingVelocityBC_D3Q19(double *dist, double *zeta_potential, double *ElectricField, double *SolidGrad,
                                                double epsilon_LB, double tau, double rho0,double den_scale, double h, double time_conv,
                                                int *BounceBackDist_list, int *BounceBackSolid_list, int *FluidBoundary_list,
@@ -700,6 +718,7 @@ public:
 	void SetupBounceBackList(IntArray &Map, signed char *id, int Np, bool SlippingVelBC=false);
     void SolidDirichletD3Q7(double *fq, double *BoundaryValue);
     void SolidNeumannD3Q7(double *fq, double *BoundaryValue);
+    void SolidDirichletAndNeumannD3Q7(double *fq, double *BoundaryValue, int *BoundaryLabel);
     void SolidSlippingVelocityBCD3Q19(double *fq, double *zeta_potential, double *ElectricField, double *SolidGrad,
                                       double epslion_LB, double tau, double rho0, double den_scale,double h, double time_conv);
 
@@ -786,6 +805,4 @@ private:
 	//......................................................................................
 
 };
-
-
 #endif

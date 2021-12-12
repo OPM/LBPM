@@ -1,6 +1,5 @@
 #include "FunctionTable.hpp"
 
-
 /********************************************************
  *  Random number generation                             *
  ********************************************************/
@@ -93,55 +92,36 @@ template<> long double genRand<long double>()
 /********************************************************
  *  axpy                                                 *
  ********************************************************/
-template<>
-void call_axpy<float>( size_t N, const float alpha, const float *x, float *y )
-{
+template <>
+void call_axpy<float>(size_t N, const float alpha, const float *x, float *y) {
     ERROR("Not finished");
 }
-template<>
-void call_axpy<double>( size_t N, const double alpha, const double *x, double *y )
-{
+template <>
+void call_axpy<double>(size_t N, const double alpha, const double *x,
+                       double *y) {
     ERROR("Not finished");
 }
-
 
 /********************************************************
  *  Multiply two arrays                                  *
  ********************************************************/
-template<>
-void call_gemv<double>(
-    size_t M, size_t N, double alpha, double beta, const double *A, const double *x, double *y )
-{
+template <>
+void call_gemv<double>(size_t M, size_t N, double alpha, double beta,
+                       const double *A, const double *x, double *y) {
     ERROR("Not finished");
 }
-template<>
-void call_gemv<float>(
-    size_t M, size_t N, float alpha, float beta, const float *A, const float *x, float *y )
-{
+template <>
+void call_gemv<float>(size_t M, size_t N, float alpha, float beta,
+                      const float *A, const float *x, float *y) {
     ERROR("Not finished");
 }
-template<>
-void call_gemm<double>( size_t M,
-                        size_t N,
-                        size_t K,
-                        double alpha,
-                        double beta,
-                        const double *A,
-                        const double *B,
-                        double *C )
-{
+template <>
+void call_gemm<double>(size_t M, size_t N, size_t K, double alpha, double beta,
+                       const double *A, const double *B, double *C) {
     ERROR("Not finished");
 }
-template<>
-void call_gemm<float>( size_t M,
-                       size_t N,
-                       size_t K,
-                       float alpha,
-                       float beta,
-                       const float *A,
-                       const float *B,
-                       float *C )
-{
+template <>
+void call_gemm<float>(size_t M, size_t N, size_t K, float alpha, float beta,
+                      const float *A, const float *B, float *C) {
     ERROR("Not finished");
 }
-

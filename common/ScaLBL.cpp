@@ -1,3 +1,19 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright Equnior ASA
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include "common/ScaLBL.h"
 
 #include <chrono>
@@ -1354,6 +1370,14 @@ void ScaLBL_Communicator::SolidNeumannD3Q7(double *fq, double *BoundaryValue){
 	// fq is a D3Q7 distribution
 	// BoundaryValues is a list of values to assign at bounce-back solid sites
     ScaLBL_Solid_Neumann_D3Q7(fq,BoundaryValue,bb_dist,bb_interactions,n_bb_d3q7);
+}
+
+void ScaLBL_Communicator::SolidDirichletAndNeumannD3Q7(double *fq, double *BoundaryValue, int *BoundaryLabel){
+	// fq is a D3Q7 distribution
+	// BoundaryValues is a list of values to assign at bounce-back solid sites
+    // BoundaryLabel: is a list of integer labels indicating the type of BCs
+    //                1-> Dirichlet BC; 2-> Neumann BC.
+    ScaLBL_Solid_DirichletAndNeumann_D3Q7(fq,BoundaryValue,BoundaryLabel,bb_dist,bb_interactions,n_bb_d3q7);
 }
 
 void ScaLBL_Communicator::SolidSlippingVelocityBCD3Q19(double *fq, double *zeta_potential, double *ElectricField, double *SolidGrad,

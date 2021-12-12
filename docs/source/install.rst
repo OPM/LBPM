@@ -29,7 +29,7 @@ Building Dependencies
 
 .. code-block:: bash
 
-   export MPI_DIR=/path/to/mpi/
+   export MPI_DIR=/path/to/mpi
    export LBPM_ZLIB_DIR=/path/to/zlib
    export LBPM_HDF5_DIR=/path/to/hdf5
    export LBPM_SILO_DIR=/path/to/silo

@@ -87,6 +87,28 @@ __global__ void dvc_ScaLBL_Solid_SlippingVelocityBC_D3Q19(double *dist, double *
         cz = lattice_cz[idx];
 		dist[iq] = value_q - 2.0*LB_weight*rho0*cs2_inv*(cx*ubx+cy*uby+cz*ubz);
 	}
+
+}
+
+__global__ void dvc_ScaLBL_Solid_DirichletAndNeumann_D3Q7(double *dist, double *BoundaryValue,int *BoundaryLabel, int *BounceBackDist_list, int *BounceBackSolid_list, int count)
+{
+
+    int idx;
+    int iq,ib;
+    double value_b,value_b_label,value_q;
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		iq = BounceBackDist_list[idx];
+        ib = BounceBackSolid_list[idx];
+		value_b = BoundaryValue[ib];//get boundary value from a solid site
+		value_b_label = BoundaryLabel[ib];//get boundary label (i.e. type of BC) from a solid site
+        value_q = dist[iq];
+        if (value_b_label==1){//Dirichlet BC
+		    dist[iq] = -1.0*value_q + value_b*0.25;//NOTE 0.25 is the speed of sound for D3Q7 lattice
+        }
+        if (value_b_label==2){//Neumann BC
+		    dist[iq] = value_q + value_b;
+        }
 }
 
 __global__ void dvc_ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_z(int *list, double *dist, double Vin, int count, int Np)
@@ -475,6 +497,15 @@ extern "C" void ScaLBL_Solid_SlippingVelocityBC_D3Q19(double *dist, double *zeta
 	hipError_t err = hipGetLastError();
 	if (hipSuccess != err){
 		printf("CUDA error in ScaLBL_Solid_SlippingVelocityBC_D3Q19 (kernel): %s \n",hipGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_Solid_DirichletAndNeumann_D3Q7(double *dist, double *BoundaryValue,int *BoundaryLabel, int *BounceBackDist_list, int *BounceBackSolid_list, int count){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_Solid_DirichletAndNeumann_D3Q7<<<GRID,512>>>(dist, BoundaryValue, BoundaryLabel, BounceBackDist_list, BounceBackSolid_list, count);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("hip error in ScaLBL_Solid_DirichletAndNeumann_D3Q7 (kernel): %s \n",cudaGetErrorString(err));
 	}
 }
 

@@ -225,4 +225,5 @@ Example Input File
       InletLayers = 0, 0, 10 // specify 10 layers along the z-inlet
       BC = 0                 // boundary condition type (0 for periodic)
    }
- 
+   Visualization {
+   }

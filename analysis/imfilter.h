@@ -1,3 +1,19 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright Equnior ASA
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 // These functions mimic the behavior of imfilter in MATLAB
 #ifndef included_imfilter
 #define included_imfilter
@@ -6,13 +22,10 @@
 #include "common/Array.h"
 #include <vector>
 
-
 namespace imfilter {
 
-
 //! enum to store the BC type
-enum class BC { fixed=0, symmetric=1, replicate=2, circular=3 };
-
+enum class BC { fixed = 0, symmetric = 1, replicate = 2, circular = 3 };
 
 /*!
  * @brief  N-D filtering of multidimensional images
@@ -31,9 +44,10 @@ enum class BC { fixed=0, symmetric=1, replicate=2, circular=3 };
  *                                      computed by implicitly assuming the input array is periodic.
  * @param[in]  X            The value to use for boundary conditions (only used if boundary==fixed)
  */
-template<class TYPE>
-Array<TYPE> imfilter( const Array<TYPE>& A, const Array<TYPE>& H, const std::vector<imfilter::BC>& boundary, const TYPE X=0 );
-
+template <class TYPE>
+Array<TYPE> imfilter(const Array<TYPE> &A, const Array<TYPE> &H,
+                     const std::vector<imfilter::BC> &boundary,
+                     const TYPE X = 0);
 
 /*!
  * @brief  N-D filtering of multidimensional images
@@ -54,11 +68,11 @@ Array<TYPE> imfilter( const Array<TYPE>& A, const Array<TYPE>& H, const std::vec
  *                                      computed by implicitly assuming the input array is periodic.
  * @param[in]  X            The value to use for boundary conditions (only used if boundary==fixed)
  */
-template<class TYPE>
-Array<TYPE> imfilter( const Array<TYPE>& A, const std::vector<int>& Nh,
-    std::function<TYPE(const Array<TYPE>&)> H,
-    const std::vector<imfilter::BC>& boundary, const TYPE X=0 );
-
+template <class TYPE>
+Array<TYPE> imfilter(const Array<TYPE> &A, const std::vector<int> &Nh,
+                     std::function<TYPE(const Array<TYPE> &)> H,
+                     const std::vector<imfilter::BC> &boundary,
+                     const TYPE X = 0);
 
 /*!
  * @brief  N-D filtering of multidimensional images
@@ -78,10 +92,10 @@ Array<TYPE> imfilter( const Array<TYPE>& A, const std::vector<int>& Nh,
  *                                      computed by implicitly assuming the input array is periodic.
  * @param[in]  X            The value to use for boundary conditions (only used if boundary==fixed)
  */
-template<class TYPE>
-Array<TYPE> imfilter_separable( const Array<TYPE>& A, const std::vector<Array<TYPE>>& H,
-    const std::vector<imfilter::BC>& boundary, const TYPE X=0 );
-
+template <class TYPE>
+Array<TYPE>
+imfilter_separable(const Array<TYPE> &A, const std::vector<Array<TYPE>> &H,
+                   const std::vector<imfilter::BC> &boundary, const TYPE X = 0);
 
 /*!
  * @brief  N-D filtering of multidimensional images
@@ -101,11 +115,11 @@ Array<TYPE> imfilter_separable( const Array<TYPE>& A, const std::vector<Array<TY
  *                                      computed by implicitly assuming the input array is periodic.
  * @param[in]  X            The value to use for boundary conditions (only used if boundary==fixed)
  */
-template<class TYPE>
-Array<TYPE> imfilter_separable( const Array<TYPE>& A, const std::vector<int>& Nh,
-    std::vector<std::function<TYPE(const Array<TYPE>&)>> H,
-    const std::vector<imfilter::BC>& boundary, const TYPE X=0 );
-
+template <class TYPE>
+Array<TYPE>
+imfilter_separable(const Array<TYPE> &A, const std::vector<int> &Nh,
+                   std::vector<std::function<TYPE(const Array<TYPE> &)>> H,
+                   const std::vector<imfilter::BC> &boundary, const TYPE X = 0);
 
 /*!
  * @brief  N-D filtering of multidimensional images
@@ -126,11 +140,11 @@ Array<TYPE> imfilter_separable( const Array<TYPE>& A, const std::vector<int>& Nh
  *                                      computed by implicitly assuming the input array is periodic.
  * @param[in]  X            The value to use for boundary conditions (only used if boundary==fixed)
  */
-template<class TYPE>
-Array<TYPE> imfilter_separable( const Array<TYPE>& A, const std::vector<int>& Nh,
-    std::vector<std::function<TYPE(int, const TYPE*)>> H,
-    const std::vector<imfilter::BC>& boundary, const TYPE X=0 );
-
+template <class TYPE>
+Array<TYPE>
+imfilter_separable(const Array<TYPE> &A, const std::vector<int> &Nh,
+                   std::vector<std::function<TYPE(int, const TYPE *)>> H,
+                   const std::vector<imfilter::BC> &boundary, const TYPE X = 0);
 
 /**
  * @brief Create a filter to use with imfilter
@@ -147,14 +161,12 @@ Array<TYPE> imfilter_separable( const Array<TYPE>& A, const std::vector<int>& Nh
  *                                     A default value of 0.5 is used if not provided.
  * \param[in] args          An optional argument that some of the filters use
  */
-template<class TYPE>
-Array<TYPE> create_filter( const std::vector<int>& N, const std::string &type, const void *args = NULL );
+template <class TYPE>
+Array<TYPE> create_filter(const std::vector<int> &N, const std::string &type,
+                          const void *args = NULL);
 
-
-}
-
+} // namespace imfilter
 
 #include "analysis/imfilter.hpp"
 
 #endif
-

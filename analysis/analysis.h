@@ -1,3 +1,19 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright Equnior ASA
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #ifndef Analysis_H_INC
 #define Analysis_H_INC
 
@@ -8,11 +24,9 @@
 #include <map>
 #include <vector>
 
-
 // Define types to use for blob ids
 typedef int32_t BlobIDType;
 typedef Array<BlobIDType> BlobIDArray;
-
 
 /*!
  * @brief  Compute the blob
@@ -26,8 +40,9 @@ typedef Array<BlobIDType> BlobIDArray;
  * @param[in] periodic      Optional value
  * @return  Returns the number of blobs
  */
-int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist, 
-    double vF, double vS, BlobIDArray& LocalBlobID, bool periodic=true );
+int ComputeLocalBlobIDs(const DoubleArray &Phase, const DoubleArray &SignDist,
+                        double vF, double vS, BlobIDArray &LocalBlobID,
+                        bool periodic = true);
 
 /*!
  *  @brief Compute blob of an arbitrary phase
@@ -38,8 +53,8 @@ int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist,
  *  @param[out] ComponentLabel
  *  @param[in] periodic
  */
-int ComputeLocalPhaseComponent( const IntArray &PhaseID, int &VALUE, IntArray &ComponentLabel, bool periodic );
-
+int ComputeLocalPhaseComponent(const IntArray &PhaseID, int &VALUE,
+                               IntArray &ComponentLabel, bool periodic);
 
 /*!
  * @brief  Compute the blob
@@ -57,10 +72,11 @@ int ComputeLocalPhaseComponent( const IntArray &PhaseID, int &VALUE, IntArray &C
  * @param[in] comm          MPI communicator
  * @return  Returns the number of blobs
  */
-int ComputeGlobalBlobIDs( int nx, int ny, int nz, const RankInfoStruct& rank_info, 
-    const DoubleArray& Phase, const DoubleArray& SignDist, double vF, double vS, 
-    BlobIDArray& GlobalBlobID, const Utilities::MPI& comm );
-
+int ComputeGlobalBlobIDs(int nx, int ny, int nz,
+                         const RankInfoStruct &rank_info,
+                         const DoubleArray &Phase, const DoubleArray &SignDist,
+                         double vF, double vS, BlobIDArray &GlobalBlobID,
+                         const Utilities::MPI &comm);
 
 /*!
  * @brief Compute component of the specified phase
@@ -76,9 +92,11 @@ int ComputeGlobalBlobIDs( int nx, int ny, int nz, const RankInfoStruct& rank_inf
  * @param[in] comm          The communicator to use
  * @return Return the number of components in the specified phase
  */
-int ComputeGlobalPhaseComponent( int nx, int ny, int nz, const RankInfoStruct& rank_info,
-    const IntArray &PhaseID, int &VALUE, BlobIDArray &GlobalBlobID, const Utilities::MPI& comm );
-
+int ComputeGlobalPhaseComponent(int nx, int ny, int nz,
+                                const RankInfoStruct &rank_info,
+                                const IntArray &PhaseID, int &VALUE,
+                                BlobIDArray &GlobalBlobID,
+                                const Utilities::MPI &comm);
 
 /*!
  * @brief  Reorder the blobs
@@ -87,30 +105,34 @@ int ComputeGlobalPhaseComponent( int nx, int ny, int nz, const RankInfoStruct& r
  * @param[in,out] ID        The ids of the blobs
  * @param[in] comm          MPI communicator
  */
-void ReorderBlobIDs( BlobIDArray& ID, const Utilities::MPI& comm );
+void ReorderBlobIDs(BlobIDArray &ID, const Utilities::MPI &comm);
 
-
-typedef std::pair<BlobIDType,std::vector<BlobIDType> > BlobIDSplitStruct;
-typedef std::pair<std::vector<BlobIDType>,BlobIDType> BlobIDMergeStruct;
-typedef std::pair<std::vector<BlobIDType>,std::vector<BlobIDType> > BlobIDMergeSplitStruct;
-typedef std::pair<BlobIDType,BlobIDType> OverlapID;
+typedef std::pair<BlobIDType, std::vector<BlobIDType>> BlobIDSplitStruct;
+typedef std::pair<std::vector<BlobIDType>, BlobIDType> BlobIDMergeStruct;
+typedef std::pair<std::vector<BlobIDType>, std::vector<BlobIDType>>
+    BlobIDMergeSplitStruct;
+typedef std::pair<BlobIDType, BlobIDType> OverlapID;
 struct ID_map_struct {
-    std::vector<BlobIDType> created;            // list of new blobs that were created
-    std::vector<BlobIDType> destroyed;          // list of blobs that disappeared
-    std::vector<std::pair<BlobIDType,BlobIDType> > src_dst;   // one-one mapping of blobs (first,second timestep id)
-    std::vector<BlobIDSplitStruct> split;       // list of blobs that split
-    std::vector<BlobIDMergeStruct> merge;       // list of blobs that merged
-    std::vector<BlobIDMergeSplitStruct> merge_split; // list of blobs that both merged and split
-    std::map<OverlapID,int64_t> overlap;         // for ids that are not a 1-1 mapping, this is a list of the overlaps <src,dst>
+    std::vector<BlobIDType> created;   // list of new blobs that were created
+    std::vector<BlobIDType> destroyed; // list of blobs that disappeared
+    std::vector<std::pair<BlobIDType, BlobIDType>>
+        src_dst; // one-one mapping of blobs (first,second timestep id)
+    std::vector<BlobIDSplitStruct> split; // list of blobs that split
+    std::vector<BlobIDMergeStruct> merge; // list of blobs that merged
+    std::vector<BlobIDMergeSplitStruct>
+        merge_split; // list of blobs that both merged and split
+    std::map<OverlapID, int64_t>
+        overlap; // for ids that are not a 1-1 mapping, this is a list of the overlaps <src,dst>
     //! Empty constructor
     ID_map_struct() {}
     //! Create initial map from N blobs (ordered 1:N-1)
-    ID_map_struct( int N ) {
+    ID_map_struct(int N) {
         created.resize(N);
-        for (int i=0; i<N; i++) { created[i]=i; }
+        for (int i = 0; i < N; i++) {
+            created[i] = i;
+        }
     }
 };
-
 
 /*!
  * @brief  Get the mapping of blob ids between iterations
@@ -124,8 +146,8 @@ struct ID_map_struct {
  * @param[in] ID2           The blob ids at the second timestep
  * @param[in] comm          The communicator to use
  */
-ID_map_struct computeIDMap( int nx, int ny, int nz, const BlobIDArray& ID1, const BlobIDArray& ID2, const Utilities::MPI& comm );
-
+ID_map_struct computeIDMap(int nx, int ny, int nz, const BlobIDArray &ID1,
+                           const BlobIDArray &ID2, const Utilities::MPI &comm);
 
 /*!
  * @brief  Compute the new global ids based on the map
@@ -135,8 +157,8 @@ ID_map_struct computeIDMap( int nx, int ny, int nz, const BlobIDArray& ID1, cons
  * @param[in] id_max        The globally largest id used previously
  * @param[out] new_ids      The newly renumbered blob ids (0:ids.max())
  */
-void getNewIDs( ID_map_struct& map, BlobIDType& id_max, std::vector<BlobIDType>& new_ids );
-
+void getNewIDs(ID_map_struct &map, BlobIDType &id_max,
+               std::vector<BlobIDType> &new_ids);
 
 /*!
  * @brief  Update the blob ids based on mapping
@@ -145,8 +167,7 @@ void getNewIDs( ID_map_struct& map, BlobIDType& id_max, std::vector<BlobIDType>&
  * @param[out] new_ids          The newly renumbered blob ids (0:ids.max())
  * @param[in,out] IDs           The blob ids to renumber
  */
-void renumberIDs( const std::vector<BlobIDType>& new_ids, BlobIDArray& IDs );
-
+void renumberIDs(const std::vector<BlobIDType> &new_ids, BlobIDArray &IDs);
 
 /*!
  * @brief  Write the ID map
@@ -157,8 +178,7 @@ void renumberIDs( const std::vector<BlobIDType>& new_ids, BlobIDArray& IDs );
  * @param[in] timestep      The current timestep (timestep 0 creates the file)
  * @param[in] filename      The filename to write/append
  */
-void writeIDMap( const ID_map_struct& map, long long int timestep, const std::string& filename );
-
-
+void writeIDMap(const ID_map_struct &map, long long int timestep,
+                const std::string &filename);
 
 #endif
