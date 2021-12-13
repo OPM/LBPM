@@ -39,6 +39,7 @@ ADD_LBPM_EXECUTABLE( convertIO )
 ADD_LBPM_EXECUTABLE( DataAggregator )
 #ADD_LBPM_EXECUTABLE( BlobAnalyzeParallel )(
 ADD_LBPM_EXECUTABLE( lbpm_minkowski_scalar )
+ADD_LBPM_EXECUTABLE( lbpm_TwoPhase_analysis )
 ADD_LBPM_EXECUTABLE( TestPoissonSolver )
 ADD_LBPM_EXECUTABLE( TestIonModel )
 ADD_LBPM_EXECUTABLE( TestNernstPlanck )

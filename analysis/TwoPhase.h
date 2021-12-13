@@ -184,6 +184,8 @@ public:
     void ColorToSignedDistance(double Beta, DoubleArray &ColorData,
                                DoubleArray &DistData);
     void ComputeLocal();
+    void ComputeStatic();
+    void PrintStatic();
     void AssignComponentLabels();
     void ComponentAverages();
     void Reduce();

@@ -4057,7 +4057,7 @@ inline double pmmc_CubeContactAngle(DoubleArray &CubeValues,
                       (A.z - B.z) * (A.z - B.z));
         integral += 0.5 * length * (vA + vB);
     }
-
+    
     return integral;
 }
 //--------------------------------------------------------------------------------------------------------
@@ -4420,7 +4420,9 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s,
     double twnsx, twnsy, twnsz, nwnsx, nwnsy, nwnsz,
         K; // tangent,normal and curvature
     double nsx, nsy, nsz, norm;
+    double nwx, nwy, nwz;
     double nwsx, nwsy, nwsz;
+    double nwnx, nwny, nwnz;
 
     Point P, A, B;
     // Local trilinear approximation for tangent and normal vector
@@ -4430,47 +4432,18 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s,
     for (k = kc; k < kc + 2; k++) {
         for (j = jc; j < jc + 2; j++) {
             for (i = ic; i < ic + 2; i++) {
-
-                // Compute all of the derivatives using finite differences
-                // fluid phase indicator field
-                //	fx = 0.5*(f(i+1,j,k) - f(i-1,j,k));
-                //    fy = 0.5*(f(i,j+1,k) - f(i,j-1,k));
-                //	fz = 0.5*(f(i,j,k+1) - f(i,j,k-1));
-                /*fxx = f(i+1,j,k) - 2.0*f(i,j,k) + f(i-1,j,k);
-				fyy = f(i,j+1,k) - 2.0*f(i,j,k) + f(i,j-1,k);
-				fzz = f(i,j,k+1) - 2.0*f(i,j,k) + f(i,j,k-1);
-				fxy = 0.25*(f(i+1,j+1,k) - f(i+1,j-1,k) - f(i-1,j+1,k) + f(i-1,j-1,k));
-				fxz = 0.25*(f(i+1,j,k+1) - f(i+1,j,k-1) - f(i-1,j,k+1) + f(i-1,j,k-1));
-				fyz = 0.25*(f(i,j+1,k+1) - f(i,j+1,k-1) - f(i,j-1,k+1) + f(i,j-1,k-1));
-				*/
-                // solid distance function
-                //	sx = 0.5*(s(i+1,j,k) - s(i-1,j,k));
-                //	sy = 0.5*(s(i,j+1,k) - s(i,j-1,k));
-                //	sz = 0.5*(s(i,j,k+1) - s(i,j,k-1));
-                /*	sxx = s(i+1,j,k) - 2.0*s(i,j,k) + s(i-1,j,k);
-				syy = s(i,j+1,k) - 2.0*s(i,j,k) + s(i,j-1,k);
-				szz = s(i,j,k+1) - 2.0*s(i,j,k) + s(i,j,k-1);
-				sxy = 0.25*(s(i+1,j+1,k) - s(i+1,j-1,k) - s(i-1,j+1,k) + s(i-1,j-1,k));
-				sxz = 0.25*(s(i+1,j,k+1) - s(i+1,j,k-1) - s(i-1,j,k+1) + s(i-1,j,k-1));
-				syz = 0.25*(s(i,j+1,k+1) - s(i,j+1,k-1) - s(i,j-1,k+1) + s(i,j-1,k-1));
-				*/
-                /*				// Compute the Jacobean matrix for tangent vector
-				Axx = sxy*fz + sy*fxz - sxz*fy - sz*fxy;
-				Axy = sxz*fx + sz*fxx - sxx*fz - sx*fxz;
-				Axz = sxx*fy + sx*fxy - sxy*fx - sy*fxx;
-				Ayx = syy*fz + sy*fyz - syz*fy - sz*fyy;
-				Ayy = syz*fx + sz*fxy - sxy*fz - sx*fyz;
-				Ayz = sxy*fy + sx*fyy - syy*fx - sy*fxy;
-				Azx = syz*fz + sy*fzz - szz*fy - sz*fyz;
-				Azy = szz*fx + sz*fxz - sxz*fz - sx*fzz;
-				Azz = sxz*fy + sx*fyz - syz*fx - sy*fxz;
-*/
                 sx = s_x(i, j, k);
                 sy = s_y(i, j, k);
                 sz = s_z(i, j, k);
                 fx = f_x(i, j, k);
                 fy = f_y(i, j, k);
                 fz = f_z(i, j, k);
+                
+                // Normal to fluid surface
+                Nx.Corners(i - ic, j - jc, k - kc) = fx;
+                Ny.Corners(i - ic, j - jc, k - kc) = fy;
+                Nz.Corners(i - ic, j - jc, k - kc) = fz;
+                
                 // Normal to solid surface
                 Sx.Corners(i - ic, j - jc, k - kc) = sx;
                 Sy.Corners(i - ic, j - jc, k - kc) = sy;
@@ -4577,8 +4550,19 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s,
         nsx /= norm;
         nsy /= norm;
         nsz /= norm;
+        
+        // Normal vector to the fluid surface
+        nwx = Nx.eval(P);
+        nwy = Ny.eval(P);
+        nwz = Nz.eval(P);
+        norm = sqrt(nwx * nwx + nwy * nwy + nwz * nwz);
+        if (norm == 0.0)
+            norm = 1.0;
+        nwx /= norm;
+        nwy /= norm;
+        nwz /= norm;
 
-        // normal in the surface tangent plane (rel. geodesic curvature)
+        // common curve normal in the solid surface tangent plane (rel. geodesic curvature)
         nwsx = twnsy * nsz - twnsz * nsy;
         nwsy = twnsz * nsx - twnsx * nsz;
         nwsz = twnsx * nsy - twnsy * nsx;
@@ -4588,16 +4572,28 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s,
         nwsx /= norm;
         nwsy /= norm;
         nwsz /= norm;
-
+        
         if (nsx * nwnsx + nsy * nwnsy + nsz * nwnsz < 0.0) {
             nwnsx = -nwnsx;
             nwnsy = -nwnsy;
             nwnsz = -nwnsz;
         }
 
+        // common curve normal in the fluid surface tangent plane (rel. geodesic curvature)
+        nwnx = twnsy * nwz - twnsz * nwy;
+        nwny = twnsz * nwx - twnsx * nwz;
+        nwnz = twnsx * nwy - twnsy * nwx;
+        norm = sqrt(nwnx * nwnx + nwny * nwny + nwnz * nwnz);
+        if (norm == 0.0)
+            norm = 1.0;
+        nwnx /= norm;
+        nwny /= norm;
+        nwnz /= norm;
+
         if (length > 0.0) {
             // normal curvature component in the direction of the solid surface
-            KNavg += K * (nsx * nwnsx + nsy * nwnsy + nsz * nwnsz) * length;
+            //KNavg += K * (nsx * nwnsx + nsy * nwnsy + nsz * nwnsz) * length;
+            KNavg += K * (nwnx * nwnsx + nwny * nwnsy + nwnz * nwnsz) * length;
             //geodesic curvature
             KGavg += K * (nwsx * nwnsx + nwsy * nwnsy + nwsz * nwnsz) * length;
         }

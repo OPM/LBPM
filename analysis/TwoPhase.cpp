@@ -14,22 +14,6 @@
   You should have received a copy of the GNU General Public License
   along with OPM.  If not, see <http://www.gnu.org/licenses/>.
 */
-/*
-  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
-  Copyright Equnior ASA
-
-  This file is part of the Open Porous Media project (OPM).
-  OPM is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-  OPM is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-  You should have received a copy of the GNU General Public License
-  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
-*/
 #include "analysis/TwoPhase.h"
 
 #include "analysis/pmmc.h"
@@ -41,6 +25,8 @@
 #include "IO/MeshDatabase.h"
 #include "IO/Reader.h"
 #include "IO/Writer.h"
+#include "analysis/filters.h"
+
 
 #include <memory>
 
@@ -430,28 +416,38 @@ void TwoPhase::UpdateSolid() {
 
 void TwoPhase::UpdateMeshValues() {
     int i, j, k, n;
+    fillHalo<double> fillData(Dm->Comm, Dm->rank_info, {Nx-2,Ny-2,Nz-2}, {1, 1, 1}, 0, 1);
+
     //...........................................................................
-    Dm->CommunicateMeshHalo(SDn);
+    //Dm->CommunicateMeshHalo(SDn);
+    fillData.fill(SDn);
     //...........................................................................
     // Compute the gradients of the phase indicator and signed distance fields
     pmmc_MeshGradient(SDn, SDn_x, SDn_y, SDn_z, Nx, Ny, Nz);
     //...........................................................................
     // Gradient of the phase indicator field
+    fillData.fill(SDn_x);
+    fillData.fill(SDn_y);
+    fillData.fill(SDn_z);
+    fillData.fill(SDs);
     //...........................................................................
-    Dm->CommunicateMeshHalo(SDn_x);
+    //Dm->CommunicateMeshHalo(SDn_x);
     //...........................................................................
-    Dm->CommunicateMeshHalo(SDn_y);
+    //Dm->CommunicateMeshHalo(SDn_y);
     //...........................................................................
-    Dm->CommunicateMeshHalo(SDn_z);
+    //Dm->CommunicateMeshHalo(SDn_z);
     //...........................................................................
-    Dm->CommunicateMeshHalo(SDs);
+    //Dm->CommunicateMeshHalo(SDs);
     pmmc_MeshGradient(SDs, SDs_x, SDs_y, SDs_z, Nx, Ny, Nz);
     //...........................................................................
-    Dm->CommunicateMeshHalo(SDs_x);
+    fillData.fill(SDs_x);
+    fillData.fill(SDs_y);
+    fillData.fill(SDs_z);
+    //Dm->CommunicateMeshHalo(SDs_x);
     //...........................................................................
-    Dm->CommunicateMeshHalo(SDs_y);
+    //Dm->CommunicateMeshHalo(SDs_y);
     //...........................................................................
-    Dm->CommunicateMeshHalo(SDs_z);
+    //Dm->CommunicateMeshHalo(SDs_z);
     //...........................................................................
     // Compute the mesh curvature of the phase indicator field
     pmmc_MeshCurvature(SDn, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
@@ -579,6 +575,7 @@ void TwoPhase::ComputeLocal() {
                     Kwn += pmmc_CubeSurfaceInterpValue(
                         CubeValues, GaussCurvature, nw_pts, nw_tris, Values, i,
                         j, k, n_nw_pts, n_nw_tris);
+                    
                     Jwn += pmmc_CubeSurfaceInterpValue(
                         CubeValues, MeanCurvature, nw_pts, nw_tris, Values, i,
                         j, k, n_nw_pts, n_nw_tris);
@@ -609,7 +606,7 @@ void TwoPhase::ComputeLocal() {
                     efawns += pmmc_CubeContactAngle(
                         CubeValues, Values, SDn_x, SDn_y, SDn_z, SDs_x, SDs_y,
                         SDs_z, local_nws_pts, i, j, k, n_local_nws_pts);
-
+                    
                     wwnsdnwn += pmmc_CommonCurveSpeed(
                         CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z, SDs_x,
                         SDs_y, SDs_z, local_nws_pts, i, j, k, n_local_nws_pts);
@@ -714,6 +711,192 @@ void TwoPhase::ComputeLocal() {
     //printf("morphological analysis at rank=%i \n",Dm->rank());
     nonwet_morph->ComputeScalar(phase_distance, 0.f);
     //printf("rank=%i completed \n",Dm->rank());
+}
+void TwoPhase::ComputeStatic() {
+    int i, j, k, n, imin, jmin, kmin, kmax;
+    int cube[8][3] = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0},
+                      {0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}};
+
+    kmin = 1;
+    kmax = Nz - 1;
+    imin = jmin = 1;
+    
+    /* set fluid isovalue to "grow" NWP for contact angle measurement */
+    fluid_isovalue = -1.5;
+    
+    FILE *ANGLES = fopen("ContactAngle.csv", "a");
+    fprintf(ANGLES,"x y z angle\n");
+
+    for (k = kmin; k < kmax; k++) {
+        for (j = jmin; j < Ny - 1; j++) {
+            for (i = imin; i < Nx - 1; i++) {
+                //...........................................................................
+                n_nw_pts = n_ns_pts = n_ws_pts = n_nws_pts = n_local_sol_pts =
+                    n_local_nws_pts = 0;
+                n_nw_tris = n_ns_tris = n_ws_tris = n_nws_seg =
+                    n_local_sol_tris = 0;
+                //...........................................................................
+                // Compute volume averages
+                for (int p = 0; p < 8; p++) {
+                    n = i + cube[p][0] + (j + cube[p][1]) * Nx +
+                        (k + cube[p][2]) * Nx * Ny;
+                    if (Dm->id[n] > 0) {
+                        // 1-D index for this cube corner
+                        // compute the norm of the gradient of the phase indicator field
+                        // Compute the non-wetting phase volume contribution
+                        if (Phase(i + cube[p][0], j + cube[p][1],
+                                  k + cube[p][2]) > 0) {
+                            nwp_volume += 0.125;
+                        } else {
+                            wp_volume += 0.125;
+                        }
+                    }
+                }
+
+                //...........................................................................
+                // Construct the interfaces and common curve
+                pmmc_ConstructLocalCube(
+                    SDs, SDn, solid_isovalue, fluid_isovalue, nw_pts, nw_tris,
+                    Values, ns_pts, ns_tris, ws_pts, ws_tris, local_nws_pts,
+                    nws_pts, nws_seg, local_sol_pts, local_sol_tris,
+                    n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
+                    n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts,
+                    n_nws_pts, n_nws_seg, i, j, k, Nx, Ny, Nz);
+
+                // wn interface averages
+                if (n_nw_pts > 0) {
+                    awn += pmmc_CubeSurfaceOrientation(Gwn, nw_pts, nw_tris,
+                                                       n_nw_tris);
+                    Kwn += pmmc_CubeSurfaceInterpValue(
+                        CubeValues, GaussCurvature, nw_pts, nw_tris, Values, i,
+                        j, k, n_nw_pts, n_nw_tris);
+                    
+                    Jwn += pmmc_CubeSurfaceInterpValue(
+                        CubeValues, MeanCurvature, nw_pts, nw_tris, Values, i,
+                        j, k, n_nw_pts, n_nw_tris);
+
+                    // Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
+                    pmmc_CubeTrimSurfaceInterpValues(
+                        CubeValues, MeanCurvature, SDs, nw_pts, nw_tris, Values,
+                        DistanceValues, i, j, k, n_nw_pts, n_nw_tris, trimdist,
+                        dummy, trJwn);
+
+                    pmmc_CubeTrimSurfaceInterpInverseValues(
+                        CubeValues, MeanCurvature, SDs, nw_pts, nw_tris, Values,
+                        DistanceValues, i, j, k, n_nw_pts, n_nw_tris, trimdist,
+                        dummy, trRwn);
+                }
+                // wns common curve averages
+                if (n_local_nws_pts > 0) {
+                    efawns += pmmc_CubeContactAngle(
+                        CubeValues, Values, SDn_x, SDn_y, SDn_z, SDs_x, SDs_y,
+                        SDs_z, local_nws_pts, i, j, k, n_local_nws_pts);
+                    
+                    for (int p = 0; p < n_local_nws_pts; p++) {
+                        // Extract the line segment
+                        Point A = local_nws_pts(p);
+                        double value = Values(p);
+                        fprintf(ANGLES, "%.8g %.8g %.8g %.8g\n", A.x, A.y, A.z, value);
+                    }
+
+                    pmmc_CurveCurvature(SDn, SDs, SDn_x, SDn_y, SDn_z, SDs_x,
+                                        SDs_y, SDs_z, KNwns_values,
+                                        KGwns_values, KNwns, KGwns, nws_pts,
+                                        n_nws_pts, i, j, k);
+
+                    lwns +=
+                        pmmc_CubeCurveLength(local_nws_pts, n_local_nws_pts);
+                }
+
+                // Solid interface averagees
+                if (n_local_sol_tris > 0) {
+                    As += pmmc_CubeSurfaceArea(local_sol_pts, local_sol_tris,
+                                               n_local_sol_tris);
+
+                    // Compute the surface orientation and the interfacial area
+                    ans += pmmc_CubeSurfaceOrientation(Gns, ns_pts, ns_tris,
+                                                       n_ns_tris);
+                    aws += pmmc_CubeSurfaceOrientation(Gws, ws_pts, ws_tris,
+                                                       n_ws_tris);
+                }
+                //...........................................................................
+                // Compute the integral curvature of the non-wetting phase
+
+                n_nw_pts = n_nw_tris = 0;
+                // Compute the non-wetting phase surface and associated area
+                An +=
+                    geomavg_MarchingCubes(SDn, fluid_isovalue, i, j, k, nw_pts,
+                                          n_nw_pts, nw_tris, n_nw_tris);
+                // Compute the integral of mean curvature
+                if (n_nw_pts > 0) {
+                    pmmc_CubeTrimSurfaceInterpValues(
+                        CubeValues, MeanCurvature, SDs, nw_pts, nw_tris, Values,
+                        DistanceValues, i, j, k, n_nw_pts, n_nw_tris, trimdist,
+                        trawn, dummy);
+                }
+
+                Jn += pmmc_CubeSurfaceInterpValue(CubeValues, MeanCurvature,
+                                                  nw_pts, nw_tris, Values, i, j,
+                                                  k, n_nw_pts, n_nw_tris);
+                // Compute Euler characteristic from integral of gaussian curvature
+                Kn += pmmc_CubeSurfaceInterpValue(CubeValues, GaussCurvature,
+                                                  nw_pts, nw_tris, Values, i, j,
+                                                  k, n_nw_pts, n_nw_tris);
+
+                euler += geomavg_EulerCharacteristic(nw_pts, nw_tris, n_nw_pts,
+                                                     n_nw_tris, i, j, k);
+            }
+        }
+    }
+    fclose(ANGLES);
+
+    Array<char> phase_label(Nx, Ny, Nz);
+    Array<double> phase_distance(Nx, Ny, Nz);
+    // Analyze the wetting fluid
+    for (k = 0; k < Nz; k++) {
+        for (j = 0; j < Ny; j++) {
+            for (i = 0; i < Nx; i++) {
+                n = k * Nx * Ny + j * Nx + i;
+                if (!(Dm->id[n] > 0)) {
+                    // Solid phase
+                    phase_label(i, j, k) = 1;
+                } else if (SDn(i, j, k) < 0.0) {
+                    // wetting phase
+                    phase_label(i, j, k) = 0;
+                } else {
+                    // non-wetting phase
+                    phase_label(i, j, k) = 1;
+                }
+                phase_distance(i, j, k) =
+                    2.0 * double(phase_label(i, j, k)) - 1.0;
+            }
+        }
+    }
+    CalcDist(phase_distance, phase_label, *Dm);
+    wet_morph->ComputeScalar(phase_distance, 0.f);
+    //printf("generating distance at rank=%i \n",Dm->rank());
+    // Analyze the wetting fluid
+    for (k = 0; k < Nz; k++) {
+        for (j = 0; j < Ny; j++) {
+            for (i = 0; i < Nx; i++) {
+                n = k * Nx * Ny + j * Nx + i;
+                if (!(Dm->id[n] > 0)) {
+                    // Solid phase
+                    phase_label(i, j, k) = 1;
+                } else if (SDn(i, j, k) < 0.0) {
+                    // wetting phase
+                    phase_label(i, j, k) = 1;
+                } else {
+                    // non-wetting phase
+                    phase_label(i, j, k) = 0;
+                }
+                phase_distance(i, j, k) =
+                    2.0 * double(phase_label(i, j, k)) - 1.0;
+            }
+        }
+    }
+    CalcDist(phase_distance, phase_label, *Dm);
+    nonwet_morph->ComputeScalar(phase_distance, 0.f);
 }
 
 void TwoPhase::AssignComponentLabels() {
@@ -1283,6 +1466,7 @@ void TwoPhase::Reduce() {
         van_global(2) = van_global(2) / nwp_volume_global;
     }
     // Normalize surface averages by the interfacial area
+    /*
     if (awn_global > 0.0) {
         Jwn_global /= awn_global;
         Kwn_global /= awn_global;
@@ -1299,6 +1483,7 @@ void TwoPhase::Reduce() {
         for (i = 0; i < 3; i++)
             vawns_global(i) /= lwns_global;
     }
+    */
     if (trawn_global > 0.0) {
         trJwn_global /= trawn_global;
         trRwn_global /= trawn_global;
@@ -1314,15 +1499,17 @@ void TwoPhase::Reduce() {
             Gws_global(i) /= aws_global;
 
     euler_global /= (2 * PI);
-
-    //sat_w = 1.0 - nwp_volume_global*iVol_global/porosity;
     sat_w = 1.0 - nwp_volume_global / (nwp_volume_global + wp_volume_global);
+
     // Compute the specific interfacial areas and common line length (dimensionless per unit volume)
+    /* 
     awn_global = awn_global * iVol_global;
     ans_global = ans_global * iVol_global;
     aws_global = aws_global * iVol_global;
     dEs = dEs * iVol_global;
     lwns_global = lwns_global * iVol_global;
+    */
+
 }
 
 void TwoPhase::NonDimensionalize(double D, double viscosity, double IFT) {
@@ -1332,6 +1519,53 @@ void TwoPhase::NonDimensionalize(double D, double viscosity, double IFT) {
     ans_global *= D;
     ans_global *= D;
     lwns_global *= D * D;
+}
+
+void TwoPhase::PrintStatic() {
+    if (Dm->rank() == 0) {
+    	FILE *STATIC;
+        STATIC = fopen("geometry.csv", "a+");
+        if (fseek(STATIC, 0, SEEK_SET) == fseek(STATIC, 0, SEEK_CUR)) {
+            // If timelog is empty, write a short header to list the averages
+            fprintf(STATIC, "sw awn ans aws Jwn Kwn lwns cwns KGws "
+                             "KGwn "); // Scalar averages
+            fprintf(STATIC,
+                "Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz "); // Orientation tensors
+            fprintf(STATIC, "Gwsxx Gwsyy Gwszz Gwsxy Gwsxz Gwsyz ");
+            fprintf(STATIC, "Gnsxx Gnsyy Gnszz Gnsxy Gnsxz Gnsyz ");
+            fprintf(STATIC, "trawn trJwn trRwn "); //trimmed curvature,
+            fprintf(STATIC, "Vw Aw Jw Xw ");      //miknowski measures,
+            fprintf(STATIC, "Vn An Jn Xn\n");     //miknowski measures,
+            //fprintf(STATIC,"Euler Kn2 Jn2 An2\n"); 			//miknowski measures,
+        }
+
+        fprintf(STATIC, "%.5g ", sat_w); // saturation 
+        fprintf(STATIC, "%.5g %.5g %.5g ", awn_global, ans_global,
+                aws_global); // interfacial areas
+        fprintf(STATIC, "%.5g %.5g ", Jwn_global,
+                Kwn_global);                      // curvature of wn interface
+        fprintf(STATIC, "%.5g ", lwns_global);   // common curve length
+        fprintf(STATIC, "%.5g ", efawns_global); // average contact angle
+        fprintf(STATIC, "%.5g %.5g ", KNwns_global,
+                KGwns_global); // total curvature contributions of common line
+        fprintf(STATIC, "%.5g %.5g %.5g %.5g %.5g %.5g ", Gwn_global(0),
+                Gwn_global(1), Gwn_global(2), Gwn_global(3), Gwn_global(4),
+                Gwn_global(5)); // orientation of wn interface
+        fprintf(STATIC, "%.5g %.5g %.5g %.5g %.5g %.5g ", Gns_global(0),
+                Gns_global(1), Gns_global(2), Gns_global(3), Gns_global(4),
+                Gns_global(5)); // orientation of ns interface
+        fprintf(STATIC, "%.5g %.5g %.5g %.5g %.5g %.5g ", Gws_global(0),
+                Gws_global(1), Gws_global(2), Gws_global(3), Gws_global(4),
+                Gws_global(5)); // orientation of ws interface
+        fprintf(STATIC, "%.5g %.5g %.5g ", trawn_global, trJwn_global,
+                trRwn_global); // Trimmed curvature
+        fprintf(STATIC, "%.5g %.5g %.5g %.5g ", wet_morph->V(), wet_morph->A(),
+                wet_morph->H(), wet_morph->X());
+       fprintf(STATIC, "%.5g %.5g %.5g %.5g\n", nonwet_morph->V(),
+                nonwet_morph->A(), nonwet_morph->H(), nonwet_morph->X());
+        //fprintf(STATIC,"%.5g %.5g %.5g %.5g\n",euler_global, Kn_global, Jn_global, An_global);			// minkowski measures
+        fclose(STATIC);
+    }
 }
 
 void TwoPhase::PrintAll(int timestep) {
