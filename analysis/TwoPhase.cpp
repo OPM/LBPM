@@ -1472,17 +1472,16 @@ void TwoPhase::Reduce() {
         van_global(2) = van_global(2) / nwp_volume_global;
     }
     // Normalize surface averages by the interfacial area
-    /*
     if (awn_global > 0.0) {
         Jwn_global /= awn_global;
-        Kwn_global /= awn_global;
+        //Kwn_global /= awn_global;
         wwndnw_global /= awn_global;
         for (i = 0; i < 3; i++)
             vawn_global(i) /= awn_global;
         for (i = 0; i < 6; i++)
             Gwn_global(i) /= awn_global;
     }
-    */
+
     if (lwns_global > 0.0) {
         efawns_global /= lwns_global;
         //KNwns_global /= lwns_global;
