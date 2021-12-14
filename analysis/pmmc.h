@@ -4573,12 +4573,13 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s,
         nwsy /= norm;
         nwsz /= norm;
         
-        if (nsx * nwnsx + nsy * nwnsy + nsz * nwnsz < 0.0) {
+       /* JM does not remember why we should do this...
+        * if (nsx * nwnsx + nsy * nwnsy + nsz * nwnsz < 0.0) {
             nwnsx = -nwnsx;
             nwnsy = -nwnsy;
             nwnsz = -nwnsz;
         }
-
+       */
         // common curve normal in the fluid surface tangent plane (rel. geodesic curvature)
         nwnx = twnsy * nwz - twnsz * nwy;
         nwny = twnsz * nwx - twnsx * nwz;

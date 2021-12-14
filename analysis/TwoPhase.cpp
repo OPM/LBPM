@@ -722,9 +722,15 @@ void TwoPhase::ComputeStatic() {
     imin = jmin = 1;
     
     /* set fluid isovalue to "grow" NWP for contact angle measurement */
-    fluid_isovalue = -1.5;
+    fluid_isovalue = -1.0;
     
-    FILE *ANGLES = fopen("ContactAngle.csv", "a");
+    string FILENAME = "ContactAngle";
+    
+    char LocalRankString[8];
+    char LocalRankFilename[40];
+    sprintf(LocalRankString, "%05d", Dm->rank());
+    sprintf(LocalRankFilename, "%s%s%s", "ContactAngle.", LocalRankString,".csv");
+    FILE *ANGLES = fopen(LocalRankFilename, "a+");
     fprintf(ANGLES,"x y z angle\n");
 
     for (k = kmin; k < kmax; k++) {
@@ -1476,14 +1482,14 @@ void TwoPhase::Reduce() {
         for (i = 0; i < 6; i++)
             Gwn_global(i) /= awn_global;
     }
+    */
     if (lwns_global > 0.0) {
         efawns_global /= lwns_global;
-        KNwns_global /= lwns_global;
-        KGwns_global /= lwns_global;
+        //KNwns_global /= lwns_global;
+        //KGwns_global /= lwns_global;
         for (i = 0; i < 3; i++)
             vawns_global(i) /= lwns_global;
     }
-    */
     if (trawn_global > 0.0) {
         trJwn_global /= trawn_global;
         trRwn_global /= trawn_global;
