@@ -1408,7 +1408,7 @@ void TwoPhase::ComponentAverages() {
 
 void TwoPhase::Reduce() {
     int i;
-    double iVol_global = 1.0 / Volume;
+    //double iVol_global = 1.0 / Volume;
     //...........................................................................
     Dm->Comm.barrier();
     nwp_volume_global = Dm->Comm.sumReduce(nwp_volume);
