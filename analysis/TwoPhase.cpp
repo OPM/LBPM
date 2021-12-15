@@ -361,6 +361,7 @@ void TwoPhase::Initialize() {
     wwndnw = 0.0;
     wwnsdnwn = 0.0;
     Jwnwwndnw = 0.0;
+    Xwn = Xns = Xws = 0.0;
 }
 
 void TwoPhase::SetParams(double rhoA, double rhoB, double tauA, double tauB,
@@ -780,6 +781,9 @@ void TwoPhase::ComputeStatic() {
                     Jwn += pmmc_CubeSurfaceInterpValue(
                         CubeValues, MeanCurvature, nw_pts, nw_tris, Values, i,
                         j, k, n_nw_pts, n_nw_tris);
+                    
+                    Xwn += geomavg_EulerCharacteristic(nw_pts, nw_tris, n_nw_pts,
+                                                         n_nw_tris, i, j, k);
 
                     // Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
                     pmmc_CubeTrimSurfaceInterpValues(
@@ -812,6 +816,14 @@ void TwoPhase::ComputeStatic() {
 
                     lwns +=
                         pmmc_CubeCurveLength(local_nws_pts, n_local_nws_pts);
+                    
+                    /* half contribution for vertices / edges at the common line 
+                     *   each cube with contact line has a net of undercounting vertices 
+                     *   each cube is undercounting edges due to internal counts
+                    */
+                    Xwn += 0.25*n_local_nws_pts - 0.5;
+                    Xws += 0.25*n_local_nws_pts - 0.5;
+                    Xns += 0.25*n_local_nws_pts - 0.5;
                 }
 
                 // Solid interface averagees
@@ -824,6 +836,12 @@ void TwoPhase::ComputeStatic() {
                                                        n_ns_tris);
                     aws += pmmc_CubeSurfaceOrientation(Gws, ws_pts, ws_tris,
                                                        n_ws_tris);
+                    
+                    Xws += geomavg_EulerCharacteristic(ws_pts, ws_tris, n_ws_pts,
+                                                         n_ws_tris, i, j, k);
+                    
+                    Xns += geomavg_EulerCharacteristic(ns_pts, ns_tris, n_ns_pts,
+                                                         n_ns_tris, i, j, k);
                 }
                 //...........................................................................
                 // Compute the integral curvature of the non-wetting phase
@@ -848,9 +866,11 @@ void TwoPhase::ComputeStatic() {
                 Kn += pmmc_CubeSurfaceInterpValue(CubeValues, GaussCurvature,
                                                   nw_pts, nw_tris, Values, i, j,
                                                   k, n_nw_pts, n_nw_tris);
+                
 
                 euler += geomavg_EulerCharacteristic(nw_pts, nw_tris, n_nw_pts,
                                                      n_nw_tris, i, j, k);
+
             }
         }
     }
@@ -1447,10 +1467,14 @@ void TwoPhase::Reduce() {
     trawn_global = Dm->Comm.sumReduce(trawn);
     trJwn_global = Dm->Comm.sumReduce(trJwn);
     trRwn_global = Dm->Comm.sumReduce(trRwn);
-    euler_global = Dm->Comm.sumReduce(euler);
+    Xwn_global = Dm->Comm.sumReduce(Xwn);
+    Xws_global = Dm->Comm.sumReduce(Xws);
+    Xns_global = Dm->Comm.sumReduce(Xns);
     An_global = Dm->Comm.sumReduce(An);
     Jn_global = Dm->Comm.sumReduce(Jn);
     Kn_global = Dm->Comm.sumReduce(Kn);
+    euler_global = Dm->Comm.sumReduce(euler);
+
     Dm->Comm.barrier();
 
     // Normalize the phase averages
@@ -1533,7 +1557,7 @@ void TwoPhase::PrintStatic() {
         if (fseek(STATIC, 0, SEEK_SET) == fseek(STATIC, 0, SEEK_CUR)) {
             // If timelog is empty, write a short header to list the averages
             fprintf(STATIC, "sw awn ans aws Jwn Kwn lwns cwns KGws "
-                             "KGwn "); // Scalar averages
+                             "KGwn Xwn Xws Xns "); // Scalar averages
             fprintf(STATIC,
                 "Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz "); // Orientation tensors
             fprintf(STATIC, "Gwsxx Gwsyy Gwszz Gwsxy Gwsxz Gwsyz ");
@@ -1553,6 +1577,8 @@ void TwoPhase::PrintStatic() {
         fprintf(STATIC, "%.5g ", efawns_global); // average contact angle
         fprintf(STATIC, "%.5g %.5g ", KNwns_global,
                 KGwns_global); // total curvature contributions of common line
+        fprintf(STATIC, "%.5g %.5g %.5g ", Xwn_global, Xns_global,
+                Xws_global); // Euler characteristic
         fprintf(STATIC, "%.5g %.5g %.5g %.5g %.5g %.5g ", Gwn_global(0),
                 Gwn_global(1), Gwn_global(2), Gwn_global(3), Gwn_global(4),
                 Gwn_global(5)); // orientation of wn interface

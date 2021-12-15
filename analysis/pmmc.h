@@ -4572,14 +4572,13 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s,
         nwsx /= norm;
         nwsy /= norm;
         nwsz /= norm;
-        
-       /* JM does not remember why we should do this...
-        * if (nsx * nwnsx + nsy * nwnsy + nsz * nwnsz < 0.0) {
-            nwnsx = -nwnsx;
-            nwnsy = -nwnsy;
-            nwnsz = -nwnsz;
+        /* normal to ws interface boundary should point into fluid (same direction as gradient) */
+        if (nwx * nwsx + nwy * nwsy + nwz * nwsz < 0.0) {
+            nwsx = -nwsx;
+            nwsy = -nwsy;
+            nwsz = -nwsz;
         }
-       */
+        
         // common curve normal in the fluid surface tangent plane (rel. geodesic curvature)
         nwnx = twnsy * nwz - twnsz * nwy;
         nwny = twnsz * nwx - twnsx * nwz;
@@ -4590,6 +4589,13 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s,
         nwnx /= norm;
         nwny /= norm;
         nwnz /= norm;
+        /* normal to wn interface boundary should point into the solid */
+        if (nsx * nwnx + nsy * nwny + nsz * nwnz > 0.0) {
+            nwnx = -nwnx;
+            nwny = -nwny;
+            nwnz = -nwnz;
+        }
+
 
         if (length > 0.0) {
             // normal curvature component in the direction of the solid surface

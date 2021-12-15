@@ -126,6 +126,16 @@ int main(int argc, char **argv)
 		fillDouble.fill(Averages->SDs);
 		if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
 		CalcDist(Averages->SDs,id,*Dm);
+		
+		/* move the solid surface by a voxel to improve contact angle measurement
+		for (k=0;k<nz;k++){
+			for (j=0;j<ny;j++){
+				for (i=0;i<nx;i++){
+					n=k*nx*ny+j*nx+i;
+					Averages->SDs(i,j,k) -= 1.0;
+				}
+			}
+		}*/
 		/* * * * * * * * * * * * * * * * * * * * * */
 		// Solve for the position of the fluid phase
 		for (k=0;k<nz;k++){
