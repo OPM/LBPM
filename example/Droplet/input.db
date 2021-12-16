@@ -1,0 +1,14 @@
+Domain {
+    Filename = "droplet_40x80x80.raw"
+    nproc = 1, 1, 1     // Number of processors (Npx,Npy,Npz)
+    n = 40, 80, 80      // Size of local domain (Nx,Ny,Nz)
+    N = 40, 80, 80      // size of the input image
+    voxel_length = 1.0 
+    BC = 0              // Boundary condition type
+    ReadType = "8bit"
+    ReadValues = 0, 2, 1
+    WriteValues = 0, 2, 1
+}
+
+Visualization {
+}
