@@ -6,7 +6,8 @@ module load cray-hdf5-parallel
 
 
 ## These must be set before compiling so the executable picks up GTL
-export PE_MPICH_GTL_DIR_amd_gfx908="-L/opt/cray/pe/mpich/8.1.4/gtl/lib"
+export PE_MPICH_GTL_DIR_amd_gfx908="-L${CRAY_MPICH_ROOTDIR}/gtl/lib"
+
 export PE_MPICH_GTL_LIBS_amd_gfx908="-lmpi_gtl_hsa"
 
 
@@ -18,10 +19,12 @@ export CMAKE_DIR=/gpfs/alpine/csc380/proj-shared/LBPM/cmake-3.21.0/bin
 rm -rf CMake*
 ${CMAKE_DIR}/cmake                              \
     -D CMAKE_BUILD_TYPE:STRING=Release          \
+    -D CMAKE_C_COMPILER:PATH=cc               \
     -D CMAKE_CXX_COMPILER:PATH=CC               \
     -D CMAKE_CXX_STANDARD=14                    \
     -D DISABLE_GOLD:BOOL=TRUE                   \
     -D DISABLE_LTO:BOOL=TRUE                    \
+    -D LINK_LIBRARIES="${ROCM_PATH}/lib/libamdhip64.so;${CRAY_MPICH_ROOTDIR}/gtl/lib/libmpi_gtl_hsa.so" \
     -D USE_HIP=1                                \
         -D CMAKE_HIP_COMPILER_TOOLKIT_ROOT=$ROCM_PATH/hip \
     -D USE_MPI=1                                \
