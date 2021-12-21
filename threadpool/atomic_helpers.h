@@ -1,3 +1,18 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 // Copyright © 2004 Mark Berrill. All Rights Reserved. This work is distributed with permission,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #ifndef included_ThreadPoolAtomicHelpers
@@ -222,7 +237,6 @@ inline int32_atomic atomic_fetch_and_or( int32_atomic volatile *v, int32_atomic 
  * \brief Fetch the current value and "ou" with given value
  * \details Perform *v = (*v) | x, returning the previous value
  * \return Returns the previous value before the "and" operation
- * \param[in] v     The pointer to the value to check and swap
  * \param[in] v     The pointer to the value to check and or
  * \param[in] x     The value to or
  */

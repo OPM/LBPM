@@ -1,0 +1,33 @@
+# load the module for cmake
+module reset
+module load CMake
+#module load CUDA
+#module load OpenMPI
+#module load cuda11.2/toolkit
+ 
+module load OpenMPI/4.0.5-gcccuda-2020b
+module load HDF5
+
+#export GCC_BIN=/apps/easybuild/software/tinkercliffs-rome_a100/GCCcore/10.2.0/bin
+
+cmake                                    \
+    -D CMAKE_C_COMPILER:PATH=mpicc          \
+    -D CMAKE_CXX_COMPILER:PATH=mpicxx        \
+    -D CMAKE_C_FLAGS="-fPIC"            \
+    -D CMAKE_CXX_FLAGS="-fPIC"          \
+    -D MPIEXEC=mpirun                     \
+    -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
+    -D CMAKE_BUILD_TYPE:STRING=Release     \
+    -D USE_CUDA=1                        \
+    -D CMAKE_CUDA_FLAGS="-arch sm_80"   \
+    -D CMAKE_CUDA_HOST_COMPILER="$GCC_BIN/gcc" \
+    -D USE_HDF5=1					 \
+       -D HDF5_DIRECTORY=$HDF5_DIR \
+    -D USE_SILO=0				 \
+       -D SILO_DIRECTORY=$SILO_DIR \
+    -D USE_TIMER=0				 \
+    ~/LBPM-WIA
+
+make VERBOSE=1 -j4 && make install
+
+ 

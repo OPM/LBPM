@@ -53,7 +53,7 @@ int main(int argc, char **argv)
       GreyscaleColor.Create();       // creating the model will create data structure to match the pore structure and allocate variables
       GreyscaleColor.Initialize();   // initializing the model will set initial conditions for variables
       GreyscaleColor.Run();	       
-      GreyscaleColor.WriteDebug();
+      GreyscaleColor.WriteVisFiles();
   
       PROFILE_STOP("Main");
       PROFILE_SAVE("lbpm_greyscaleColor_simulator",1);

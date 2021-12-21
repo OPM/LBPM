@@ -92,6 +92,8 @@ int main( int argc, char **argv )
 				SKIP_TIMESTEPS = flow_db->getWithDefault<int>( "skip_timesteps", 50000 );
 				ENDPOINT_THRESHOLD = flow_db->getWithDefault<double>( "endpoint_threshold", 0.1);
 				/* protocol specific key values */
+				if (PROTOCOL == "image sequence" || PROTOCOL == "core flooding")
+					SKIP_TIMESTEPS = 0;
 				if (PROTOCOL == "fractional flow")
 					FRACTIONAL_FLOW_INCREMENT = flow_db->getWithDefault<double>( "fractional_flow_increment", 0.05);
 				if (PROTOCOL == "seed water")
@@ -107,10 +109,14 @@ int main( int argc, char **argv )
 			runAnalysis analysis(ColorModel);
 			while (ContinueSimulation){
 				/* this will run steady points */
-				timestep += MAX_STEADY_TIME;
+				if (PROTOCOL == "fractional flow" || PROTOCOL == "seed water" || PROTOCOL == "shell aggregation" || PROTOCOL == "image sequence" )
+					timestep += MAX_STEADY_TIME;
+				else 
+					timestep += ColorModel.timestepMax;
+				/* Run the simulation timesteps*/
 				MLUPS = ColorModel.Run(timestep);
 				if (rank==0) printf("Lattice update rate (per MPI process)= %f MLUPS \n", MLUPS);
-				if (ColorModel.timestep > ColorModel.timestepMax){
+				if (ColorModel.timestep >= ColorModel.timestepMax){
 					ContinueSimulation = false;
 				}
 				
@@ -175,15 +181,18 @@ int main( int argc, char **argv )
 					if (rank==0) printf("  *********************************************************************  \n");
 				}
 				/*********************************************************/
+				if (rank==0) printf("   (flatten density field)  \n");
+				if (PROTOCOL == "fractional flow")	{							
+					Adapt.Flatten(ColorModel);
+				}
 			}
 		}
 		
-		
-		//PROFILE_STOP( "Main" );
-		//auto file  = db->getWithDefault<std::string>( "TimerFile", "lbpm_color_simulator" );
-		//auto level = db->getWithDefault<int>( "TimerLevel", 1 );
-		//NULL_USE(level);
-		//PROFILE_SAVE( file, level );
+		PROFILE_STOP( "Main" );
+		auto file  = db->getWithDefault<std::string>( "TimerFile", "lbpm_color_simulator" );
+		auto level = db->getWithDefault<int>( "TimerLevel", 1 );
+		NULL_USE(level);
+		PROFILE_SAVE( file, level );
 		// ****************************************************
 
 

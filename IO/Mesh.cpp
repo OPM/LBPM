@@ -1,3 +1,33 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include "Mesh.h"
 #include "IO/IOHelpers.h"
 #include "common/Utilities.h"
@@ -133,7 +163,7 @@ size_t PointList::numberPointsVar( VariableType type ) const
 }
 std::pair<size_t, void *> PointList::pack( int level ) const
 {
-    std::pair<size_t, void *> data_out( 0, NULL );
+    std::pair<size_t, void *> data_out( 0, nullptr );
     if ( level == 0 ) {
         data_out.first     = ( 2 + 3 * points.size() ) * sizeof( double );
         double *data_ptr   = new double[2 + 3 * points.size()];
@@ -596,6 +626,8 @@ std::string getString( FileFormat type )
         return "new(single)";
     else if ( type == FileFormat::SILO )
         return "silo";
+    else if ( type == FileFormat::HDF5 )
+        return "hdf5";
     else
         ERROR( "Invalid type" );
     return "";
@@ -611,6 +643,8 @@ FileFormat getFileFormat( const std::string &type_in )
         return FileFormat::NEW_SINGLE;
     else if ( type == "silo" || type == "4" )
         return FileFormat::SILO;
+    else if ( type == "hdf5" || type == "5" )
+        return FileFormat::HDF5;
     else
         ERROR( "Invalid type: " + type );
     return FileFormat::SILO;

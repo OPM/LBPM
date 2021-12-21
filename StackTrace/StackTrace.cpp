@@ -856,7 +856,7 @@ static void getFileAndLineObject( staticVector<StackTrace::stack_info*,blockSize
             char *buf = tmp2;
             if ( buf[0] != '?' && buf[0] != 0 ) {
                 size_t j = 0;
-                for ( j = 0; j < 4095 && buf[j] != ':'; j++ ) {
+                for ( j = 0; j < 1024 && buf[j] != ':'; j++ ) {
                 }
                 buf[j] = 0;
                 copy( buf, info[i]->filename, info[i]->filenamePath );

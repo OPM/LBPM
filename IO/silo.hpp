@@ -1,3 +1,33 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #ifndef SILO_INTERFACE_HPP
 #define SILO_INTERFACE_HPP
 
@@ -245,11 +275,11 @@ Array<TYPE> readUniformMeshVariable( DBfile *fid, const std::string &varname )
         copyData<TYPE>( data2, type, var->vals[i] );
         memcpy( &data( 0, i ), data2.data(), var->nels * sizeof( TYPE ) );
     }
-    DBFreeQuadvar( var );
     std::vector<size_t> dims( var->ndims + 1, var->nvals );
     for ( int d = 0; d < var->ndims; d++ )
         dims[d] = var->dims[d];
     data.reshape( dims );
+    DBFreeQuadvar( var );
     return data;
 }
 

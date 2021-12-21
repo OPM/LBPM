@@ -18,6 +18,8 @@ Currently supported lattice Boltzmann models
    
    greyscale/*
 
+   greyscaleColor/*
+
    freeEnergy/*
 
    

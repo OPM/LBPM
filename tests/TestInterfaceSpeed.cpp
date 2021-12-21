@@ -107,8 +107,8 @@ int main (int argc, char *argv[])
 	printf("Area ws = %f, Analytical = %f \n", Averages->aws, 4*PI*RADIUS*HEIGHT);
 	printf("Area s = %f, Analytical = %f \n", Averages->As, 2*PI*RADIUS*(Nz-2));
 	printf("Length wns = %f, Analytical = %f \n", Averages->lwns, 4*PI*RADIUS);
-	printf("Geodesic curvature (wns) = %f, Analytical = %f \n", Averages->KGwns_global, 0.0);
-	printf("Normal curvature (wns) = %f, Analytical = %f \n", Averages->KNwns_global, 1.0/RADIUS);
+	printf("Geodesic curvature (wn) = %f, Analytical = %f \n", Averages->KGwns_global, 0.0);
+	printf("Geodesic curvature (ws) = %f, Analytical = %f \n", Averages->KNwns_global, 4*PI);
 //	printf("Cos(theta_wns) = %f, Analytical = %f \n",efawns/lwns,1.0*RADIUS/CAPRAD);
 	printf("Interface Velocity = %f,%f,%f \n",Averages->vawn_global(0),Averages->vawn_global(1),Averages->vawn_global(2));
 	printf("Common Curve Velocity = %f,%f,%f \n",Averages->vawns_global(0),Averages->vawns_global(1),Averages->vawns_global(2));

@@ -1,3 +1,19 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright Equnior ASA
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include "common/ScaLBL.h"
 
 #include <chrono>
@@ -1356,6 +1372,14 @@ void ScaLBL_Communicator::SolidNeumannD3Q7(double *fq, double *BoundaryValue){
     ScaLBL_Solid_Neumann_D3Q7(fq,BoundaryValue,bb_dist,bb_interactions,n_bb_d3q7);
 }
 
+void ScaLBL_Communicator::SolidDirichletAndNeumannD3Q7(double *fq, double *BoundaryValue, int *BoundaryLabel){
+	// fq is a D3Q7 distribution
+	// BoundaryValues is a list of values to assign at bounce-back solid sites
+    // BoundaryLabel: is a list of integer labels indicating the type of BCs
+    //                1-> Dirichlet BC; 2-> Neumann BC.
+    ScaLBL_Solid_DirichletAndNeumann_D3Q7(fq,BoundaryValue,BoundaryLabel,bb_dist,bb_interactions,n_bb_d3q7);
+}
+
 void ScaLBL_Communicator::SolidSlippingVelocityBCD3Q19(double *fq, double *zeta_potential, double *ElectricField, double *SolidGrad,
                                                        double epsilon_LB, double tau, double rho0, double den_scale,double h, double time_conv){
 	// fq is a D3Q19 distribution
@@ -2297,24 +2321,70 @@ void ScaLBL_Communicator::D3Q7_Ion_Concentration_BC_Z(int *neighborList, double 
 	}
 }
 
-void ScaLBL_Communicator::D3Q7_Ion_Flux_BC_z(int *neighborList, double *fq, double Cin, double tau, double *VelocityZ, int time){
+void ScaLBL_Communicator::D3Q7_Ion_Flux_Diff_BC_z(int *neighborList, double *fq, double Cin, double tau, double *VelocityZ, int time){
 	if (kproc == 0) {
 		if (time%2==0){
-			ScaLBL_D3Q7_AAeven_Ion_Flux_BC_z(dvcSendList_z, fq, Cin, tau, VelocityZ, sendCount_z, N);
+			ScaLBL_D3Q7_AAeven_Ion_Flux_Diff_BC_z(dvcSendList_z, fq, Cin, tau, VelocityZ, sendCount_z, N);
 		}
 		else{
-			ScaLBL_D3Q7_AAodd_Ion_Flux_BC_z(neighborList, dvcSendList_z, fq, Cin, tau, VelocityZ, sendCount_z, N);
+			ScaLBL_D3Q7_AAodd_Ion_Flux_Diff_BC_z(neighborList, dvcSendList_z, fq, Cin, tau, VelocityZ, sendCount_z, N);
 		}
 	}
 }
 
-void ScaLBL_Communicator::D3Q7_Ion_Flux_BC_Z(int *neighborList, double *fq, double Cout, double tau, double *VelocityZ, int time){
+void ScaLBL_Communicator::D3Q7_Ion_Flux_Diff_BC_Z(int *neighborList, double *fq, double Cout, double tau, double *VelocityZ, int time){
 	if (kproc == nprocz-1){
 		if (time%2==0){
-			ScaLBL_D3Q7_AAeven_Ion_Flux_BC_Z(dvcSendList_Z, fq, Cout, tau, VelocityZ, sendCount_Z, N);
+			ScaLBL_D3Q7_AAeven_Ion_Flux_Diff_BC_Z(dvcSendList_Z, fq, Cout, tau, VelocityZ, sendCount_Z, N);
 		}
 		else{
-			ScaLBL_D3Q7_AAodd_Ion_Flux_BC_Z(neighborList, dvcSendList_Z, fq, Cout, tau, VelocityZ, sendCount_Z, N);
+			ScaLBL_D3Q7_AAodd_Ion_Flux_Diff_BC_Z(neighborList, dvcSendList_Z, fq, Cout, tau, VelocityZ, sendCount_Z, N);
+		}
+	}
+}
+
+void ScaLBL_Communicator::D3Q7_Ion_Flux_DiffAdvc_BC_z(int *neighborList, double *fq, double Cin, double tau, double *VelocityZ, int time){
+	if (kproc == 0) {
+		if (time%2==0){
+			ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvc_BC_z(dvcSendList_z, fq, Cin, tau, VelocityZ, sendCount_z, N);
+		}
+		else{
+			ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvc_BC_z(neighborList, dvcSendList_z, fq, Cin, tau, VelocityZ, sendCount_z, N);
+		}
+	}
+}
+
+void ScaLBL_Communicator::D3Q7_Ion_Flux_DiffAdvc_BC_Z(int *neighborList, double *fq, double Cout, double tau, double *VelocityZ, int time){
+	if (kproc == nprocz-1){
+		if (time%2==0){
+			ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvc_BC_Z(dvcSendList_Z, fq, Cout, tau, VelocityZ, sendCount_Z, N);
+		}
+		else{
+			ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvc_BC_Z(neighborList, dvcSendList_Z, fq, Cout, tau, VelocityZ, sendCount_Z, N);
+		}
+	}
+}
+
+void ScaLBL_Communicator::D3Q7_Ion_Flux_DiffAdvcElec_BC_z(int *neighborList, double *fq, double Cin, double tau, double *VelocityZ, double *ElectricField_Z,
+                                                          double Di, double zi, double Vt, int time){
+	if (kproc == 0) {
+		if (time%2==0){
+			ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvcElec_BC_z(dvcSendList_z, fq, Cin, tau, VelocityZ, ElectricField_Z, Di, zi, Vt, sendCount_z, N);
+		}
+		else{
+			ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvcElec_BC_z(neighborList, dvcSendList_z, fq, Cin, tau, VelocityZ, ElectricField_Z, Di, zi, Vt, sendCount_z, N);
+		}
+	}
+}
+
+void ScaLBL_Communicator::D3Q7_Ion_Flux_DiffAdvcElec_BC_Z(int *neighborList, double *fq, double Cout, double tau, double *VelocityZ, double *ElectricField_Z,
+                                                          double Di, double zi, double Vt, int time){
+	if (kproc == nprocz-1){
+		if (time%2==0){
+			ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvcElec_BC_Z(dvcSendList_Z, fq, Cout, tau, VelocityZ, ElectricField_Z, Di, zi, Vt, sendCount_Z, N);
+		}
+		else{
+			ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvcElec_BC_Z(neighborList, dvcSendList_Z, fq, Cout, tau, VelocityZ, ElectricField_Z, Di, zi, Vt, sendCount_Z, N);
 		}
 	}
 }

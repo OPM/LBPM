@@ -94,13 +94,13 @@ bool checkVar( const std::string &format, std::shared_ptr<IO::Mesh> mesh,
 {
     if ( format == "new" )
         IO::reformatVariable( *mesh, *variable2 );
-    bool pass                = true;
-    const IO::Variable &var1 = *variable1;
-    const IO::Variable &var2 = *variable2;
-    pass                     = var1.name == var2.name;
-    pass                     = pass && var1.dim == var2.dim;
-    pass                     = pass && var1.type == var2.type;
-    pass                     = pass && var1.data.length() == var2.data.length();
+    bool pass        = true;
+    const auto &var1 = *variable1;
+    const auto &var2 = *variable2;
+    pass             = var1.name == var2.name;
+    pass             = pass && var1.dim == var2.dim;
+    pass             = pass && var1.type == var2.type;
+    pass             = pass && var1.data.length() == var2.data.length();
     if ( pass ) {
         for ( size_t m = 0; m < var1.data.length(); m++ )
             pass = pass && approx_equal( var1.data( m ), var2.data( m ) );
@@ -132,6 +132,12 @@ void testWriter(
         precision = IO::DataType::Double;
     } else if ( format == "silo-float" ) {
         format2   = "silo";
+        precision = IO::DataType::Float;
+    } else if ( format == "hdf5-double" ) {
+        format2   = "hdf5";
+        precision = IO::DataType::Double;
+    } else if ( format == "hdf5-float" ) {
+        format2   = "hdf5";
         precision = IO::DataType::Float;
     }
 
@@ -315,7 +321,7 @@ int main( int argc, char **argv )
     set_node_vec->data = point_node_vec->data;
     list_node_mag->data.resize( 3 * N_tri );
     list_node_vec->data.resize( 3 * N_tri, 3 );
-    for ( int i = 0; i < N_points; i++ ) {
+    for ( int i = 0; i < N_tri; i++ ) {
         list_node_mag->data( 3 * i + 0 )    = distance( trilist->A[i] );
         list_node_mag->data( 3 * i + 1 )    = distance( trilist->B[i] );
         list_node_mag->data( 3 * i + 2 )    = distance( trilist->C[i] );
@@ -396,8 +402,14 @@ int main( int argc, char **argv )
     // Run the tests
     testWriter( "old", meshData, ut );
     testWriter( "new", meshData, ut );
+#ifdef USE_SILO
     testWriter( "silo-double", meshData, ut );
     testWriter( "silo-float", meshData, ut );
+#endif
+#ifdef USE_HDF5
+    testWriter( "hdf5-double", meshData, ut );
+    testWriter( "hdf5-float", meshData, ut );
+#endif
 
     // Finished
     ut.report();
