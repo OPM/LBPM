@@ -21,6 +21,9 @@
 
 class Membrane {
 public:
+    int *membraneLinks;    // D3Q19 links that cross membrane
+    double *membraneDist;  // distance to membrane for each linked site
+
     /**
     * \brief Create a flow adaptor to operate on the LB model
     * @param         ScaLBL - originating data structures 
@@ -45,9 +48,7 @@ public:
     * @param membrane - links that form the membrane
     * @param Np - number of sites in compact layout
     */
-    int Create(DoubleArray &Distance, IntArray &Map, int *neighborList, int *membrane, int Np);
-
-
+    int Create(DoubleArray &Distance, IntArray &Map, int *neighborList, int Np);
 private:
 
 };

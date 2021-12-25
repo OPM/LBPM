@@ -1,5 +1,5 @@
 /*
-  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright 2013--2022 James E. McClure, Virginia Polytechnic & State University
   Copyright Equnior ASA
 
   This file is part of the Open Porous Media project (OPM).
@@ -15,9 +15,7 @@
   along with OPM.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "common/ScaLBL.h"
-
 #include <chrono>
-
 
 ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	//......................................................................................
@@ -323,7 +321,6 @@ ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	//......................................................................................
 
 }
-
 
 ScaLBL_Communicator::~ScaLBL_Communicator()
 {
@@ -987,7 +984,6 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 	delete [] TempBuffer;
 	return(Np);
 }
-
 
 void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, int Np, bool SlippingVelBC)
 {

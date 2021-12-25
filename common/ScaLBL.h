@@ -699,6 +699,14 @@ public:
 	
 	double GetPerformance(int *NeighborList, double *fq, int Np);
 	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np, int width);
+    /**
+    * \brief Create membrane data structure
+    *        - cut lattice links based on distance map
+    * @param Distance - signed distance to membrane
+    * @param neighborList - data structure that retains lattice links 
+    * @param Np - number of lattice sites
+    * @param width - halo width for the model
+    */
 	void Barrier(){
 		ScaLBL_DeviceBarrier();
 		MPI_COMM_SCALBL.barrier();
