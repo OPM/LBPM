@@ -63,8 +63,10 @@ private:
     * @param recvDistance   - distance values from neighboring processor
     * @param d3q19_recvlist - device array with the saved list
     * */
-    int D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, const int *list,  int start, int count,
-    		DoubleArray &Distance, double *recvDistance, int *d3q19_recvlist);
+    int D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz, int rank_q, int rank_Q,
+    		const int shift_x, const int shift_y, const int shift_z, 
+    		const int *originalSendList, const int sendCount, const int recvCount,
+    		const DoubleArray &Distance, int *membraneSendList, int *membraneRecvList);
 	//......................................................................................
 	// MPI ranks for all 18 neighbors
 	//......................................................................................

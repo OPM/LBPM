@@ -343,12 +343,22 @@ Membrane::~Membrane() {
 	ScaLBL_FreeDeviceMemory( dvcRecvDist_YZ );
 }
 
-int Membrane::D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz, int rank_p, int rank_q
-		const int *originalSendList, const int shift_x, const int shift_y, const int shift_z, 
+int Membrane::D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz, int rank_q, int rank_Q,
+		const int shift_x, const int shift_y, const int shift_z, 
+		const int *originalSendList, const int sendCount, const int recvCount,
 		const DoubleArray &Distance, int *membraneSendList, int *membraneRecvList){
 
+	int sendtag = 2389;
+	int recvtag = 2389;
 	int i,j,k,n,nn,idx;
 	double dist,locdist;
+	
+	int *SendList;
+	int *RecvList;
+	int *RecvList_q;
+	SendList = new int [sendCount]; // for this process
+	RecvList = new int [recvCount];   // filled in by the neighbor process
+	RecvList_q = new int [sendCount]; // goes to the neighbor process
 
 	int regularCount = 0;
 	int membraneCount = 0;
@@ -377,16 +387,27 @@ int Membrane::D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz, int
 		if (dist*locdist < 0.0){
 			/* store membrane values at the end */
 			membraneCount++;
-			membraneRecvList[sendCount-membraneCount] = nn;
-			membraneSendList[sendCount-membraneCount] = n;
+			RecvList_q[sendCount-membraneCount] = nn;
+			SendList[sendCount-membraneCount] = n;
 		}
 		else {
-			membraneRecvList[regularCount] = nn;
-			membraneSendList[regularCount++] = n;
+			RecvList_q[regularCount] = nn;
+			SendList[regularCount++] = n;
 		}
 	}
+	// send the recv list to the neighbor process
+    req1[0] = Dm->Comm.Isend(RecvList_q, sendCount, rank_q, sendtag);
+    req2[0] = Dm->Comm.Irecv(RecvList, recvCount, rank_Q, recvtag);
+    Dm->Barrier();
 	
+	// Return updated version to the device
+	ScaLBL_CopyToDevice(&membraneSendList[start], SendList, sendCount*sizeof(int));
+	ScaLBL_CopyToDevice(&membraneRecvList[start], RecvList, recvCount*sizeof(int));
 
+	// clean up the work arrays
+	delete [] SendList;
+	delete [] RecvList;
+	delete [] RecvList_q;
 	return membraneCount;
 }
 
