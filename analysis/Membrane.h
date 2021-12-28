@@ -21,6 +21,9 @@
 
 class Membrane {
 public:
+    int Np;
+    int Nx,Ny,Nz,N;
+    
     int *neighborList;     // modified neighborlist
     int *membraneLinks;    // D3Q19 links that cross membrane
     double *membraneDist;  // distance to membrane for each linked site
@@ -30,7 +33,7 @@ public:
     * @param         ScaLBL - originating data structures 
     * @param 		 neighborList - list of neighbors for each site
     */
-    Membrane(ScaLBL_Communicator &ScaLBL, int *initialNeighborList);
+    Membrane(std::shared_ptr <Domain> Dm, int *initialNeighborList, int Nsites);
 
     /**
 	* \brief Destructor
@@ -46,8 +49,23 @@ public:
     */
     int Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArray &Map);
     
+	//......................................................................................
+	// Buffers to store data sent and recieved by this MPI process
+	double *sendbuf_x, *sendbuf_y, *sendbuf_z, *sendbuf_X, *sendbuf_Y, *sendbuf_Z;
+	double *sendbuf_xy, *sendbuf_yz, *sendbuf_xz, *sendbuf_Xy, *sendbuf_Yz, *sendbuf_xZ;
+	double *sendbuf_xY, *sendbuf_yZ, *sendbuf_Xz, *sendbuf_XY, *sendbuf_YZ, *sendbuf_XZ;
+	double *recvbuf_x, *recvbuf_y, *recvbuf_z, *recvbuf_X, *recvbuf_Y, *recvbuf_Z;
+	double *recvbuf_xy, *recvbuf_yz, *recvbuf_xz, *recvbuf_Xy, *recvbuf_Yz, *recvbuf_xZ;
+	double *recvbuf_xY, *recvbuf_yZ, *recvbuf_Xz, *recvbuf_XY, *recvbuf_YZ, *recvbuf_XZ;
+	//......................................................................................
+    
 private:
-    int Np;
+    int iproc,jproc,kproc;
+    int nprocx,nprocy,nprocz;
+	// Give the object it's own MPI communicator
+	RankInfoStruct rank_info;
+	Utilities::MPI MPI_COMM_SCALBL;		// MPI Communicator for this domain
+	MPI_Request req1[18],req2[18];
     /**
     * \brief   Set up membrane communication
     * \details associate p2p communication links to membrane where necessary
@@ -63,9 +81,10 @@ private:
     * @param recvDistance   - distance values from neighboring processor
     * @param d3q19_recvlist - device array with the saved list
     * */
-    int D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz, int rank_q, int rank_Q,
-    		const int shift_x, const int shift_y, const int shift_z, 
-    		const int *originalSendList, const int sendCount, const int recvCount,
+    int D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz, 
+    		int rank_q, int rank_Q, const int shift_x, const int shift_y, const int shift_z, 
+    		std::shared_ptr <Domain> Dm, const int *originalSendList, const int sendCount, const int recvCount,
+    		int startSend, int startRecv,
     		const DoubleArray &Distance, int *membraneSendList, int *membraneRecvList);
 	//......................................................................................
 	// MPI ranks for all 18 neighbors

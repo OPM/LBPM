@@ -3,9 +3,9 @@
 #include "analysis/Membrane.h"
 #include "analysis/distance.h"
 
-Membrane::Membrane(std::shared_ptr <Domain> Dm, int *initialNeighborList) {
+Membrane::Membrane(std::shared_ptr <Domain> Dm, int *initialNeighborList, int Nsites) {
 
-	Np = Dm->Np;
+	Np = Nsites;
 	neighborList = new int[18*Np];
 	/* Copy neighborList */
 	for (int idx=0; idx<Np; idx++){
@@ -343,9 +343,10 @@ Membrane::~Membrane() {
 	ScaLBL_FreeDeviceMemory( dvcRecvDist_YZ );
 }
 
-int Membrane::D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz, int rank_q, int rank_Q,
-		const int shift_x, const int shift_y, const int shift_z, 
-		const int *originalSendList, const int sendCount, const int recvCount,
+int Membrane::D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz, 
+		int rank_q, int rank_Q, const int shift_x, const int shift_y, const int shift_z, 
+		std::shared_ptr <Domain> Dm, const int *originalSendList, const int sendCount, const int recvCount,
+		int startSend, int startRecv,
 		const DoubleArray &Distance, int *membraneSendList, int *membraneRecvList){
 
 	int sendtag = 2389;
@@ -398,11 +399,11 @@ int Membrane::D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz, int
 	// send the recv list to the neighbor process
     req1[0] = Dm->Comm.Isend(RecvList_q, sendCount, rank_q, sendtag);
     req2[0] = Dm->Comm.Irecv(RecvList, recvCount, rank_Q, recvtag);
-    Dm->Barrier();
+    Dm->Comm.barrier();
 	
 	// Return updated version to the device
-	ScaLBL_CopyToDevice(&membraneSendList[start], SendList, sendCount*sizeof(int));
-	ScaLBL_CopyToDevice(&membraneRecvList[start], RecvList, recvCount*sizeof(int));
+	ScaLBL_CopyToDevice(&membraneSendList[startSend], SendList, sendCount*sizeof(int));
+	ScaLBL_CopyToDevice(&membraneRecvList[startRecv], RecvList, recvCount*sizeof(int));
 
 	// clean up the work arrays
 	delete [] SendList;
@@ -413,6 +414,7 @@ int Membrane::D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz, int
 
 int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArray &Map){
 	int mlink = 0;
+	int i,j,k;
 	int n, idx, neighbor;
 	double dist, locdist;
 	/* go through the neighborlist structure */
@@ -424,7 +426,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 				idx=Map(i,j,k);
 				locdist=Distance(i,j,k);
 
-				else if (!(idx<0)){
+				if (!(idx<0)){
 					
 					neighbor=Map(i-1,j,k);
 					dist=Distance(i-1,j,k);
@@ -560,7 +562,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 				idx=Map(i,j,k);
 				locdist=Distance(i,j,k);
 
-				else if (!(idx<0)){
+				if (!(idx<0)){
 
 					neighbor=Map(i+1,j,k);
 					dist=Distance(i+1,j,k);
@@ -657,7 +659,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 	}
 	
 	/* Re-organize communication based on membrane structure*/
-	membraneCount_x = D3Q19_MapSendRecv(Cx, Cy, Cz, Dm->sendList("x"), Distance, );
+	//membraneCount_x = D3Q19_MapSendRecv(Cx, Cy, Cz, Dm->sendList("x"), Distance, );
 	// MPI_COMM_SCALBL.barrier();
 	
 
@@ -665,7 +667,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 	// Set up the recieve distribution lists
 	//...................................................................................
 	//...Map recieve list for the X face: q=2,8,10,12,14 .................................
-	D3Q19_MapRecv(-1,0,0, Dm->recvList("X"),0,recvCount_X,dvcRecvDist_X);
+/*	D3Q19_MapRecv(-1,0,0, Dm->recvList("X"),0,recvCount_X,dvcRecvDist_X);
 	D3Q19_MapRecv(-1,-1,0,Dm->recvList("X"),recvCount_X,recvCount_X,dvcRecvDist_X);
 	D3Q19_MapRecv(-1,1,0, Dm->recvList("X"),2*recvCount_X,recvCount_X,dvcRecvDist_X);
 	D3Q19_MapRecv(-1,0,-1,Dm->recvList("X"),3*recvCount_X,recvCount_X,dvcRecvDist_X);
@@ -747,6 +749,6 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 
 	CommunicationCount = SendCount+RecvCount;
 	//......................................................................................
-	
+	*/
 	return mlink;
 }

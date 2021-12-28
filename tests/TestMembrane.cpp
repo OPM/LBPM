@@ -6,8 +6,8 @@
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
-#include "common/ScaLBL.h"
 #include "common/MPI.h"
+#include "analysis/Membrane.h"
 
 using namespace std;
 
@@ -107,6 +107,9 @@ int main(int argc, char **argv)
 		      
 			}
 		}
+		
+		/* create a membrane data structure */
+	    Membrane M(Dm, neighborList, Np);
 
 		//......................device distributions.................................
 		int *NeighborList;
