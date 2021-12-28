@@ -59,11 +59,19 @@ int main(int argc, char **argv)
 		int N = Nx*Ny*Nz;
 		//.......................................................................
 		int Np = 0;
-		for (k=1;k<Nz-1;k++){
-			for (j=1;j<Ny-1;j++){
-				for (i=1;i<Nx-1;i++){
+		double distance,radius;
+		DoubleArray Distance(Nx,Ny,Nz);
+		for (k=0;k<Nz;k++){
+			for (j=0;j<Ny;j++){
+				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
 					Dm->id[n] = 1;
+					radius = double(Nx)/6;
+					distance = sqrt(double((i-0.5*Nx)*(i-0.5*Nx)+ (j-0.5*Ny)*(j-0.5*Ny)+ (k-0.5*Nz)*(k-0.5*Nz)))-radius;
+					if (distance < 0.0 ){
+						Dm->id[n] = 1;
+					}
+					Distance(i,j,k) = distance;
 					Np++;
 				}
 			}
