@@ -343,49 +343,50 @@ Membrane::~Membrane() {
 	ScaLBL_FreeDeviceMemory( dvcRecvDist_YZ );
 }
 
-int Membrane::D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, const int *list,  int start, int count,
-							DoubleArray &Distance, double *recvDistance, int *d3q19_recvlist){
+int Membrane::D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz, int rank_p, int rank_q
+		const int *originalSendList, const int shift_x, const int shift_y, const int shift_z, 
+		const DoubleArray &Distance, int *membraneSendList, int *membraneRecvList){
+
 	int i,j,k,n,nn,idx;
 	double dist,locdist;
-	int * ReturnDist;
-	ReturnDist=new int [count];
-	
+
 	int regularCount = 0;
 	int membraneCount = 0;
-	for (idx=0; idx<count; idx++){
-
+	for (idx=0; idx<sendCount; idx++){
 		// Get the value from the list -- note that n is the index is from the send (non-local) process
-		n = list[idx]; // if (rank == 0) printf("@ rank:%d n=%d\n",rank,n);
+		n = originalSendList[idx]; // if (rank == 0) printf("@ rank:%d n=%d\n",rank,n);
 		// Get the 3-D indices from the send process
 		k = n/(Nx*Ny); j = (n-Nx*Ny*k)/Nx; i = n-Nx*Ny*k-Nx*j;
 		// if (rank ==0) printf("@ Get 3D indices from the send process: i=%d, j=%d, k=%d\n",i,j,k);
+		
+		/* distance to membrane at the send site */
+		locdist = Distance(i,j,k);
 
 		// Streaming for the non-local distribution
 		i += Cqx; j += Cqy; k += Cqz;
 		// if (rank == 0) printf("@ Streaming for the non-local distribution: i=%d, j=%d, k=%d\n",i,j,k);
-		/* get the distances */
-		dist = recvDistance[idx];
+		/* distance to membrane at the recv site */
 		locdist = Distance(i,j,k);
 		
 		// Compute 1D index for the neighbor and save
+		i += shift_x;
+		j += shift_y;
+		k += shift_z;
 		nn = k*Nx*Ny+j*Nx+i;
+		
 		if (dist*locdist < 0.0){
 			/* store membrane values at the end */
 			membraneCount++;
-			ReturnDist[count-membraneCount] = nn;
+			membraneRecvList[sendCount-membraneCount] = nn;
+			membraneSendList[sendCount-membraneCount] = n;
 		}
 		else {
-			// if (rank == 0) printf("@ rank:%d: neighbor=%d\n",rank,nn);
-			ReturnDist[regularCount++] = nn;
-			//ReturnDist[idx] = nn;			
+			membraneRecvList[regularCount] = nn;
+			membraneSendList[regularCount++] = n;
 		}
 	}
+	
 
-	// Return updated version to the device
-	ScaLBL_CopyToDevice(&d3q19_recvlist[start], ReturnDist, count*sizeof(int));
-
-	// clean up the work arrays
-	delete [] ReturnDist;
 	return membraneCount;
 }
 
@@ -635,7 +636,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 	}
 	
 	/* Re-organize communication based on membrane structure*/
-	
+	membraneCount_x = D3Q19_MapSendRecv(Cx, Cy, Cz, Dm->sendList("x"), Distance, );
 	// MPI_COMM_SCALBL.barrier();
 	
 
