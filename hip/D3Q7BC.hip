@@ -6,6 +6,16 @@
 #define NTHREADS 256
 
 
+#define CHECK_ERROR(KERNEL)                                         \
+    do {                                                            \
+        auto err = hipGetLastError();                               \
+        if ( hipSuccess != err ){                                   \
+            auto errString = hipGetErrorString(err);                \
+            printf("error in %s (kernel): %s \n",KERNEL,errString); \
+        }                                                           \
+    } while(0)
+
+
 __global__ void dvc_ScaLBL_Solid_Dirichlet_D3Q7(double *dist, double *BoundaryValue, int *BounceBackDist_list, int *BounceBackSolid_list, int count)
 {
 
@@ -35,6 +45,28 @@ __global__ void dvc_ScaLBL_Solid_Neumann_D3Q7(double *dist, double *BoundaryValu
 		value_b = BoundaryValue[ib];//get boundary value from a solid site
         value_q = dist[iq];
 		dist[iq] = value_q + value_b;
+	}
+}
+
+__global__ void dvc_ScaLBL_Solid_DirichletAndNeumann_D3Q7(double *dist, double *BoundaryValue,int *BoundaryLabel, int *BounceBackDist_list, int *BounceBackSolid_list, int count)
+{
+
+    int idx;
+    int iq,ib;
+    double value_b,value_b_label,value_q;
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		iq = BounceBackDist_list[idx];
+        ib = BounceBackSolid_list[idx];
+		value_b = BoundaryValue[ib];//get boundary value from a solid site
+		value_b_label = BoundaryLabel[ib];//get boundary label (i.e. type of BC) from a solid site
+        value_q = dist[iq];
+        if (value_b_label==1){//Dirichlet BC
+		    dist[iq] = -1.0*value_q + value_b*0.25;//NOTE 0.25 is the speed of sound for D3Q7 lattice
+        }
+        if (value_b_label==2){//Neumann BC
+		    dist[iq] = value_q + value_b;
+        }
 	}
 }
 
@@ -87,28 +119,6 @@ __global__ void dvc_ScaLBL_Solid_SlippingVelocityBC_D3Q19(double *dist, double *
         cz = lattice_cz[idx];
 		dist[iq] = value_q - 2.0*LB_weight*rho0*cs2_inv*(cx*ubx+cy*uby+cz*ubz);
 	}
-
-}
-
-__global__ void dvc_ScaLBL_Solid_DirichletAndNeumann_D3Q7(double *dist, double *BoundaryValue,int *BoundaryLabel, int *BounceBackDist_list, int *BounceBackSolid_list, int count)
-{
-
-    int idx;
-    int iq,ib;
-    double value_b,value_b_label,value_q;
-	idx = blockIdx.x*blockDim.x + threadIdx.x;
-	if (idx < count){
-		iq = BounceBackDist_list[idx];
-        ib = BounceBackSolid_list[idx];
-		value_b = BoundaryValue[ib];//get boundary value from a solid site
-		value_b_label = BoundaryLabel[ib];//get boundary label (i.e. type of BC) from a solid site
-        value_q = dist[iq];
-        if (value_b_label==1){//Dirichlet BC
-		    dist[iq] = -1.0*value_q + value_b*0.25;//NOTE 0.25 is the speed of sound for D3Q7 lattice
-        }
-        if (value_b_label==2){//Neumann BC
-		    dist[iq] = value_q + value_b;
-        }
 }
 
 __global__ void dvc_ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_z(int *list, double *dist, double Vin, int count, int Np)
@@ -338,7 +348,133 @@ __global__ void dvc_ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_Z(int *d_neighborList
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_BC_z(int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np)
+__global__ void dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_Diff_BC_z(int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np)
+{
+    //NOTE: FluxIn is the inward flux
+    int idx,n;
+	double f0,f1,f2,f3,f4,f5,f6;
+    double fsum_partial;
+    double uz;
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		n = list[idx];
+		f0 = dist[n];
+		f1 = dist[2*Np+n];
+		f2 = dist[1*Np+n];
+		f3 = dist[4*Np+n];
+		f4 = dist[3*Np+n];
+		f6 = dist[5*Np+n];
+        fsum_partial = f0+f1+f2+f3+f4+f6;
+        uz = VelocityZ[n];
+		//...................................................
+        f5 =(FluxIn+(1.0-0.5/tau)*(f6+uz*fsum_partial))/(1.0-0.5/tau)/(1.0-uz); 
+		dist[6*Np+n] = f5;
+	}
+}
+
+__global__ void dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_Diff_BC_Z(int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np)
+{
+    //NOTE: FluxIn is the inward flux
+    int idx,n;
+	double f0,f1,f2,f3,f4,f5,f6;
+    double fsum_partial;
+    double uz;
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		n = list[idx];
+		f0 = dist[n];
+		f1 = dist[2*Np+n];
+		f2 = dist[1*Np+n];
+		f3 = dist[4*Np+n];
+		f4 = dist[3*Np+n];
+		f5 = dist[6*Np+n];
+        fsum_partial = f0+f1+f2+f3+f4+f5;
+        uz = VelocityZ[n];
+		//...................................................
+        f6 =(FluxIn+(1.0-0.5/tau)*(f5-uz*fsum_partial))/(1.0-0.5/tau)/(1.0+uz); 
+		dist[5*Np+n] = f6;
+	}
+}
+
+__global__ void dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_Diff_BC_z(int *d_neighborList, int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np)
+{
+    //NOTE: FluxIn is the inward flux
+	int idx, n;
+    int nread,nr5;
+	double f0,f1,f2,f3,f4,f5,f6;
+    double fsum_partial;
+    double uz;
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		n = list[idx];
+		f0 = dist[n];
+
+		nread = d_neighborList[n];
+		f1 = dist[nread];
+
+		nread = d_neighborList[n+2*Np];
+		f3 = dist[nread];
+
+		nread = d_neighborList[n+Np];
+		f2 = dist[nread];
+
+		nread = d_neighborList[n+3*Np];
+		f4 = dist[nread];
+
+		nread = d_neighborList[n+5*Np];
+		f6 = dist[nread];
+
+        fsum_partial = f0+f1+f2+f3+f4+f6;
+        uz = VelocityZ[n];
+		//...................................................
+        f5 =(FluxIn+(1.0-0.5/tau)*(f6+uz*fsum_partial))/(1.0-0.5/tau)/(1.0-uz); 
+
+		// Unknown distributions
+		nr5 = d_neighborList[n+4*Np];
+		dist[nr5] = f5;
+	}
+}
+
+__global__ void dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_Diff_BC_Z(int *d_neighborList, int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np)
+{
+    //NOTE: FluxIn is the inward flux
+	int idx, n;
+    int nread,nr6;
+	double f0,f1,f2,f3,f4,f5,f6;
+    double fsum_partial;
+    double uz;
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		n = list[idx];
+		f0 = dist[n];
+
+		nread = d_neighborList[n];
+		f1 = dist[nread];
+
+		nread = d_neighborList[n+2*Np];
+		f3 = dist[nread];
+
+		nread = d_neighborList[n+4*Np];
+		f5 = dist[nread];
+
+		nread = d_neighborList[n+Np];
+		f2 = dist[nread];
+
+		nread = d_neighborList[n+3*Np];
+		f4 = dist[nread];
+
+        fsum_partial = f0+f1+f2+f3+f4+f5;
+        uz = VelocityZ[n];
+		//...................................................
+        f6 =(FluxIn+(1.0-0.5/tau)*(f5-uz*fsum_partial))/(1.0-0.5/tau)/(1.0+uz); 
+
+		// unknown distributions
+		nr6 = d_neighborList[n+5*Np];
+		dist[nr6] = f6;
+	}
+}
+
+__global__ void dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvc_BC_z(int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np)
 {
     //NOTE: FluxIn is the inward flux
     int idx,n;
@@ -362,7 +498,7 @@ __global__ void dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_BC_z(int *list, double *dist, do
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_BC_Z(int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np)
+__global__ void dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvc_BC_Z(int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np)
 {
     //NOTE: FluxIn is the inward flux
     int idx,n;
@@ -386,7 +522,7 @@ __global__ void dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_BC_Z(int *list, double *dist, do
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_BC_z(int *d_neighborList, int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np)
+__global__ void dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvc_BC_z(int *d_neighborList, int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np)
 {
     //NOTE: FluxIn is the inward flux
 	int idx, n;
@@ -425,7 +561,7 @@ __global__ void dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_BC_z(int *d_neighborList, int *li
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_BC_Z(int *d_neighborList, int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np)
+__global__ void dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvc_BC_Z(int *d_neighborList, int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np)
 {
     //NOTE: FluxIn is the inward flux
 	int idx, n;
@@ -463,24 +599,170 @@ __global__ void dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_BC_Z(int *d_neighborList, int *li
 		dist[nr6] = f6;
 	}
 }
+
+__global__ void dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvcElec_BC_z(int *list, double *dist, double FluxIn, double tau, double *VelocityZ, double *ElectricField_Z,
+                                                                  double Di, double zi, double Vt, int count, int Np)
+{
+    //NOTE: FluxIn is the inward flux
+    int idx,n;
+	double f0,f1,f2,f3,f4,f5,f6;
+    double fsum_partial;
+    double uz;
+    double uEPz;//electrochemical induced velocity
+    double Ez;//electrical field
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		n = list[idx];
+		f0 = dist[n];
+		f1 = dist[2*Np+n];
+		f2 = dist[1*Np+n];
+		f3 = dist[4*Np+n];
+		f4 = dist[3*Np+n];
+		f6 = dist[5*Np+n];
+        fsum_partial = f0+f1+f2+f3+f4+f6;
+        uz = VelocityZ[n];
+        Ez = ElectricField_Z[n];
+        uEPz=zi*Di/Vt*Ez;
+		//...................................................
+        f5 =(FluxIn+(1.0-0.5/tau)*f6-(0.5*uz/tau+uEPz)*fsum_partial)/(1.0-0.5/tau+0.5*uz/tau+uEPz); 
+		dist[6*Np+n] = f5;
+	}
+}
+
+__global__ void dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvcElec_BC_Z(int *list, double *dist, double FluxIn, double tau, double *VelocityZ, double *ElectricField_Z, 
+                                                                  double Di, double zi, double Vt, int count, int Np)
+{
+    //NOTE: FluxIn is the inward flux
+    int idx,n;
+	double f0,f1,f2,f3,f4,f5,f6;
+    double fsum_partial;
+    double uz;
+    double uEPz;//electrochemical induced velocity
+    double Ez;//electrical field
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		n = list[idx];
+		f0 = dist[n];
+		f1 = dist[2*Np+n];
+		f2 = dist[1*Np+n];
+		f3 = dist[4*Np+n];
+		f4 = dist[3*Np+n];
+		f5 = dist[6*Np+n];
+        fsum_partial = f0+f1+f2+f3+f4+f5;
+        uz = VelocityZ[n];
+        Ez = ElectricField_Z[n];
+        uEPz=zi*Di/Vt*Ez;
+		//...................................................
+        f6 =(FluxIn+(1.0-0.5/tau)*f5+(0.5*uz/tau+uEPz)*fsum_partial)/(1.0-0.5/tau-0.5*uz/tau-uEPz); 
+		dist[5*Np+n] = f6;
+	}
+}
+
+__global__ void dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvcElec_BC_z(int *d_neighborList, int *list, double *dist, double FluxIn, double tau, double *VelocityZ, double *ElectricField_Z,
+                                                                 double Di, double zi, double Vt, int count, int Np)
+{
+    //NOTE: FluxIn is the inward flux
+	int idx, n;
+    int nread,nr5;
+	double f0,f1,f2,f3,f4,f5,f6;
+    double fsum_partial;
+    double uz;
+    double uEPz;//electrochemical induced velocity
+    double Ez;//electrical field
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		n = list[idx];
+		f0 = dist[n];
+
+		nread = d_neighborList[n];
+		f1 = dist[nread];
+
+		nread = d_neighborList[n+2*Np];
+		f3 = dist[nread];
+
+		nread = d_neighborList[n+Np];
+		f2 = dist[nread];
+
+		nread = d_neighborList[n+3*Np];
+		f4 = dist[nread];
+
+		nread = d_neighborList[n+5*Np];
+		f6 = dist[nread];
+
+        fsum_partial = f0+f1+f2+f3+f4+f6;
+        uz = VelocityZ[n];
+        Ez = ElectricField_Z[n];
+        uEPz=zi*Di/Vt*Ez;
+		//...................................................
+        f5 =(FluxIn+(1.0-0.5/tau)*f6-(0.5*uz/tau+uEPz)*fsum_partial)/(1.0-0.5/tau+0.5*uz/tau+uEPz); 
+
+		// Unknown distributions
+		nr5 = d_neighborList[n+4*Np];
+		dist[nr5] = f5;
+	}
+}
+
+__global__ void dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvcElec_BC_Z(int *d_neighborList, int *list, double *dist, double FluxIn, double tau, double *VelocityZ, double *ElectricField_Z,
+                                                                 double Di, double zi, double Vt, int count, int Np)
+{
+    //NOTE: FluxIn is the inward flux
+	int idx, n;
+    int nread,nr6;
+	double f0,f1,f2,f3,f4,f5,f6;
+    double fsum_partial;
+    double uz;
+    double uEPz;//electrochemical induced velocity
+    double Ez;//electrical field
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		n = list[idx];
+		f0 = dist[n];
+
+		nread = d_neighborList[n];
+		f1 = dist[nread];
+
+		nread = d_neighborList[n+2*Np];
+		f3 = dist[nread];
+
+		nread = d_neighborList[n+4*Np];
+		f5 = dist[nread];
+
+		nread = d_neighborList[n+Np];
+		f2 = dist[nread];
+
+		nread = d_neighborList[n+3*Np];
+		f4 = dist[nread];
+
+        fsum_partial = f0+f1+f2+f3+f4+f5;
+        uz = VelocityZ[n];
+        Ez = ElectricField_Z[n];
+        uEPz=zi*Di/Vt*Ez;
+		//...................................................
+        f6 =(FluxIn+(1.0-0.5/tau)*f5+(0.5*uz/tau+uEPz)*fsum_partial)/(1.0-0.5/tau-0.5*uz/tau-uEPz); 
+
+		// unknown distributions
+		nr6 = d_neighborList[n+5*Np];
+		dist[nr6] = f6;
+	}
+}
 //*************************************************************************
 
 extern "C" void ScaLBL_Solid_Dirichlet_D3Q7(double *dist, double *BoundaryValue, int *BounceBackDist_list, int *BounceBackSolid_list, int count){
 	int GRID = count / 512 + 1;
 	dvc_ScaLBL_Solid_Dirichlet_D3Q7<<<GRID,512>>>(dist, BoundaryValue, BounceBackDist_list, BounceBackSolid_list, count);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("CUDA error in ScaLBL_Solid_Dirichlet_D3Q7 (kernel): %s \n",hipGetErrorString(err));
-	}
+    CHECK_ERROR("ScaLBL_Solid_Dirichlet_D3Q7");
 }
 
 extern "C" void ScaLBL_Solid_Neumann_D3Q7(double *dist, double *BoundaryValue, int *BounceBackDist_list, int *BounceBackSolid_list, int count){
 	int GRID = count / 512 + 1;
 	dvc_ScaLBL_Solid_Neumann_D3Q7<<<GRID,512>>>(dist, BoundaryValue, BounceBackDist_list, BounceBackSolid_list, count);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("CUDA error in ScaLBL_Solid_Neumann_D3Q7 (kernel): %s \n",hipGetErrorString(err));
-	}
+    CHECK_ERROR("ScaLBL_Solid_Neumann_D3Q7");
+}
+
+extern "C" void ScaLBL_Solid_DirichletAndNeumann_D3Q7(double *dist, double *BoundaryValue,int *BoundaryLabel, int *BounceBackDist_list, int *BounceBackSolid_list, int count){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_Solid_DirichletAndNeumann_D3Q7<<<GRID,512>>>(dist, BoundaryValue, BoundaryLabel, BounceBackDist_list, BounceBackSolid_list, count);
+    CHECK_ERROR("ScaLBL_Solid_DirichletAndNeumann_D3Q7");
 }
 
 extern "C" void ScaLBL_Solid_SlippingVelocityBC_D3Q19(double *dist, double *zeta_potential, double *ElectricField, double *SolidGrad,
@@ -494,143 +776,142 @@ extern "C" void ScaLBL_Solid_SlippingVelocityBC_D3Q19(double *dist, double *zeta
                                                             BounceBackDist_list, BounceBackSolid_list, FluidBoundary_list,
                                                             lattice_weight, lattice_cx, lattice_cy, lattice_cz,
                                                             count, Np);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("CUDA error in ScaLBL_Solid_SlippingVelocityBC_D3Q19 (kernel): %s \n",hipGetErrorString(err));
-	}
-}
-
-extern "C" void ScaLBL_Solid_DirichletAndNeumann_D3Q7(double *dist, double *BoundaryValue,int *BoundaryLabel, int *BounceBackDist_list, int *BounceBackSolid_list, int count){
-	int GRID = count / 512 + 1;
-	dvc_ScaLBL_Solid_DirichletAndNeumann_D3Q7<<<GRID,512>>>(dist, BoundaryValue, BoundaryLabel, BounceBackDist_list, BounceBackSolid_list, count);
-	cudaError_t err = cudaGetLastError();
-	if (cudaSuccess != err){
-		printf("hip error in ScaLBL_Solid_DirichletAndNeumann_D3Q7 (kernel): %s \n",cudaGetErrorString(err));
-	}
+    CHECK_ERROR("ScaLBL_Solid_SlippingVelocityBC_D3Q19");
 }
 
 extern "C" void ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_z(int *list, double *dist, double Vin, int count, int Np){
 	int GRID = count / 512 + 1;
 	dvc_ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_z<<<GRID,512>>>(list, dist, Vin, count, Np);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_z (kernel): %s \n",hipGetErrorString(err));
-	}
+    CHECK_ERROR("ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_z");
 }
 
 extern "C" void ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_Z(int *list, double *dist, double Vout, int count, int Np){
 	int GRID = count / 512 + 1;
 	dvc_ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_Z<<<GRID,512>>>(list, dist, Vout, count, Np);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_Z (kernel): %s \n",hipGetErrorString(err));
-	}
+    CHECK_ERROR("ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_Z");
 }
 
 extern "C" void ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_z(int *d_neighborList, int *list, double *dist, double Vin, int count, int Np){
 	int GRID = count / 512 + 1;
 	dvc_ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_z<<<GRID,512>>>(d_neighborList, list, dist, Vin, count, Np);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_z (kernel): %s \n",hipGetErrorString(err));
-	}
+    CHECK_ERROR("ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_z");
 }
 
 extern "C" void ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_Z(int *d_neighborList, int *list, double *dist, double Vout, int count, int Np){
 	int GRID = count / 512 + 1;
 	dvc_ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_Z<<<GRID,512>>>(d_neighborList, list, dist, Vout, count, Np);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_Z (kernel): %s \n",hipGetErrorString(err));
-	}
+    CHECK_ERROR("ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_Z");
 }
 
 extern "C" void ScaLBL_Poisson_D3Q7_BC_z(int *list, int *Map, double *Psi, double Vin, int count){
 	int GRID = count / 512 + 1;
     dvc_ScaLBL_Poisson_D3Q7_BC_z<<<GRID,512>>>(list, Map, Psi, Vin, count);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("CUDA error in ScaLBL_Poisson_D3Q7_BC_z (kernel): %s \n",hipGetErrorString(err));
-	}
+    CHECK_ERROR("ScaLBL_Poisson_D3Q7_BC_z");
 }
 
 extern "C" void ScaLBL_Poisson_D3Q7_BC_Z(int *list, int *Map, double *Psi, double Vout, int count){
 	int GRID = count / 512 + 1;
     dvc_ScaLBL_Poisson_D3Q7_BC_Z<<<GRID,512>>>(list, Map, Psi, Vout, count);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("CUDA error in ScaLBL_Poisson_D3Q7_BC_Z (kernel): %s \n",hipGetErrorString(err));
-	}
+    CHECK_ERROR("ScaLBL_Poisson_D3Q7_BC_Z");
 }
 
 extern "C" void ScaLBL_D3Q7_AAeven_Ion_Concentration_BC_z(int *list, double *dist, double Cin, int count, int Np){
 	int GRID = count / 512 + 1;
 	dvc_ScaLBL_D3Q7_AAeven_Ion_Concentration_BC_z<<<GRID,512>>>(list, dist, Cin, count, Np);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAeven_Ion_Concentration_BC_z (kernel): %s \n",hipGetErrorString(err));
-	}
+    CHECK_ERROR("ScaLBL_D3Q7_AAeven_Ion_Concentration_BC_z");
 }
 
 extern "C" void ScaLBL_D3Q7_AAeven_Ion_Concentration_BC_Z(int *list, double *dist, double Cout, int count, int Np){
 	int GRID = count / 512 + 1;
 	dvc_ScaLBL_D3Q7_AAeven_Ion_Concentration_BC_Z<<<GRID,512>>>(list, dist, Cout, count, Np);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAeven_Ion_Concentration_BC_Z (kernel): %s \n",hipGetErrorString(err));
-	}
+    CHECK_ERROR("ScaLBL_D3Q7_AAeven_Ion_Concentration_BC_Z");
 }
 
 extern "C" void ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_z(int *d_neighborList, int *list, double *dist, double Cin, int count, int Np){
 	int GRID = count / 512 + 1;
 	dvc_ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_z<<<GRID,512>>>(d_neighborList, list, dist, Cin, count, Np);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_z (kernel): %s \n",hipGetErrorString(err));
-	}
+    CHECK_ERROR("ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_z");
 }
 
 extern "C" void ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_Z(int *d_neighborList, int *list, double *dist, double Cout, int count, int Np){
 	int GRID = count / 512 + 1;
 	dvc_ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_Z<<<GRID,512>>>(d_neighborList, list, dist, Cout, count, Np);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_Z (kernel): %s \n",hipGetErrorString(err));
-	}
+    CHECK_ERROR("ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_Z");
+}
+//------------Diff-----------------
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_Diff_BC_z(int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_Diff_BC_z<<<GRID,512>>>(list, dist, FluxIn, tau, VelocityZ, count, Np);
+    CHECK_ERROR("ScaLBL_D3Q7_AAeven_Ion_Flux_Diff_BC_z");
 }
 
-extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_BC_z(int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np){
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_Diff_BC_Z(int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np){
 	int GRID = count / 512 + 1;
-	dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_BC_z<<<GRID,512>>>(list, dist, FluxIn, tau, VelocityZ, count, Np);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAeven_Ion_Flux_BC_z (kernel): %s \n",hipGetErrorString(err));
-	}
+	dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_Diff_BC_Z<<<GRID,512>>>(list, dist, FluxIn, tau, VelocityZ, count, Np);
+    CHECK_ERROR("ScaLBL_D3Q7_AAeven_Ion_Flux_Diff_BC_Z");
 }
 
-extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_BC_Z(int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np){
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_Diff_BC_z(int *d_neighborList, int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np){
 	int GRID = count / 512 + 1;
-	dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_BC_Z<<<GRID,512>>>(list, dist, FluxIn, tau, VelocityZ, count, Np);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAeven_Ion_Flux_BC_Z (kernel): %s \n",hipGetErrorString(err));
-	}
+	dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_Diff_BC_z<<<GRID,512>>>(d_neighborList, list, dist, FluxIn, tau, VelocityZ, count, Np);
+    CHECK_ERROR("ScaLBL_D3Q7_AAodd_Ion_Flux_Diff_BC_z");
 }
 
-extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_BC_z(int *d_neighborList, int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np){
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_Diff_BC_Z(int *d_neighborList, int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np){
 	int GRID = count / 512 + 1;
-	dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_BC_z<<<GRID,512>>>(d_neighborList, list, dist, FluxIn, tau, VelocityZ, count, Np);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAodd_Ion_Flux_BC_z (kernel): %s \n",hipGetErrorString(err));
-	}
+	dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_Diff_BC_Z<<<GRID,512>>>(d_neighborList, list, dist, FluxIn, tau, VelocityZ, count, Np);
+    CHECK_ERROR("ScaLBL_D3Q7_AAodd_Ion_Flux_Diff_BC_Z");
+}
+//----------DiffAdvc-------------
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvc_BC_z(int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvc_BC_z<<<GRID,512>>>(list, dist, FluxIn, tau, VelocityZ, count, Np);
+    CHECK_ERROR("ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvc_BC_z");
 }
 
-extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_BC_Z(int *d_neighborList, int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np){
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvc_BC_Z(int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np){
 	int GRID = count / 512 + 1;
-	dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_BC_Z<<<GRID,512>>>(d_neighborList, list, dist, FluxIn, tau, VelocityZ, count, Np);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAodd_Ion_Flux_BC_Z (kernel): %s \n",hipGetErrorString(err));
-	}
+	dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvc_BC_Z<<<GRID,512>>>(list, dist, FluxIn, tau, VelocityZ, count, Np);
+    CHECK_ERROR("ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvc_BC_Z");
 }
+
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvc_BC_z(int *d_neighborList, int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvc_BC_z<<<GRID,512>>>(d_neighborList, list, dist, FluxIn, tau, VelocityZ, count, Np);
+    CHECK_ERROR("ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvc_BC_z");
+}
+
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvc_BC_Z(int *d_neighborList, int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvc_BC_Z<<<GRID,512>>>(d_neighborList, list, dist, FluxIn, tau, VelocityZ, count, Np);
+    CHECK_ERROR("ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvc_BC_Z");
+}
+//----------DiffAdvcElec-------------
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvcElec_BC_z(int *list, double *dist, double FluxIn, double tau, double *VelocityZ, double *ElectricField_Z,
+                                                              double Di, double zi, double Vt, int count, int Np){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvcElec_BC_z<<<GRID,512>>>(list, dist, FluxIn, tau, VelocityZ, ElectricField_Z, Di, zi, Vt, count, Np);
+    CHECK_ERROR("ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvcElec_BC_z");
+}
+
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvcElec_BC_Z(int *list, double *dist, double FluxIn, double tau, double *VelocityZ, double *ElectricField_Z,
+                                                              double Di, double zi, double Vt, int count, int Np){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvcElec_BC_Z<<<GRID,512>>>(list, dist, FluxIn, tau, VelocityZ, ElectricField_Z, Di, zi, Vt, count, Np);
+    CHECK_ERROR("ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvcElec_BC_Z");
+}
+
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvcElec_BC_z(int *d_neighborList, int *list, double *dist, double FluxIn, double tau, double *VelocityZ, double *ElectricField_Z,
+                                                             double Di, double zi, double Vt, int count, int Np){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvcElec_BC_z<<<GRID,512>>>(d_neighborList, list, dist, FluxIn, tau, VelocityZ, ElectricField_Z, Di, zi, Vt, count, Np);
+    CHECK_ERROR("ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvcElec_BC_z");
+}
+
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvcElec_BC_Z(int *d_neighborList, int *list, double *dist, double FluxIn, double tau, double *VelocityZ, double *ElectricField_Z,
+                                                             double Di, double zi, double Vt, int count, int Np){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvcElec_BC_Z<<<GRID,512>>>(d_neighborList, list, dist, FluxIn, tau, VelocityZ, ElectricField_Z, Di, zi, Vt, count, Np);
+    CHECK_ERROR("ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvcElec_BC_Z");
+}
+//-------------------------------
