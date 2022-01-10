@@ -21,13 +21,11 @@ int main(int argc, char **argv)
 {
     // Initialize MPI and error handlers
     Utilities::startup( argc, argv );
+    Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 
     { // Limit scope so variables that contain communicators will free before MPI_Finialize
-    	// Initialize MPI
-    	Utilities::startup( argc, argv );
-    	Utilities::MPI comm( MPI_COMM_WORLD );
-    	int rank = comm.getRank();
-    	int nprocs = comm.getSize();
 
         if (rank == 0){
             printf("**************************************\n");
@@ -77,6 +75,9 @@ int main(int argc, char **argv)
             }
         }
         IonModel.getIonConcentration_debug(timestep);
+        IonModel.getIonFluxDiffusive_debug(timestep);
+        IonModel.getIonFluxAdvective_debug(timestep);
+        IonModel.getIonFluxElectrical_debug(timestep);
 
         if (rank==0) printf("Maximum timestep is reached and the simulation is completed\n");
         if (rank==0) printf("*************************************************************\n");

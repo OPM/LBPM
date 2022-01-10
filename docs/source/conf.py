@@ -18,7 +18,7 @@ import sys
 # -- Project information -----------------------------------------------------
 
 project = 'LBPM'
-copyright = '2021, James E McClure'
+copyright = '2021'
 author = 'James E McClure'
 
 # The full version, including alpha/beta/rc tags
@@ -31,7 +31,8 @@ release = '1.0'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.imgmath'
+    'sphinx.ext.imgmath',
+    'breathe'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -55,7 +56,6 @@ html_theme = 'alabaster'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-
 ## Read the docs style:
 if os.environ.get('READTHEDOCS') != 'True':
     try:
@@ -68,3 +68,12 @@ if os.environ.get('READTHEDOCS') != 'True':
     
 #def setup(app):
 #    app.add_stylesheet("fix_rtd.css")
+
+
+# -- Breathe configuration -------------------------------------------------
+
+breathe_projects = {
+	"LBPM Doxygen": "/home/mcclurej/local/dev/LBPM/doc/xml/"
+}
+breathe_default_project = "LBPM Doxygen"
+breathe_default_members = ('members', 'undoc-members')

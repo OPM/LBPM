@@ -37,6 +37,16 @@ that can be over-ridden to develop customized simulations.
 
    protocols/*
 
+****************************
+Analysis capabilities
+****************************
+   
+.. toctree::
+   :glob:
+   :maxdepth: 2
+
+   analysis/*
+
 
 ***************************
 Model parameters
@@ -44,17 +54,184 @@ Model parameters
 
 The essential model parameters for the color model are
 
-- :math:`\alpha` -- control the interfacial tension between fluids with key ``alpha``
-- :math:`\beta`  -- control the width of the interface with key ``beta``
-- :math:`\tau_A` -- control the viscosity of fluid A with key ``tauA``
-- :math:`\tau_B` -- control the viscosity of fluid B with key ``tauB``
+- ``alpha`` -- control the interfacial tension between fluids -- :math:`0 < \alpha < 0.01`
+- ``beta`` -- control the width of the interface -- :math:`\beta < 1`
+- ``tauA`` -- control the viscosity of fluid A -- :math:`0.7 < \tau_A < 1.5`
+- ``tauB`` -- control the viscosity of fluid B -- :math:`0.7 < \tau_B < 1.5`
+- ``rhoA`` -- control the viscosity of fluid A -- :math:`0.05 < \rho_A < 1.0`
+- ``rhoB`` -- control the viscosity of fluid B -- :math:`0.05 < \rho_B < 1.0`
 
 ****************************
 Model Formulation
 ****************************
 
 
-  
+Two LBEs are constructed to model the mass transport, incorporating the anti-diffusion
+
+.. math::
+   :nowrap:
+
+   $$
+   A_q(\bm{x} + \bm{\xi}_q \delta t, t+\delta t) = w_q N_a \Big[1 + \frac{\bm{u} \cdot \bm{\xi}_q}{c_s^2} 
+       + \beta  \frac{N_b}{N_a+N_b} \bm{n} \cdot \bm{\xi}_q\Big] \;
+   $$
+
+.. math::
+   :nowrap:
+
+   $$
+   B_q(\bm{x} + \bm{\xi}_q \delta t, t+\delta t) = 
+       w_q N_b \Big[1 + \frac{\bm{u} \cdot \bm{\xi}_q}{c_s^2}
+       - \beta  \frac{N_a}{N_a+N_b} \bm{n} \cdot \bm{\xi}_q\Big]\;, 
+   $$
+
+The number density for each fluid is obtained from the sum of the mass transport distributions
+
+.. math::
+   :nowrap:
+
+   $$
+   N_a = \sum_q A_q\;, \quad    N_b = \sum_q B_q\; 
+   $$
+
+   
+The phase indicator field is then defined as 
+
+.. math::
+   :nowrap:
+
+   $$
+   \phi = \frac{N_a-N_b}{N_a+N_b}
+   $$
+
+The fluid density and kinematic viscosity are determined based on linear interpolation
+
+   
+.. math::
+   :nowrap:
+
+   $$
+    \rho_0 = \frac{(1+\phi) \rho_n}{2}+ \frac{(1-\phi) \rho_w}{2} \;,
+   $$
+
+.. math::
+   :nowrap:
+
+   $$
+    s_\nu = \frac{(1+\phi)}{2\tau_n} +\frac{(1-\phi)}{2\tau_w} \;,
+   $$
+
+where
+
+.. math::
+   :nowrap:
+
+   $$
+    \nu_w = \frac{1}{3}\Big(\tau_w - \frac{1}{2} \Big) \;, \quad
+    \nu_n = \frac{1}{3}\Big(\tau_n - \frac{1}{2} \Big) \;.
+   $$
+
+
+These values are then used to model the momentum transport.
+The LBE governing momentum transport is defined based on a MRT relaxation process with additional
+terms to account for the interfacial stresses
+
+.. math::
+   :nowrap:
+
+   $$
+      f_q(\bm{x}_i + \bm{\xi}_q \delta t,t + \delta t) - f_q(\bm{x}_i,t) = \sum^{Q-1}_{k=0} M^{-1}_{qk} \lambda_{k} (m_k^{eq}-m_k) + w_q \bm{\xi}_q \cdot \frac{\bm{F}}{c_s^2} \;,
+   $$
+
+Where :math:`\bm{F}` is an external body force and :math:`c_s^2 = 1/3` is the speed of sound for the LB model.
+The moments are linearly indepdendent:
+
+.. math::
+   :nowrap:
+
+   $$
+      m_k = \sum_{q=0}^{18} M_{qk} f_q\;.
+   $$
+
+   
+The relaxation parameters are determined from the relaxation time:
+
+.. math::
+   :nowrap:
+
+   $$
+     \lambda_1 =  \lambda_2=  \lambda_9 = \lambda_{10}= \lambda_{11}= \lambda_{12}= \lambda_{13}= \lambda_{14}= \lambda_{15} = s_\nu \;,
+   $$
+   
+.. math::
+   :nowrap:
+      
+    $$
+     \lambda_{4}= \lambda_{6}= \lambda_{8} = \lambda_{16} = \lambda_{17} = \lambda_{18}= \frac{8(2-s_\nu)}{8-s_\nu} \;,
+   $$
+
+The non-zero equilibrium moments are defined as
+
+.. math::
+   :nowrap:
+
+   $$
+     m_1^{eq} = (j_x^2+j_y^2+j_z^2) - \alpha |\textbf{C}|, \\
+   $$     
+
+.. math::
+   :nowrap:
+
+   $$     
+     m_9^{eq} = (2j_x^2-j_y^2-j_z^2)+ \alpha \frac{|\textbf{C}|}{2}(2n_x^2-n_y^2-n_z^2), \\
+   $$     
+
+.. math::
+   :nowrap:
+
+   $$     
+     m_{11}^{eq} = (j_y^2-j_z^2) + \alpha \frac{|\textbf{C}|}{2}(n_y^2-n_z^2), \\
+   $$     
+
+.. math::
+   :nowrap:
+
+   $$     
+     m_{13}^{eq} = j_x j_y + \alpha \frac{|\textbf{C}|}{2} n_x n_y\;, \\
+   $$     
+
+.. math::
+   :nowrap:
+
+   $$     
+     m_{14}^{eq} = j_y j_z + \alpha \frac{|\textbf{C}|}{2} n_y n_z\;, \\
+   $$     
+
+.. math::
+   :nowrap:
+
+   $$     
+     m_{15}^{eq} = j_x j_z + \alpha \frac{|\textbf{C}|}{2} n_x n_z\;, 
+   $$
+
+where the color gradient is determined from the phase indicator field
+
+.. math::
+   :nowrap:
+
+   $$
+   \textbf{C}=\nabla \phi\;.
+   $$
+
+and the unit normal vector is
+
+.. math::
+   :nowrap:
+
+   $$
+     \bm{n} = \frac{\textbf{C}}{|\textbf{C}|}\;.
+   $$
+   
 ****************************
 Boundary Conditions
 ****************************
@@ -89,3 +266,8 @@ the inlet or outlet, the ``Domain`` section of the database may specify the foll
 - ``InletLayerPhase = 2`` -- establish a reservoir of component B at the inlet
 - ``OutletLayerPhase = 1`` -- establish a reservoir of component A at the outlet
 
+****************
+Example data
+****************
+
+Example data can be downloaded from https://www.digitalrocksportal.org/projects/326 

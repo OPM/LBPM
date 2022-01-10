@@ -77,6 +77,15 @@ int main(int argc, char **argv)
 		comm.barrier();
 		Dm->CommInit();
 		
+		/* read the data */
+		if (domain_db->keyExists( "Filename" )){
+			auto Filename = domain_db->getScalar<std::string>( "Filename" );
+			Dm->Decomp(Filename);
+		}
+		else{
+			Dm->ReadIDs();
+		}
+		
 		// Compute the Minkowski functionals
 		comm.barrier();
 		std::shared_ptr<Minkowski> Averages(new Minkowski(Dm));

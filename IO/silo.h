@@ -1,3 +1,18 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #ifndef SILO_INTERFACE
 #define SILO_INTERFACE
 
@@ -49,7 +64,7 @@ void close( DBfile *fid );
  * @param[in] fid           Handle to the open file
  * @param[in] name          Name of variable
  */
-DataType varDataType( DBfile *dbfile, const std::string &name );
+DataType varDataType( DBfile *fid, const std::string &name );
 
 
 /*!
@@ -250,8 +265,6 @@ void writeMultiMesh( DBfile *fid, const std::string &meshname,
  * @param[in] varname       Mesh name
  * @param[in] subVarNames   Names of the sub meshes in the form "filename:meshname"
  * @param[in] subVarTypes   Type of each submesh
- * @param[in] ndim          Dimension of variable (used to determine suffix)
- * @param[in] nvar          Number of subvariables (used to determine suffix)
  */
 void writeMultiVar( DBfile *fid, const std::string &varname,
     const std::vector<std::string> &subVarNames, const std::vector<int> &subVarTypes );

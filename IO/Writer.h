@@ -1,3 +1,18 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #ifndef WRITER_INC
 #define WRITER_INC
 
@@ -21,11 +36,13 @@ namespace IO {
  * @param[in] format        The data format to use:
  *                              old - Old mesh format
  *                                    (provided for backward compatibility, cannot write variables)
- *                              new - New format, 1 file/process silo - Silo
+ *                              new - New format, 1 file/process
+ *                              silo - Silo
+ *                              hdf5 - HDF5 + XMDF
  * @param[in] append        Append any existing data (default is false)
  */
 void initialize(
-    const std::string &path = "", const std::string &format = "silo", bool append = false );
+    const std::string &path = "", const std::string &format = "hdf5", bool append = false );
 
 
 /*!
@@ -53,6 +70,11 @@ inline void writeData(
     sprintf( subdir, "vis%03i", timestep );
     writeData( subdir, meshData, comm );
 }
+
+
+// Create the database entry for the mesh data
+IO::MeshDatabase getDatabase(
+    const std::string &filename, const IO::MeshDataStruct &mesh, IO::FileFormat format, int rank );
 
 
 } // namespace IO

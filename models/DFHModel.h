@@ -16,38 +16,38 @@ Implementation of color lattice boltzmann model
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
-class ScaLBL_DFHModel{
+class ScaLBL_DFHModel {
 public:
-	ScaLBL_DFHModel(int RANK, int NP, const Utilities::MPI& COMM);
-	~ScaLBL_DFHModel();	
-	
-	// functions in they should be run
-	void ReadParams(string filename);
-	void ReadParams(std::shared_ptr<Database> db0);
-	void SetDomain();
-	void ReadInput();
-	void Create();
-	void Initialize();
-	void AssignSolidPotential();
-	void Run();
-	void WriteDebug();
-	
-	bool Restart,pBC;
-	int timestep,timestepMax;
-	int BoundaryCondition;
-	double tauA,tauB,rhoA,rhoB,alpha,beta;
-	double Fx,Fy,Fz,flux;
-	double din,dout,inletA,inletB,outletA,outletB;
-	
-	int Nx,Ny,Nz,N,Np;
-	int rank,nprocx,nprocy,nprocz,nprocs;
-	double Lx,Ly,Lz;
+    ScaLBL_DFHModel(int RANK, int NP, const Utilities::MPI &COMM);
+    ~ScaLBL_DFHModel();
 
-	std::shared_ptr<Domain> Dm;   // this domain is for analysis
-	std::shared_ptr<Domain> Mask; // this domain is for lbm
-	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
+    // functions in they should be run
+    void ReadParams(string filename);
+    void ReadParams(std::shared_ptr<Database> db0);
+    void SetDomain();
+    void ReadInput();
+    void Create();
+    void Initialize();
+    void AssignSolidPotential();
+    void Run();
+    void WriteDebug();
+
+    bool Restart, pBC;
+    int timestep, timestepMax;
+    int BoundaryCondition;
+    double tauA, tauB, rhoA, rhoB, alpha, beta;
+    double Fx, Fy, Fz, flux;
+    double din, dout, inletA, inletB, outletA, outletB;
+
+    int Nx, Ny, Nz, N, Np;
+    int rank, nprocx, nprocy, nprocz, nprocs;
+    double Lx, Ly, Lz;
+
+    std::shared_ptr<Domain> Dm;   // this domain is for analysis
+    std::shared_ptr<Domain> Mask; // this domain is for lbm
+    std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
     std::shared_ptr<TwoPhase> Averages;
-    
+
     // input database
     std::shared_ptr<Database> db;
     std::shared_ptr<Database> domain_db;
@@ -64,20 +64,18 @@ public:
     double *Velocity;
     double *Gradient;
     double *Pressure;
-		
+
 private:
-	Utilities::MPI comm;
-    
-	int dist_mem_size;
-	int neighborSize;
-	// filenames
+    Utilities::MPI comm;
+
+    int dist_mem_size;
+    int neighborSize;
+    // filenames
     char LocalRankString[8];
     char LocalRankFilename[40];
     char LocalRestartFile[40];
-   
+
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);
     void AssignComponentLabels(double *phase);
-    	
 };
-
