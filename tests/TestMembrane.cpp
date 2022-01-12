@@ -119,6 +119,9 @@ int main(int argc, char **argv)
 		/* create a membrane data structure */
 	    Membrane M(Dm, neighborList, Np);
 
+	    int MembraneCount = M.Create(Dm, Distance, Map);
+	    
+	    
 		//......................device distributions.................................
 		int *NeighborList;
 		int *dvcMap;
@@ -159,19 +162,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		/*		for (int idx=0; idx<Np; idx++){
-			n = TmpMap[idx];
-			// back out the 3D indices
-			k = n/(Nx*Ny);
-			j = (n-Nx*Ny*k)/Nx;
-			i = n-Nx*Ny*k-Nx*j;
-			for (int q=0; q<19; q++){
-				fq[q*Np+idx]=k*100.f+j*10.f+i*1.f+0.01*q;
-			}
-		}
-				if (rank==0)	printf ("Setting up distributions \n");
-		
-		*/
+
 		// Loop over the distributions for interior lattice sites
 		if (rank==0)	printf ("Loop over distributions \n");
 

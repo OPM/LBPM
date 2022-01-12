@@ -344,9 +344,10 @@ Membrane::~Membrane() {
 }
 
 int Membrane::D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz, 
-		int rank_q, int rank_Q, const int shift_x, const int shift_y, const int shift_z, 
-		std::shared_ptr <Domain> Dm, const int *originalSendList, const int sendCount, const int recvCount,
-		int startSend, int startRecv,
+		const int shift_x, const int shift_y, const int shift_z, 
+		const int sendCount, const int recvCount,
+		int rank_q, int rank_Q, int startSend, int startRecv,
+		std::shared_ptr <Domain> Dm, const int *originalSendList, 
 		const DoubleArray &Distance, int *membraneSendList, int *membraneRecvList){
 
 	int sendtag = 2389;
@@ -414,8 +415,8 @@ int Membrane::D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz,
 
 int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArray &Map){
 	int mlink = 0;
-	int i,j,k;
-	int n, idx, neighbor;
+	int i,j,k,n;
+	int idx, neighbor;
 	double dist, locdist;
 	/* go through the neighborlist structure */
 	/* count & cut the links */

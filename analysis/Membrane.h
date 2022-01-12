@@ -49,6 +49,7 @@ public:
     */
     int Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArray &Map);
     
+    void SendRecv(double *dist);
 	//......................................................................................
 	// Buffers to store data sent and recieved by this MPI process
 	double *sendbuf_x, *sendbuf_y, *sendbuf_z, *sendbuf_X, *sendbuf_Y, *sendbuf_Z;
@@ -82,9 +83,10 @@ private:
     * @param d3q19_recvlist - device array with the saved list
     * */
     int D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz, 
-    		int rank_q, int rank_Q, const int shift_x, const int shift_y, const int shift_z, 
-    		std::shared_ptr <Domain> Dm, const int *originalSendList, const int sendCount, const int recvCount,
-    		int startSend, int startRecv,
+    		const int shift_x, const int shift_y, const int shift_z, 
+    		const int sendCount, const int recvCount,
+    		int rank_q, int rank_Q, int startSend, int startRecv,
+    		std::shared_ptr <Domain> Dm, const int *originalSendList, 
     		const DoubleArray &Distance, int *membraneSendList, int *membraneRecvList);
 	//......................................................................................
 	// MPI ranks for all 18 neighbors
