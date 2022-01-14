@@ -17,7 +17,7 @@ std::shared_ptr<Database> loadInputs( int nprocs )
     auto db = std::make_shared<Database>();
     db->putScalar<int>( "BC", 0 );
     db->putVector<int>( "nproc", { 1, 1, 1 } );
-    db->putVector<int>( "n", { 5, 5, 5 } );
+    db->putVector<int>( "n", { 32, 32, 32 } );
     db->putScalar<int>( "nspheres", 1 );
     db->putVector<double>( "L", { 1, 1, 1 } );
     return db;
@@ -42,7 +42,7 @@ int main(int argc, char **argv)
         int rank = comm.getRank();
 		if (rank == 0){
 			printf("********************************************************\n");
-			printf("Running unit test: TestMap	\n");
+			printf("Running unit test: TestMembrane	\n");
 			printf("********************************************************\n");
 		}
 		
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
 					Dm->id[n] = 1;
-					radius = double(Nx)/6;
+					radius = double(Nx)/4;
 					distance = sqrt(double((i-0.5*Nx)*(i-0.5*Nx)+ (j-0.5*Ny)*(j-0.5*Ny)+ (k-0.5*Nz)*(k-0.5*Nz)))-radius;
 					if (distance < 0.0 ){
 						Dm->id[n] = 1;
@@ -99,29 +99,64 @@ int main(int argc, char **argv)
 		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id.data(),Np,1);
 		comm.barrier();
 		
+		double *dist;
+		dist = new double [19*Np];
+		
 		// Check the neighborlist
 		printf("Check neighborlist: exterior %i, first interior %i last interior %i \n",ScaLBL_Comm->LastExterior(),ScaLBL_Comm->FirstInterior(),ScaLBL_Comm->LastInterior());
 		for (int idx=0; idx<ScaLBL_Comm->LastExterior(); idx++){
 			for (int q=0; q<18; q++){
 				int nn = neighborList[q*Np+idx]%Np;
 				if (nn>Np) printf("neighborlist error (exterior) at q=%i, idx=%i \n",q,idx);
-		      
+				dist[q*Np + idx] = 0.0;
 			}
 		}
 		for (int idx=ScaLBL_Comm->FirstInterior(); idx<ScaLBL_Comm->LastInterior(); idx++){
 			for (int q=0; q<18; q++){
 				int nn = neighborList[q*Np+idx]%Np;
 				if (nn>Np) printf("neighborlist error (exterior) at q=%i, idx=%i \n",q,idx);
-		      
+				dist[q*Np + idx] = 0.0;
 			}
 		}
+
 		
 		/* create a membrane data structure */
 	    Membrane M(Dm, neighborList, Np);
 
 	    int MembraneCount = M.Create(Dm, Distance, Map);
-	    
-	    
+		if (rank==0)	printf (" Number of membrane links: %i \n", MembraneCount);
+
+		/* create a tagged array to show where the mebrane is*/
+		double *MembraneLinks;
+		MembraneLinks = new double [Nx*Ny*Nz];
+		for (int n=0; n<Nx*Ny*Nz; n++) {
+			MembraneLinks[n] = 0.0;
+		}
+		for (int mlink=0; mlink<MembraneCount; mlink++){
+			int iq = M.membraneLinks[2*mlink];
+			int jq = M.membraneLinks[2*mlink+1];
+			dist[iq] = 1.0; // set these distributions to non-zero
+			dist[jq] = 1.0;
+		}
+		for (k=1;k<Nz-1;k++){
+			for (j=1;j<Ny-1;j++){
+				for (i=1;i<Nx-1;i++){
+					int idx = Map(i,j,k);
+					double sum = 0.0;
+					for (int q=0; q<19; q++){
+						sum += dist[q*Np + idx];
+					}
+					int n = k*Nx*Ny + j*Nx + i;
+					MembraneLinks[n] = sum;
+					if (sum > 0.f){
+						Dm->id[n] = 127;
+					}
+				}
+			}
+		}
+		if (argc > 1)
+			Dm->AggregateLabels("membrane.raw");
+				 
 		//......................device distributions.................................
 		int *NeighborList;
 		int *dvcMap;

@@ -372,7 +372,7 @@ int Membrane::D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz,
 		// if (rank ==0) printf("@ Get 3D indices from the send process: i=%d, j=%d, k=%d\n",i,j,k);
 		
 		/* distance to membrane at the send site */
-		locdist = Distance(i,j,k);
+		dist = Distance(i,j,k);
 
 		// Streaming for the non-local distribution
 		i += Cqx; j += Cqy; k += Cqz;
@@ -415,7 +415,7 @@ int Membrane::D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz,
 
 int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArray &Map){
 	int mlink = 0;
-	int i,j,k,n;
+	int i,j,k;
 	int idx, neighbor;
 	double dist, locdist;
 	/* go through the neighborlist structure */
@@ -423,7 +423,6 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 	for (k=1;k<Nz-1;k++){
 		for (j=1;j<Ny-1;j++){
 			for (i=1;i<Nx-1;i++){
-				n=k*Nx*Ny+j*Nx+i;
 				idx=Map(i,j,k);
 				locdist=Distance(i,j,k);
 
@@ -559,7 +558,6 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 	for (k=1;k<Nz-1;k++){
 		for (j=1;j<Ny-1;j++){
 			for (i=1;i<Nx-1;i++){
-				n=k*Nx*Ny+j*Nx+i;
 				idx=Map(i,j,k);
 				locdist=Distance(i,j,k);
 
