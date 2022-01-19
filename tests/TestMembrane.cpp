@@ -118,7 +118,6 @@ int main(int argc, char **argv)
 				dist[q*Np + idx] = 0.0;
 			}
 		}
-
 		
 		/* create a membrane data structure */
 	    Membrane M(Dm, neighborList, Np);
@@ -135,7 +134,7 @@ int main(int argc, char **argv)
 		for (int mlink=0; mlink<MembraneCount; mlink++){
 			int iq = M.membraneLinks[2*mlink];
 			int jq = M.membraneLinks[2*mlink+1];
-			dist[iq] = 1.0; // set these distributions to non-zero
+			dist[iq] = -1.0; // set these distributions to non-zero
 			dist[jq] = 1.0;
 		}
 		for (k=1;k<Nz-1;k++){
@@ -150,6 +149,9 @@ int main(int argc, char **argv)
 					MembraneLinks[n] = sum;
 					if (sum > 0.f){
 						Dm->id[n] = 127;
+					}
+					if (sum < 0.f){
+						Dm->id[n] = 64;
 					}
 				}
 			}

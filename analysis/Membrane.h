@@ -26,6 +26,7 @@ public:
     
     int *neighborList;     // modified neighborlist
     int *membraneLinks;    // D3Q19 links that cross membrane
+    int *membraneTag;      // label each link in the membrane
     double *membraneDist;  // distance to membrane for each linked site
 
     /**

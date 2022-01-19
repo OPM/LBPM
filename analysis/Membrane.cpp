@@ -552,9 +552,11 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 	/* allocate memory */
 	membraneLinks = new int [2*mlink];
 	membraneDist = new double [2*mlink];
-	
+	membraneTag = new int [mlink];
+
 	/* construct the membrane*/
 	mlink = 0;
+	int insideMem = 0; int outsideMem = 0;
 	for (k=1;k<Nz-1;k++){
 		for (j=1;j<Ny-1;j++){
 			for (i=1;i<Nx-1;i++){
@@ -566,90 +568,162 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 					neighbor=Map(i+1,j,k);
 					dist=Distance(i+1,j,k);
 					if (dist*locdist < 0.0){
-						membraneLinks[2*mlink] = idx + 1*Np;
-						membraneLinks[2*mlink+1] = neighbor + 2*Np;
-						membraneDist[2*mlink] = locdist;
-						membraneDist[2*mlink+1] = dist;
+						if (locdist < 0.0){
+							insideMem = 2*mlink;
+							outsideMem = 2*mlink+1;
+						}
+						else{
+							insideMem = 2*mlink+1;
+							outsideMem = 2*mlink;
+						}
+						membraneLinks[insideMem] = idx + 1*Np;
+						membraneLinks[outsideMem] = neighbor + 2*Np;
+						membraneDist[insideMem] = locdist;
+						membraneDist[outsideMem] = dist;
 						mlink++;
 					}
 
 					neighbor=Map(i,j+1,k);
 					dist=Distance(i,j+1,k);
 					if (dist*locdist < 0.0){
-						membraneLinks[2*mlink] = idx + 3*Np;
-						membraneLinks[2*mlink+1] = neighbor + 4*Np;
-						membraneDist[2*mlink] = locdist;
-						membraneDist[2*mlink+1] = dist;
+						if (locdist < 0.0){
+							insideMem = 2*mlink;
+							outsideMem = 2*mlink+1;
+						}
+						else{
+							insideMem = 2*mlink+1;
+							outsideMem = 2*mlink;
+						}
+						membraneLinks[insideMem] = idx + 3*Np;
+						membraneLinks[outsideMem] = neighbor + 4*Np;
+						membraneDist[insideMem] = locdist;
+						membraneDist[outsideMem] = dist;
 						mlink++;
 					}
 
 					neighbor=Map(i,j,k+1);
 					dist=Distance(i,j,k+1);
 					if (dist*locdist < 0.0){
-						membraneLinks[2*mlink] = idx + 5*Np;
-						membraneLinks[2*mlink+1] = neighbor + 6*Np;
-						membraneDist[2*mlink] = locdist;
-						membraneDist[2*mlink+1] = dist;
+						if (locdist < 0.0){
+							insideMem = 2*mlink;
+							outsideMem = 2*mlink+1;
+						}
+						else{
+							insideMem = 2*mlink+1;
+							outsideMem = 2*mlink;
+						}
+						membraneLinks[insideMem] = idx + 5*Np;
+						membraneLinks[outsideMem] = neighbor + 6*Np;
+						membraneDist[insideMem] = locdist;
+						membraneDist[outsideMem] = dist;
 						mlink++;
 					}
 
 					neighbor=Map(i+1,j+1,k);
 					dist=Distance(i+1,j+1,k);
 					if (dist*locdist < 0.0){
-						membraneLinks[2*mlink] = idx + 7*Np;
-						membraneLinks[2*mlink+1] = neighbor+8*Np;
-						membraneDist[2*mlink] = locdist;
-						membraneDist[2*mlink+1] = dist;
+						if (locdist < 0.0){
+							insideMem = 2*mlink;
+							outsideMem = 2*mlink+1;
+						}
+						else{
+							insideMem = 2*mlink+1;
+							outsideMem = 2*mlink;
+						}
+						membraneLinks[insideMem] = idx + 7*Np;
+						membraneLinks[outsideMem] = neighbor+8*Np;
+						membraneDist[insideMem] = locdist;
+						membraneDist[outsideMem] = dist;
 						mlink++;
 					}
 
 					neighbor=Map(i+1,j-1,k);
 					dist=Distance(i+1,j-1,k);
 					if (dist*locdist < 0.0){
-						membraneLinks[2*mlink] = idx + 9*Np;
-						membraneLinks[2*mlink+1] = neighbor + 10*Np;
-						membraneDist[2*mlink] = locdist;
-						membraneDist[2*mlink+1] = dist;
+						if (locdist < 0.0){
+							insideMem = 2*mlink;
+							outsideMem = 2*mlink+1;
+						}
+						else{
+							insideMem = 2*mlink+1;
+							outsideMem = 2*mlink;
+						}
+						membraneLinks[insideMem] = idx + 9*Np;
+						membraneLinks[outsideMem] = neighbor + 10*Np;
+						membraneDist[insideMem] = locdist;
+						membraneDist[outsideMem] = dist;
 						mlink++;
 					}
 
 					neighbor=Map(i+1,j,k+1);
 					dist=Distance(i+1,j,k+1);
 					if (dist*locdist < 0.0){
-						membraneLinks[2*mlink] = idx + 11*Np;
-						membraneLinks[2*mlink+1] = neighbor + 12*Np;
-						membraneDist[2*mlink] = locdist;
-						membraneDist[2*mlink+1] = dist;
+						if (locdist < 0.0){
+							insideMem = 2*mlink;
+							outsideMem = 2*mlink+1;
+						}
+						else{
+							insideMem = 2*mlink+1;
+							outsideMem = 2*mlink;
+						}
+						membraneLinks[insideMem] = idx + 11*Np;
+						membraneLinks[outsideMem] = neighbor + 12*Np;
+						membraneDist[insideMem] = locdist;
+						membraneDist[outsideMem] = dist;
 						mlink++;
 					}
 
 					neighbor=Map(i+1,j,k-1);
 					dist=Distance(i+1,j,k-1);
 					if (dist*locdist < 0.0){
-						membraneLinks[2*mlink] = idx + 13*Np;
-						membraneLinks[2*mlink+1] = neighbor + 14*Np;
-						membraneDist[2*mlink] = locdist;
-						membraneDist[2*mlink+1] = dist;
+						if (locdist < 0.0){
+							insideMem = 2*mlink;
+							outsideMem = 2*mlink+1;
+						}
+						else{
+							insideMem = 2*mlink+1;
+							outsideMem = 2*mlink;
+						}
+						membraneLinks[insideMem] = idx + 13*Np;
+						membraneLinks[outsideMem] = neighbor + 14*Np;
+						membraneDist[insideMem] = locdist;
+						membraneDist[outsideMem] = dist;
 						mlink++;
 					}
 
 					neighbor=Map(i,j+1,k+1);
 					dist=Distance(i,j+1,k+1);
 					if (dist*locdist < 0.0){
-						membraneLinks[2*mlink] = idx + 15*Np;
-						membraneLinks[2*mlink+1] =neighbor + 16*Np;
-						membraneDist[2*mlink] = locdist;
-						membraneDist[2*mlink+1] = dist;
+						if (locdist < 0.0){
+							insideMem = 2*mlink;
+							outsideMem = 2*mlink+1;
+						}
+						else{
+							insideMem = 2*mlink+1;
+							outsideMem = 2*mlink;
+						}
+						membraneLinks[insideMem] = idx + 15*Np;
+						membraneLinks[outsideMem] =neighbor + 16*Np;
+						membraneDist[insideMem] = locdist;
+						membraneDist[outsideMem] = dist;
 						mlink++;
 					}
 
 					neighbor=Map(i,j+1,k-1);
 					dist=Distance(i,j+1,k-1);
 					if (dist*locdist < 0.0){
-						membraneLinks[2*mlink] = idx + 17*Np;
-						membraneLinks[2*mlink+1] = neighbor + 18*Np;
-						membraneDist[2*mlink] = locdist;
-						membraneDist[2*mlink+1] = dist;
+						if (locdist < 0.0){
+							insideMem = 2*mlink;
+							outsideMem = 2*mlink+1;
+						}
+						else{
+							insideMem = 2*mlink+1;
+							outsideMem = 2*mlink;
+						}
+						membraneLinks[insideMem] = idx + 17*Np;
+						membraneLinks[outsideMem] = neighbor + 18*Np;
+						membraneDist[insideMem] = locdist;
+						membraneDist[outsideMem] = dist;
 						mlink++;
 					}
 				}
