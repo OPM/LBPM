@@ -6,7 +6,9 @@ LBPM includes specialized data analysis capabilities for two-fluid systems. Whil
 components are generally designed for in situ analysis of simulation data, they can also
 be applied independently to analyze 3D image data. In this example we consider applying
 the analysis tools implemented in ``lbpm_TwoPhase_analysis``, which are designed to
-analyze two-fluid configurations in porous media. 
+analyze two-fluid configurations in porous media. The numerical implementation used to
+construct the common line are described in ( https://doi.org/10.1016/j.advwatres.2006.06.010 ).
+Methods used to measure the contact angle are described in ( https://doi.org/10.1017/jfm.2016.212 ).
 
 Source files for the example are included in the LBPM repository
 in the directory ``examples/Droplet``. A simple python code is included
