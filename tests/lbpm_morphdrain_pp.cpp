@@ -53,6 +53,7 @@ int main(int argc, char **argv)
 		auto WriteValues = domain_db->getVector<int>( "WriteValues" );
 		SW = domain_db->getScalar<double>("Sw");
 		auto READFILE = domain_db->getScalar<std::string>( "Filename" );
+		auto MORPH_RADIUS = domain_db->getWithDefault<double>( "MorphRadius", 100000.0);
 
 		// Generate the NWP configuration
 		//if (rank==0) printf("Initializing morphological distribution with critical radius %f \n", Rcrit);
@@ -122,7 +123,7 @@ int main(int argc, char **argv)
 		comm.barrier();
 
 		// Run the morphological opening
-		MorphDrain(SignDist, id, Dm, SW);
+		MorphDrain(SignDist, id, Dm, SW, MORPH_RADIUS);
 	
 		// calculate distance to non-wetting fluid
 		if (domain_db->keyExists( "HistoryLabels" )){

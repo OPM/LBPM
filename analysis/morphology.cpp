@@ -611,7 +611,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id,
 
 //***************************************************************************************
 double MorphDrain(DoubleArray &SignDist, signed char *id,
-                  std::shared_ptr<Domain> Dm, double VoidFraction) {
+                  std::shared_ptr<Domain> Dm, double VoidFraction, double InitialRadius) {
     // SignDist is the distance to the object that you want to constaing the morphological opening
     // VoidFraction is the the empty space where the object inst
     // id is a labeled map
@@ -688,6 +688,11 @@ double MorphDrain(DoubleArray &SignDist, signed char *id,
     double deltaR = 0.05; // amount to change the radius in voxel units
     double Rcrit_old = maxdistGlobal;
     double Rcrit_new = maxdistGlobal;
+    
+    if (InitialRadius < maxdistGlobal){
+    	Rcrit_old = InitialRadius;
+    	Rcrit_new = InitialRadius;
+    }
     //if (argc>2){
     //	Rcrit_new = strtod(argv[2],NULL);
     //	if (rank==0) printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);
