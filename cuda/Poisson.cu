@@ -104,7 +104,7 @@ __global__  void dvc_ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(int *Map, doub
 	}
 }
 
-__global__  void dvc_ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,int start, int finish, int Np){
+__global__  void dvc_ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,bool UseSlippingVelBC,int start, int finish, int Np){
 
 	int n;
 	double psi;//electric potential
@@ -122,8 +122,11 @@ __global__  void dvc_ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, int *Map, doub
 		if (n<finish) {
 
             //Load data
-            rho_e = Den_charge[n];
-            rho_e = rho_e/epsilon_LB;
+            //rho_e = Den_charge[n];
+            //rho_e = rho_e/epsilon_LB;
+            //When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
+            //and thus the net space charge density is zero. 
+            rho_e = (UseSlippingVelBC==1) ? 0.0 : Den_charge[n] / epsilon_LB;
             idx=Map[n];
             psi = Psi[idx];
             
@@ -184,7 +187,7 @@ __global__  void dvc_ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, int *Map, doub
 	}
 }
 
-__global__  void dvc_ScaLBL_D3Q7_AAeven_Poisson(int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,int start, int finish, int Np){
+__global__  void dvc_ScaLBL_D3Q7_AAeven_Poisson(int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,bool UseSlippingVelBC,int start, int finish, int Np){
 
 	int n;
 	double psi;//electric potential
@@ -201,8 +204,11 @@ __global__  void dvc_ScaLBL_D3Q7_AAeven_Poisson(int *Map, double *dist, double *
 		if (n<finish) {
 
             //Load data
-            rho_e = Den_charge[n];
-            rho_e = rho_e/epsilon_LB;
+            //rho_e = Den_charge[n];
+            //rho_e = rho_e/epsilon_LB;
+            //When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
+            //and thus the net space charge density is zero. 
+            rho_e = (UseSlippingVelBC==1) ? 0.0 : Den_charge[n] / epsilon_LB;
             idx=Map[n];
             psi = Psi[idx];
 
@@ -293,10 +299,10 @@ extern "C" void ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(int *Map, double *d
 	//cudaProfilerStop();
 }
 
-extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,int start, int finish, int Np){
+extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,bool UseSlippingVelBC,int start, int finish, int Np){
 
 	//cudaProfilerStart();
-	dvc_ScaLBL_D3Q7_AAodd_Poisson<<<NBLOCKS,NTHREADS >>>(neighborList,Map,dist,Den_charge,Psi,ElectricField,tau,epsilon_LB,start,finish,Np);
+	dvc_ScaLBL_D3Q7_AAodd_Poisson<<<NBLOCKS,NTHREADS >>>(neighborList,Map,dist,Den_charge,Psi,ElectricField,tau,epsilon_LB,UseSlippingVelBC,start,finish,Np);
 
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -305,10 +311,10 @@ extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, int *Map, double *d
 	//cudaProfilerStop();
 }
 
-extern "C" void ScaLBL_D3Q7_AAeven_Poisson(int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,int start, int finish, int Np){
+extern "C" void ScaLBL_D3Q7_AAeven_Poisson(int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,bool UseSlippingVelBC,int start, int finish, int Np){
 
 	//cudaProfilerStart();
-	dvc_ScaLBL_D3Q7_AAeven_Poisson<<<NBLOCKS,NTHREADS >>>(Map,dist,Den_charge,Psi,ElectricField,tau,epsilon_LB,start,finish,Np);
+	dvc_ScaLBL_D3Q7_AAeven_Poisson<<<NBLOCKS,NTHREADS >>>(Map,dist,Den_charge,Psi,ElectricField,tau,epsilon_LB,UseSlippingVelBC,start,finish,Np);
 
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
