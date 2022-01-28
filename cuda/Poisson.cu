@@ -122,8 +122,6 @@ __global__  void dvc_ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, int *Map, doub
 		if (n<finish) {
 
             //Load data
-            //rho_e = Den_charge[n];
-            //rho_e = rho_e/epsilon_LB;
             //When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
             //and thus the net space charge density is zero. 
             rho_e = (UseSlippingVelBC==1) ? 0.0 : Den_charge[n] / epsilon_LB;
@@ -204,8 +202,6 @@ __global__  void dvc_ScaLBL_D3Q7_AAeven_Poisson(int *Map, double *dist, double *
 		if (n<finish) {
 
             //Load data
-            //rho_e = Den_charge[n];
-            //rho_e = rho_e/epsilon_LB;
             //When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
             //and thus the net space charge density is zero. 
             rho_e = (UseSlippingVelBC==1) ? 0.0 : Den_charge[n] / epsilon_LB;
