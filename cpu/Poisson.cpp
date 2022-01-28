@@ -95,7 +95,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(
 extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, int *Map,
                                           double *dist, double *Den_charge,
                                           double *Psi, double *ElectricField,
-                                          double tau, double epsilon_LB,
+                                          double tau, double epsilon_LB, bool UseSlippingVelBC,
                                           int start, int finish, int Np) {
     int n;
     double psi;        //electric potential
@@ -109,8 +109,9 @@ extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, int *Map,
     for (n = start; n < finish; n++) {
 
         //Load data
-        rho_e = Den_charge[n];
-        rho_e = rho_e / epsilon_LB;
+        //When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
+        //and thus the net space charge density is zero. 
+        rho_e = (UseSlippingVelBC==1) ? 0.0 : Den_charge[n] / epsilon_LB;
         idx = Map[n];
         psi = Psi[idx];
 
@@ -175,8 +176,8 @@ extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, int *Map,
 extern "C" void ScaLBL_D3Q7_AAeven_Poisson(int *Map, double *dist,
                                            double *Den_charge, double *Psi,
                                            double *ElectricField, double tau,
-                                           double epsilon_LB, int start,
-                                           int finish, int Np) {
+                                           double epsilon_LB, bool UseSlippingVelBC,
+                                           int start, int finish, int Np) {
     int n;
     double psi;        //electric potential
     double Ex, Ey, Ez; //electric field
@@ -188,8 +189,9 @@ extern "C" void ScaLBL_D3Q7_AAeven_Poisson(int *Map, double *dist,
     for (n = start; n < finish; n++) {
 
         //Load data
-        rho_e = Den_charge[n];
-        rho_e = rho_e / epsilon_LB;
+        //When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
+        //and thus the net space charge density is zero. 
+        rho_e = (UseSlippingVelBC==1) ? 0.0 : Den_charge[n] / epsilon_LB;
         idx = Map[n];
         psi = Psi[idx];
 

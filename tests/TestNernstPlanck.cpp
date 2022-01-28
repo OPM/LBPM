@@ -74,7 +74,7 @@ int main(int argc, char **argv)
         while (timestep < Study.timestepMax && error > Study.tolerance){
             
             timestep++;
-            PoissonSolver.Run(IonModel.ChargeDensity,0);//solve Poisson equtaion to get steady-state electrical potental
+            PoissonSolver.Run(IonModel.ChargeDensity,false,0);//solve Poisson equtaion to get steady-state electrical potental
             IonModel.Run(IonModel.FluidVelocityDummy,PoissonSolver.ElectricField); //solve for ion transport and electric potential
             
             timestep++;//AA operations
