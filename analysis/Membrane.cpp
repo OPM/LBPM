@@ -735,7 +735,13 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 	//membraneCount_x = D3Q19_MapSendRecv(Cx, Cy, Cz, Dm->sendList("x"), Distance, );
 	// MPI_COMM_SCALBL.barrier();
 	
-
+	/*	int Membrane::D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz, 
+			const int shift_x, const int shift_y, const int shift_z, 
+			const int sendCount, const int recvCount,
+			int rank_q, int rank_Q, int startSend, int startRecv,
+			std::shared_ptr <Domain> Dm, const int *originalSendList, 
+			const DoubleArray &Distance, int *membraneSendList, int *membraneRecvList)
+	*/
 	//...................................................................................
 	// Set up the recieve distribution lists
 	//...................................................................................
