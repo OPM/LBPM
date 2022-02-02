@@ -20,7 +20,7 @@
 #include "hip/hip_runtime.h"
 
 #define NBLOCKS 560
-#define NTHREADS 128
+#define NTHREADS 256
 
 __global__ void INITIALIZE(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz)
 {

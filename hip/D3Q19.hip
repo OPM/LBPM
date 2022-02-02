@@ -463,7 +463,8 @@ dvc_ScaLBL_AAodd_Compact(char * ID, int *d_neighborList, double *dist, int Np) {
 }
 
 
-__global__ void 
+__global__ void
+__launch_bounds__(256,1)
 dvc_ScaLBL_AAodd_MRT(int *neighborList, double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx, double Fy, double Fz) {
 
 	int n;
@@ -932,7 +933,8 @@ dvc_ScaLBL_AAodd_MRT(int *neighborList, double *dist, int start, int finish, int
 
 
 //__launch_bounds__(512,1)
-__global__ void 
+__global__ void
+__launch_bounds__(256,1) 
 dvc_ScaLBL_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx, double Fy, double Fz) {
 
 	int n;
