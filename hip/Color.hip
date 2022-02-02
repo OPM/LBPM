@@ -541,7 +541,7 @@ __global__  void dvc_ColorCollide( char *ID, double *disteven, double *distodd, 
 }
 
 __global__  void 
-__launch_bounds__(512,2)
+__launch_bounds__(256,1)
 dvc_ScaLBL_D3Q19_ColorCollide( char *ID, double *disteven, double *distodd, double *phi, double *ColorGrad,
 								double *Velocity, int Nx, int Ny, int Nz, double rlx_setA, double rlx_setB, 
 								double alpha, double beta, double Fx, double Fy, double Fz)
@@ -1257,7 +1257,8 @@ __global__  void dvc_ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny
 
 
 
-__global__  void dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
+__global__  void 
+__launch_bounds__(256,1) dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
 		double *Velocity, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
 	int ijk,nn,n;
@@ -1839,8 +1840,8 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *A
 	}
 }
 
-
-__global__ void dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den,
+__global__  void 
+__launch_bounds__(256,1) dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den,
 		 double *Phi, double *Velocity, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
 
@@ -3677,7 +3678,8 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_ColorMass(int *neighborList, double *Aq, 
 	}
 }
 
-__global__  void dvc_ScaLBL_D3Q7_AAodd_PhaseField(int *neighborList, int *Map, double *Aq, double *Bq, 
+__global__  void 
+__launch_bounds__(256,1) dvc_ScaLBL_D3Q7_AAodd_PhaseField(int *neighborList, int *Map, double *Aq, double *Bq, 
 		double *Den, double *Phi, int start, int finish, int Np){
 	int idx,n,nread;
 	double fq,nA,nB;
@@ -3747,7 +3749,8 @@ __global__  void dvc_ScaLBL_D3Q7_AAodd_PhaseField(int *neighborList, int *Map, d
 	}
 }
 
-__global__  void dvc_ScaLBL_D3Q7_AAeven_PhaseField(int *Map, double *Aq, double *Bq, double *Den, double *Phi, 
+__global__  void 
+__launch_bounds__(256,1) dvc_ScaLBL_D3Q7_AAeven_PhaseField(int *Map, double *Aq, double *Bq, double *Den, double *Phi, 
 		int start, int finish, int Np){
 	int idx,n;
 	double fq,nA,nB;
