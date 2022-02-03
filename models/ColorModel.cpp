@@ -115,8 +115,7 @@ void ScaLBL_ColorModel::ReadParams(string filename) {
     inletB = 0.f;
     outletA = 0.f;
     outletB = 1.f;
-
-
+    
     BoundaryCondition = 0;
     if (color_db->keyExists("BC")) {
         BoundaryCondition = color_db->getScalar<int>("BC");
@@ -483,12 +482,22 @@ void ScaLBL_ColorModel::Create() {
 
     // copy the neighbor list
     ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
+    ScaLBL_Comm->Barrier();
     delete[] neighborList;
+
     // initialize phi based on PhaseLabel (include solid component labels)
     double *PhaseLabel;
-    PhaseLabel = new double[N];
+    PhaseLabel = new double[Nx*Ny*Nz];
+    ScaLBL_Comm->Barrier();
+
     AssignComponentLabels(PhaseLabel);
-    ScaLBL_CopyToDevice(Phi, PhaseLabel, N * sizeof(double));
+    ScaLBL_Comm->Barrier();
+
+    ScaLBL_CopyToDevice(Phi, PhaseLabel, Nx*Ny*Nz * sizeof(double));
+    ScaLBL_Comm->Barrier();
+
+    if (rank == 0)
+      printf("Model created \n");
     delete[] PhaseLabel;
 }
 
