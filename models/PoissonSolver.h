@@ -34,7 +34,7 @@ public:
     void ReadInput();
     void Create();
     void Initialize(double time_conv_from_Study);
-    void Run(double *ChargeDensity, int timestep_from_Study);
+    void Run(double *ChargeDensity, bool UseSlippingVelBC, int timestep_from_Study);
     void getElectricPotential(DoubleArray &ReturnValues);
     void getElectricPotential_debug(int timestep);
     void getElectricField(DoubleArray &Values_x, DoubleArray &Values_y,
@@ -111,8 +111,8 @@ private:
     void SolveElectricPotentialAAodd(int timestep_from_Study);
     void SolveElectricPotentialAAeven(int timestep_from_Study);
     //void SolveElectricField();
-    void SolvePoissonAAodd(double *ChargeDensity);
-    void SolvePoissonAAeven(double *ChargeDensity);
+    void SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVelBC);
+    void SolvePoissonAAeven(double *ChargeDensity, bool UseSlippingVelBC);
     void getConvergenceLog(int timestep,double error);
     double getBoundaryVoltagefromPeriodicBC(double V0,double freq,double t0,int time_step);
     

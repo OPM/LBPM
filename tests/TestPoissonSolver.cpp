@@ -69,7 +69,7 @@ int main(int argc, char **argv)
             int timeSave = int(PoissonSolver.TestPeriodicSaveInterval/PoissonSolver.TestPeriodicTimeConv);
             while (timestep<timeMax){
                 timestep++;
-                PoissonSolver.Run(PoissonSolver.ChargeDensityDummy,timestep);
+                PoissonSolver.Run(PoissonSolver.ChargeDensityDummy,false,timestep);
                 if (timestep%timeSave==0){
                     if (rank==0) printf("   Time = %.3g[s]; saving electric potential and field\n",timestep*PoissonSolver.TestPeriodicTimeConv);
                     PoissonSolver.getElectricPotential_debug(timestep);
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
             }
         }
         else {
-            PoissonSolver.Run(PoissonSolver.ChargeDensityDummy,1);
+            PoissonSolver.Run(PoissonSolver.ChargeDensityDummy,false,1);
             PoissonSolver.getElectricPotential_debug(1);
             PoissonSolver.getElectricField_debug(1);
         }

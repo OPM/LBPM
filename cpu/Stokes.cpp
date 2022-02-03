@@ -4,7 +4,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(
     double *dist, double *Velocity, double *ChargeDensity,
     double *ElectricField, double rlx_setA, double rlx_setB, double Gx,
     double Gy, double Gz, double rho0, double den_scale, double h,
-    double time_conv, int start, int finish, int Np) {
+    double time_conv, bool UseSlippingVelBC, int start, int finish, int Np) {
     double fq;
     // conserved momemnts
     double rho, jx, jy, jz;
@@ -38,13 +38,11 @@ extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(
         Ey = ElectricField[n + 1 * Np];
         Ez = ElectricField[n + 2 * Np];
         //compute total body force, including input body force (Gx,Gy,Gz)
-        Fx =
-            Gx +
-            rhoE * Ex * (time_conv * time_conv) / (h * h * 1.0e-12) /
-                den_scale; //the extra factors at the end necessarily convert unit from phys to LB
-        Fy = Gy + rhoE * Ey * (time_conv * time_conv) / (h * h * 1.0e-12) /
+        Fx = (UseSlippingVelBC==1) ? Gx : Gx + rhoE * Ex * (time_conv * time_conv) / (h * h * 1.0e-12) /
+                      den_scale; //the extra factors at the end necessarily convert unit from phys to LB
+        Fy = (UseSlippingVelBC==1) ? Gy : Gy + rhoE * Ey * (time_conv * time_conv) / (h * h * 1.0e-12) /
                       den_scale;
-        Fz = Gz + rhoE * Ez * (time_conv * time_conv) / (h * h * 1.0e-12) /
+        Fz = (UseSlippingVelBC==1) ? Gz : Gz + rhoE * Ez * (time_conv * time_conv) / (h * h * 1.0e-12) /
                       den_scale;
 
         // q=0
@@ -479,7 +477,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(
     int *neighborList, double *dist, double *Velocity, double *ChargeDensity,
     double *ElectricField, double rlx_setA, double rlx_setB, double Gx,
     double Gy, double Gz, double rho0, double den_scale, double h,
-    double time_conv, int start, int finish, int Np) {
+    double time_conv, bool UseSlippingVelBC, int start, int finish, int Np) {
     double fq;
     // conserved momemnts
     double rho, jx, jy, jz;
@@ -513,12 +511,21 @@ extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(
         Ex = ElectricField[n + 0 * Np];
         Ey = ElectricField[n + 1 * Np];
         Ez = ElectricField[n + 2 * Np];
+
         //compute total body force, including input body force (Gx,Gy,Gz)
-        Fx = Gx + rhoE * Ex * (time_conv * time_conv) / (h * h * 1.0e-12) /
+        //Fx = Gx + rhoE * Ex * (time_conv * time_conv) / (h * h * 1.0e-12) /
+        //              den_scale; //the extra factors at the end necessarily convert unit from phys to LB
+        //Fy = Gy + rhoE * Ey * (time_conv * time_conv) / (h * h * 1.0e-12) /
+        //              den_scale;
+        //Fz = Gz + rhoE * Ez * (time_conv * time_conv) / (h * h * 1.0e-12) /
+        //              den_scale;
+        //When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
+        //and body force induced by external efectric field is reduced to slipping velocity BC. 
+        Fx = (UseSlippingVelBC==1) ? Gx : Gx + rhoE * Ex * (time_conv * time_conv) / (h * h * 1.0e-12) /
+                      den_scale; //the extra factors at the end necessarily convert unit from phys to LB
+        Fy = (UseSlippingVelBC==1) ? Gy : Gy + rhoE * Ey * (time_conv * time_conv) / (h * h * 1.0e-12) /
                       den_scale;
-        Fy = Gy + rhoE * Ey * (time_conv * time_conv) / (h * h * 1.0e-12) /
-                      den_scale;
-        Fz = Gz + rhoE * Ez * (time_conv * time_conv) / (h * h * 1.0e-12) /
+        Fz = (UseSlippingVelBC==1) ? Gz : Gz + rhoE * Ez * (time_conv * time_conv) / (h * h * 1.0e-12) /
                       den_scale;
 
         // q=0

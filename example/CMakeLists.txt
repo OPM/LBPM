@@ -3,6 +3,8 @@
 INSTALL_EXAMPLE( Bubble )
 INSTALL_EXAMPLE( ConstrainedBubble )
 INSTALL_EXAMPLE( Piston )
+INSTALL_EXAMPLE( Droplet )
+INSTALL_EXAMPLE( DropletCoalescence )
 INSTALL_EXAMPLE( Plates )
 INSTALL_EXAMPLE( SquareTube )
 INSTALL_EXAMPLE( InkBottle )

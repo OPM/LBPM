@@ -18,4 +18,5 @@ a basic introduction to working with LBPM.
    morphology/*	      
    
    color/*
-   
+
+   analysis/*

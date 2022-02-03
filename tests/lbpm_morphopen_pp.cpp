@@ -81,7 +81,7 @@ int main(int argc, char **argv)
 		id = new signed char [N];
 		Mask->Decomp(READFILE);
 		Mask->CommInit();
-
+		
 		// Generate the NWP configuration
 		//if (rank==0) printf("Initializing morphological distribution with critical radius %f \n", Rcrit);
 		if (rank==0) printf("Performing morphological opening with target saturation %f \n", SW);

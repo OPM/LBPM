@@ -103,7 +103,9 @@ public:
     double lwns_global;
     double efawns, efawns_global; // averaged contact angle
     double euler, Kn, Jn, An;
+    double Xwn, Xns, Xws;
     double euler_global, Kn_global, Jn_global, An_global;
+    double Xwn_global, Xns_global, Xws_global;
 
     double rho_n, rho_w;
     double nu_n, nu_w;
@@ -184,6 +186,8 @@ public:
     void ColorToSignedDistance(double Beta, DoubleArray &ColorData,
                                DoubleArray &DistData);
     void ComputeLocal();
+    void ComputeStatic();
+    void PrintStatic();
     void AssignComponentLabels();
     void ComponentAverages();
     void Reduce();
