@@ -103,7 +103,10 @@ public:
 
     Domain2() = delete;
     Domain2(const Domain2 &) = delete;
-    ~Domain2() {}
+    ~Domain2() {
+        int err = MPI_Comm_free(&Comm);
+        INSIST( err == MPI_SUCCESS, "Problem free'ing MPI_Comm object" );
+    }
 
 public:
 
