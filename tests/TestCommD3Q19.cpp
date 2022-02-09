@@ -428,6 +428,7 @@ int main(int argc, char **argv)
 		if (rank==0) printf("Aggregated communication bandwidth = %f Gbit/sec \n",nprocs*ScaLBL_Comm.CommunicationCount*64*timestep/1e9);
 	}
 	// ****************************************************
+	cout << fflush;
 	comm.barrier();
 	Utilities::shutdown();
 	// ****************************************************
