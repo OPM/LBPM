@@ -8,34 +8,66 @@
 #include <exception>
 #include <stdexcept>
 
-#include "common/Array.h"
+#include "common/Database.h"
 #include "common/Utilities.h"
 #include "common/MPI.h"
-#include "common/Communication.h"
-#include "common/Database.h"
+
+
+struct RankInfoStruct2 {
+    int nx;            //!<  The number of processors in the x direction
+    int ny;            //!<  The number of processors in the y direction
+    int nz;            //!<  The number of processors in the z direction
+    int ix;            //!<  The index of the current process in the x direction
+    int jy;            //!<  The index of the current process in the y direction
+    int kz;            //!<  The index of the current process in the z direction
+    int rank[3][3][3]; //!<  The rank for the neighbor [i][j][k]
+    RankInfoStruct2() : RankInfoStruct2( 1, 0, 0, 0 ) {}
+    RankInfoStruct2(int rank0, int nprocx, int nprocy, int nprocz) {
+       memset(this, 0, sizeof(RankInfoStruct2));
+       nx = nprocx;
+       ny = nprocy;
+       nz = nprocz;
+       if (rank0 >= nprocx * nprocy * nprocz) {
+           ix = -1;
+           jy = -1;
+           kz = -1;
+           for (int i = -1; i <= 1; i++) {
+                for (int j = -1; j <= 1; j++) {
+                    for (int k = -1; k <= 1; k++) {
+                       rank[i + 1][j + 1][k + 1] = -1;
+                    }
+                }
+            }
+        } else {
+            ix = rank0 % nprocx;
+            jy = (rank0 / nprocx) % nprocy;
+            kz = rank0 / (nprocx * nprocy);
+            for (int i = -1; i <= 1; i++) {
+                for (int j = -1; j <= 1; j++) {
+                    for (int k = -1; k <= 1; k++) {
+                        rank[i + 1][j + 1][k + 1] =
+                            getRankForBlock(ix + i, jy + j, kz + k);
+                    }
+                }
+            }
+            ASSERT(rank[1][1][1] == rank0);
+        }
+    }
+    int getRankForBlock(int i, int j, int k) const {
+        int i2 = (i + nx) % nx;
+        int j2 = (j + ny) % ny;
+        int k2 = (k + nz) % nz;
+        return i2 + j2 * nx + k2 * nx * ny;
+    }
+};
 
 
 class Domain2 {
 public:
     Domain2(std::shared_ptr<Database> db, const Utilities::MPI &Communicator) {
         Comm = Communicator.dup();
-        int myrank = Comm.getRank();
-        initialize(db);
-        rank_info = RankInfoStruct(myrank, rank_info.nx, rank_info.ny, rank_info.nz);
-        Comm.barrier();
-    }
-
-    Domain2() = delete;
-    Domain2(const Domain2 &) = delete;
-    ~Domain2() = default;
-
-private:
-    // initialize from database
-    void initialize(std::shared_ptr<Database> db) {
-        d_db = db;
-        auto nproc = d_db->getVector<int>("nproc");
-        auto n = d_db->getVector<int>("n");
-
+        auto nproc = db->getVector<int>("nproc");
+        auto n = db->getVector<int>("n");
         ASSERT(n.size() == 3u);
         ASSERT(nproc.size() == 3u);
         int nx = n[0];
@@ -45,22 +77,19 @@ private:
         Ny = ny + 2;
         Nz = nz + 2;
         N = Nx * Ny * Nz;
-        // Initialize ranks
         int myrank = Comm.getRank();
-        rank_info = RankInfoStruct(myrank, nproc[0], nproc[1], nproc[2]);
-
-        // Fill remaining variables
-        id = std::vector<signed char>(N, 0);
+        rank_info = RankInfoStruct2(myrank, nproc[0], nproc[1], nproc[2]);
         int nprocs = Comm.getSize();
         INSIST(nprocs == nproc[0] * nproc[1] * nproc[2], "Fatal error in processor count!");
     }
 
-    std::shared_ptr<Database> d_db;
+    Domain2() = delete;
+    Domain2(const Domain2 &) = delete;
+    ~Domain2() = default;
 
 public: // Public variables (need to create accessors instead)
-    std::shared_ptr<Database> database;
     int Nx, Ny, Nz, N;
-    RankInfoStruct rank_info;
+    RankInfoStruct2 rank_info;
 
     Utilities::MPI Comm; // MPI Communicator for this domain
 
@@ -94,10 +123,6 @@ public: // Public variables (need to create accessors instead)
     inline int rank_Yz() const { return rank_info.rank[1][2][0]; }
     inline int rank_yZ() const { return rank_info.rank[1][0][2]; }
 
-    //......................................................................................
-    // Solid indicator function
-    std::vector<signed char> id;
-
     // Initialize communication data structures within Domain object. 
     void CommInit() {
         int i, j, k, n;
@@ -114,8 +139,6 @@ public: // Public variables (need to create accessors instead)
         for (k = 1; k < Nz - 1; k++) {
             for (j = 1; j < Ny - 1; j++) {
                 for (i = 1; i < Nx - 1; i++) {
-                    // Check the phase ID
-                    if (id[k * Nx * Ny + j * Nx + i] > 0) {
                         // Counts for the six faces
                         if (i == 1)
                             sendCount_x++;
@@ -156,7 +179,6 @@ public: // Public variables (need to create accessors instead)
                             sendCount_Yz++;
                         if (j == Ny - 2 && k == Nz - 2)
                             sendCount_YZ++;
-                    }
                 }
             }
         }
@@ -181,18 +203,14 @@ public: // Public variables (need to create accessors instead)
         sendList_YZ.resize(sendCount_YZ, 0);
         sendList_XZ.resize(sendCount_XZ, 0);
         // Populate the send list
-        sendCount_x = sendCount_y = sendCount_z = sendCount_X = sendCount_Y =
-            sendCount_Z = 0;
-        sendCount_xy = sendCount_yz = sendCount_xz = sendCount_Xy = sendCount_Yz =
-            sendCount_xZ = 0;
-        sendCount_xY = sendCount_yZ = sendCount_Xz = sendCount_XY = sendCount_YZ =
-            sendCount_XZ = 0;
+        sendCount_x = sendCount_y = sendCount_z = sendCount_X = sendCount_Y = sendCount_Z = 0;
+        sendCount_xy = sendCount_yz = sendCount_xz = sendCount_Xy = sendCount_Yz = sendCount_xZ = 0;
+        sendCount_xY = sendCount_yZ = sendCount_Xz = sendCount_XY = sendCount_YZ = sendCount_XZ = 0;
         for (k = 1; k < Nz - 1; k++) {
             for (j = 1; j < Ny - 1; j++) {
                 for (i = 1; i < Nx - 1; i++) {
                     // Local value to send
                     n = k * Nx * Ny + j * Nx + i;
-                    if (id[n] > 0) {
                         // Counts for the six faces
                         if (i == 1)
                             sendList_x[sendCount_x++] = n;
@@ -233,18 +251,14 @@ public: // Public variables (need to create accessors instead)
                             sendList_Yz[sendCount_Yz++] = n;
                         if (j == Ny - 2 && k == Nz - 2)
                             sendList_YZ[sendCount_YZ++] = n;
-                    }
                 }
             }
         }
 
         //......................................................................................
-        int recvCount_x, recvCount_y, recvCount_z, recvCount_X, recvCount_Y,
-            recvCount_Z;
-        int recvCount_xy, recvCount_yz, recvCount_xz, recvCount_Xy, recvCount_Yz,
-            recvCount_xZ;
-        int recvCount_xY, recvCount_yZ, recvCount_Xz, recvCount_XY, recvCount_YZ,
-            recvCount_XZ;
+        int recvCount_x, recvCount_y, recvCount_z, recvCount_X, recvCount_Y, recvCount_Z;
+        int recvCount_xy, recvCount_yz, recvCount_xz, recvCount_Xy, recvCount_Yz, recvCount_xZ;
+        int recvCount_xY, recvCount_yZ, recvCount_Xz, recvCount_XY, recvCount_YZ, recvCount_XZ;
         req1[0] = Comm.Isend(&sendCount_x, 1, rank_x(), sendtag + 0);
         req2[0] = Comm.Irecv(&recvCount_X, 1, rank_X(), recvtag + 0);
         req1[1] = Comm.Isend(&sendCount_X, 1, rank_X(), sendtag + 1);
@@ -400,29 +414,11 @@ int main(int argc, char **argv)
 {
     Utilities::startup( argc, argv, true );
     Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
     {
         auto filename = argv[1];
         auto input_db = std::make_shared<Database>( filename );
         auto db = input_db->getDatabase( "Domain" );
         auto Dm  = std::make_shared<Domain2>(db,comm);
-        int Nx = db->getVector<int>( "n" )[0] + 2;
-        int Ny = db->getVector<int>( "n" )[1] + 2;
-        int Nz = db->getVector<int>( "n" )[2] + 2;
-        char LocalRankString[8];
-        sprintf(LocalRankString,"%05d",rank);
-        char LocalRankFilename[40];
-        sprintf(LocalRankFilename,"ID.%05i",rank);
-        auto id = new char[Nx*Ny*Nz];
-        for (int k=0;k<Nz;k++){
-            for (int j=0;j<Ny;j++){
-                for (int i=0;i<Nx;i++){
-                    int n = k*Nx*Ny+j*Nx+i;
-                    id[n] = 1;
-                    Dm->id[n] = id[n];
-                }
-            }
-        }
         Dm->CommInit();
         std::cout << "step 1" << std::endl << std::flush;
     }
