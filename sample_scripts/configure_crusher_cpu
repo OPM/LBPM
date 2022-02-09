@@ -18,11 +18,7 @@ export CMAKE_DIR=/gpfs/alpine/csc380/proj-shared/LBPM/cmake-3.21.0/bin
 #-I${MPICH_DIR}/include
 #-L${MPICH_DIR}/lib -lmpi -L${CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa
 
-#export HIPFLAGS="--amdgpu-target=gfx90a --save-temps"
-
-
-#THIS IS HOW TO CHECK FOR SPILLS (example)
-# hipcc -c -g -ggdb --save-temps Color.hip
+HIPFLAGS = --amdgpu-target=gfx90a 
 
 # configure
 rm -rf CMake*
@@ -36,7 +32,7 @@ ${CMAKE_DIR}/cmake                             \
     -D CMAKE_C_FLAGS="-L${MPICH_DIR}/lib -lmpi -L${CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa -I${HDF5_DIR}/include"  \
     -D CMAKE_CXX_FLAGS="-L${MPICH_DIR}/lib -lmpi -L${CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa  -I${HDF5_DIR}/include" \
     -D LINK_LIBRARIES="${ROCM_PATH}/lib/libamdhip64.so;${CRAY_MPICH_ROOTDIR}/gtl/lib/libmpi_gtl_hsa.so" \
-    -D USE_HIP=1                                \
+    -D USE_HIP=0                                \
         -D CMAKE_HIP_COMPILER_TOOLKIT_ROOT=$ROCM_PATH/hip \
     -D USE_MPI=1                                \
     -D MPI_SKIP_SEARCH=1                        \
