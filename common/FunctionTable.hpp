@@ -297,10 +297,10 @@ TYPE FunctionTable::sum(const Array<TYPE, FUN, ALLOC> &A) {
 }
 
 template <class TYPE>
-inline void FunctionTable::gemmWrapper(char TRANSA, char TRANSB, int M, int N,
-                                       int K, TYPE alpha, const TYPE *A,
-                                       int LDA, const TYPE *B, int LDB,
-                                       TYPE beta, TYPE *C, int LDC) {
+inline void FunctionTable::gemmWrapper(char, char, int, int,
+                                       int, TYPE, const TYPE*,
+                                       int, const TYPE*, int,
+                                       TYPE, TYPE*, int) {
     ERROR("Not finished");
 }
 

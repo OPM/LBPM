@@ -93,12 +93,11 @@ template<> long double genRand<long double>()
  *  axpy                                                 *
  ********************************************************/
 template <>
-void call_axpy<float>(size_t N, const float alpha, const float *x, float *y) {
+void call_axpy<float>(size_t, const float, const float*, float*) {
     ERROR("Not finished");
 }
 template <>
-void call_axpy<double>(size_t N, const double alpha, const double *x,
-                       double *y) {
+void call_axpy<double>(size_t, const double, const double*, double*) {
     ERROR("Not finished");
 }
 
@@ -106,22 +105,22 @@ void call_axpy<double>(size_t N, const double alpha, const double *x,
  *  Multiply two arrays                                  *
  ********************************************************/
 template <>
-void call_gemv<double>(size_t M, size_t N, double alpha, double beta,
-                       const double *A, const double *x, double *y) {
+void call_gemv<double>(size_t, size_t, double, double,
+                       const double*, const double*, double*) {
     ERROR("Not finished");
 }
 template <>
-void call_gemv<float>(size_t M, size_t N, float alpha, float beta,
-                      const float *A, const float *x, float *y) {
+void call_gemv<float>(size_t, size_t, float, float,
+                      const float*, const float*, float*) {
     ERROR("Not finished");
 }
 template <>
-void call_gemm<double>(size_t M, size_t N, size_t K, double alpha, double beta,
-                       const double *A, const double *B, double *C) {
+void call_gemm<double>(size_t, size_t, size_t, double, double,
+                       const double*, const double*, double*) {
     ERROR("Not finished");
 }
 template <>
-void call_gemm<float>(size_t M, size_t N, size_t K, float alpha, float beta,
-                      const float *A, const float *B, float *C) {
+void call_gemm<float>(size_t, size_t, size_t, float, float,
+                      const float*, const float*, float*) {
     ERROR("Not finished");
 }
