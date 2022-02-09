@@ -270,17 +270,19 @@ int main(int argc, char **argv)
 		//.......................................................................
 
 		//...........................................................................
-		comm.barrier();
+		//comm.barrier();
 		if (rank == 0) cout << "Domain set." << endl;
 		//...........................................................................
-
+                cout << flush;
 		//...........................................................................
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
+                cout << flush;
 		// Create a communicator for the device (will use optimized layout)
 		ScaLBL_Communicator ScaLBL_Comm(Dm);
 		
 		int Npad=(Np/16 + 2)*16;
 		if (rank==0)    printf ("Set up memory efficient layout, %i | %i | %i \n", Np, Npad, N);
+                cout << flush;
 		auto neighborList= new int[18*Npad];
 		IntArray Map(Nx,Ny,Nz);
 		Map.fill(-2);		
@@ -291,7 +293,8 @@ int main(int argc, char **argv)
 		//......................device distributions.................................
 		dist_mem_size = Np*sizeof(double);
 		if (rank==0)	printf ("Allocating distributions \n");
-		
+		cout << flush;
+
 		int *NeighborList;
 		int *dvcMap;
 		double *fq;
@@ -320,6 +323,9 @@ int main(int argc, char **argv)
 		ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int)*Np);
 		ScaLBL_DeviceBarrier();
 		delete [] TmpMap;
+
+		if (rank==0)	printf("Map is copied to GPU \n");
+		cout << flush;
 
 		//...........................................................................
 
@@ -352,11 +358,13 @@ int main(int argc, char **argv)
 	fclose(CommFile);
 		 */
 		if (rank==0)	printf("Setting the distributions, size = : %i\n", Np);
+		cout << flush;
+		
 		//...........................................................................
 		GlobalFlipScaLBL_D3Q19_Init(fq_host, Map, Np, Nx-2, Ny-2, Nz-2, iproc,jproc,kproc,nprocx,nprocy,nprocz);
 		ScaLBL_CopyToDevice(fq, fq_host, 19*dist_mem_size);
 		ScaLBL_DeviceBarrier();
-		comm.barrier();
+		//comm.barrier();
 		//*************************************************************************
 		// First timestep
 		ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
@@ -376,6 +384,7 @@ int main(int argc, char **argv)
 		int timestep = 0;
 		if (rank==0) printf("********************************************************\n");
 		if (rank==0)	printf("No. of timesteps for timing: %i \n", 100);
+		cout << flush;
 
 		//.......create and start timer............
 		double starttime,stoptime,cputime;
@@ -426,6 +435,8 @@ int main(int argc, char **argv)
 		// communication bandwidth includes both send and recieve
 		if (rank==0) printf("Communication bandwidth (per process)= %f Gbit/sec \n",ScaLBL_Comm.CommunicationCount*64*timestep/1e9);
 		if (rank==0) printf("Aggregated communication bandwidth = %f Gbit/sec \n",nprocs*ScaLBL_Comm.CommunicationCount*64*timestep/1e9);
+		cout << flush;
+
 	}
 	// ****************************************************
 	cout << fflush;
