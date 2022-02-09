@@ -46,6 +46,7 @@ ADD_LBPM_EXECUTABLE( TestNernstPlanck )
 ADD_LBPM_EXECUTABLE( TestPNP_Stokes )
 ADD_LBPM_EXECUTABLE( TestMixedGrad )
 ADD_LBPM_EXECUTABLE( TestCrusher )
+ADD_LBPM_EXECUTABLE( TestCrusher2 )
 
 
 
