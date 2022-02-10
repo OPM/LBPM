@@ -11,7 +11,8 @@
 #include <time.h>
 #include <vector>
 
-#include "common/Utilities.h"
+#include "StackTrace/StackTrace.h"
+#include "StackTrace/ErrorHandlers.h"
 
 #include "mpi.h"
 
@@ -412,14 +413,23 @@ std::array<int,3> get_nproc( int P )
 int main(int argc, char **argv)
 {
     // Start MPI
-    Utilities::startup( argc, argv, true );
+    bool multiple = true;
+    if (multiple) {
+        int provided;
+        MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+        if (provided < MPI_THREAD_MULTIPLE)
+            std::cerr << "Warning: Failed to start MPI with thread support\n";
+        StackTrace::globalCallStackInitialize(MPI_COMM_WORLD);
+    } else {
+        MPI_Init(&argc, &argv);
+    }
 	
     // Run the problem
     int size = 0;
     MPI_Comm_size( MPI_COMM_WORLD, &size );
     {
         auto nproc = get_nproc( size );
-        std::array<int,3> n = { 10, 20, 30 };
+        std::array<int,3> n = { 222, 222, 222 };
         auto Dm  = std::make_shared<Domain2>(nproc,n,MPI_COMM_WORLD);
         Dm->CommInit();
         std::cout << "step 1" << std::endl << std::flush;
@@ -429,7 +439,9 @@ int main(int argc, char **argv)
     std::cout << "step 3" << std::endl << std::flush;
 
     // Shutdown MPI
-    Utilities::shutdown();
+    StackTrace::globalCallStackFinalize();
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Finalize();
     std::cout << "step 4" << std::endl << std::flush;
     return 0;
 }
