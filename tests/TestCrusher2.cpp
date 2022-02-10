@@ -1,16 +1,29 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <array>
+#include <cstring>
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include <math.h>
-#include <time.h>
-#include <exception>
+#include <memory>
+#include <sstream>
 #include <stdexcept>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <vector>
 
 #include "common/Database.h"
 #include "common/Utilities.h"
 #include "common/MPI.h"
+
+
+inline MPI_Request Isend( const Utilities::MPI &comm, const int *buf, int count, int rank, int tag )
+{
+    return comm.Isend( buf, count, rank, tag );
+}
+inline MPI_Request Irecv( const Utilities::MPI &comm, int *buf, int count, int rank, int tag )
+{
+    return comm.Irecv( buf, count, rank, tag );
+}
 
 
 struct RankInfoStruct2 {
@@ -139,46 +152,46 @@ public: // Public variables (need to create accessors instead)
         for (k = 1; k < Nz - 1; k++) {
             for (j = 1; j < Ny - 1; j++) {
                 for (i = 1; i < Nx - 1; i++) {
-                        // Counts for the six faces
-                        if (i == 1)
-                            sendCount_x++;
-                        if (j == 1)
-                            sendCount_y++;
-                        if (k == 1)
-                            sendCount_z++;
-                        if (i == Nx - 2)
-                            sendCount_X++;
-                        if (j == Ny - 2)
-                            sendCount_Y++;
-                        if (k == Nz - 2)
-                            sendCount_Z++;
-                        // Counts for the twelve edges
-                        if (i == 1 && j == 1)
-                            sendCount_xy++;
-                        if (i == 1 && j == Ny - 2)
-                            sendCount_xY++;
-                        if (i == Nx - 2 && j == 1)
-                            sendCount_Xy++;
-                        if (i == Nx - 2 && j == Ny - 2)
-                            sendCount_XY++;
+                    // Counts for the six faces
+                    if (i == 1)
+                        sendCount_x++;
+                    if (j == 1)
+                        sendCount_y++;
+                    if (k == 1)
+                        sendCount_z++;
+                    if (i == Nx - 2)
+                        sendCount_X++;
+                    if (j == Ny - 2)
+                        sendCount_Y++;
+                    if (k == Nz - 2)
+                        sendCount_Z++;
+                    // Counts for the twelve edges
+                    if (i == 1 && j == 1)
+                        sendCount_xy++;
+                    if (i == 1 && j == Ny - 2)
+                        sendCount_xY++;
+                    if (i == Nx - 2 && j == 1)
+                        sendCount_Xy++;
+                    if (i == Nx - 2 && j == Ny - 2)
+                        sendCount_XY++;
 
-                        if (i == 1 && k == 1)
-                            sendCount_xz++;
-                        if (i == 1 && k == Nz - 2)
-                            sendCount_xZ++;
-                        if (i == Nx - 2 && k == 1)
-                            sendCount_Xz++;
-                        if (i == Nx - 2 && k == Nz - 2)
-                            sendCount_XZ++;
+                    if (i == 1 && k == 1)
+                        sendCount_xz++;
+                    if (i == 1 && k == Nz - 2)
+                        sendCount_xZ++;
+                    if (i == Nx - 2 && k == 1)
+                        sendCount_Xz++;
+                    if (i == Nx - 2 && k == Nz - 2)
+                        sendCount_XZ++;
 
-                        if (j == 1 && k == 1)
-                            sendCount_yz++;
-                        if (j == 1 && k == Nz - 2)
-                            sendCount_yZ++;
-                        if (j == Ny - 2 && k == 1)
-                            sendCount_Yz++;
-                        if (j == Ny - 2 && k == Nz - 2)
-                            sendCount_YZ++;
+                    if (j == 1 && k == 1)
+                        sendCount_yz++;
+                    if (j == 1 && k == Nz - 2)
+                        sendCount_yZ++;
+                    if (j == Ny - 2 && k == 1)
+                        sendCount_Yz++;
+                    if (j == Ny - 2 && k == Nz - 2)
+                        sendCount_YZ++;
                 }
             }
         }
@@ -211,46 +224,46 @@ public: // Public variables (need to create accessors instead)
                 for (i = 1; i < Nx - 1; i++) {
                     // Local value to send
                     n = k * Nx * Ny + j * Nx + i;
-                        // Counts for the six faces
-                        if (i == 1)
-                            sendList_x[sendCount_x++] = n;
-                        if (j == 1)
-                            sendList_y[sendCount_y++] = n;
-                        if (k == 1)
-                            sendList_z[sendCount_z++] = n;
-                        if (i == Nx - 2)
-                            sendList_X[sendCount_X++] = n;
-                        if (j == Ny - 2)
-                            sendList_Y[sendCount_Y++] = n;
-                        if (k == Nz - 2)
-                            sendList_Z[sendCount_Z++] = n;
-                        // Counts for the twelve edges
-                        if (i == 1 && j == 1)
-                            sendList_xy[sendCount_xy++] = n;
-                        if (i == 1 && j == Ny - 2)
-                            sendList_xY[sendCount_xY++] = n;
-                        if (i == Nx - 2 && j == 1)
-                            sendList_Xy[sendCount_Xy++] = n;
-                        if (i == Nx - 2 && j == Ny - 2)
-                            sendList_XY[sendCount_XY++] = n;
+                    // Counts for the six faces
+                    if (i == 1)
+                        sendList_x[sendCount_x++] = n;
+                    if (j == 1)
+                        sendList_y[sendCount_y++] = n;
+                    if (k == 1)
+                        sendList_z[sendCount_z++] = n;
+                    if (i == Nx - 2)
+                        sendList_X[sendCount_X++] = n;
+                    if (j == Ny - 2)
+                        sendList_Y[sendCount_Y++] = n;
+                    if (k == Nz - 2)
+                        sendList_Z[sendCount_Z++] = n;
+                    // Counts for the twelve edges
+                    if (i == 1 && j == 1)
+                        sendList_xy[sendCount_xy++] = n;
+                    if (i == 1 && j == Ny - 2)
+                        sendList_xY[sendCount_xY++] = n;
+                    if (i == Nx - 2 && j == 1)
+                        sendList_Xy[sendCount_Xy++] = n;
+                    if (i == Nx - 2 && j == Ny - 2)
+                        sendList_XY[sendCount_XY++] = n;
 
-                        if (i == 1 && k == 1)
-                            sendList_xz[sendCount_xz++] = n;
-                        if (i == 1 && k == Nz - 2)
-                            sendList_xZ[sendCount_xZ++] = n;
-                        if (i == Nx - 2 && k == 1)
-                            sendList_Xz[sendCount_Xz++] = n;
-                        if (i == Nx - 2 && k == Nz - 2)
-                            sendList_XZ[sendCount_XZ++] = n;
+                    if (i == 1 && k == 1)
+                        sendList_xz[sendCount_xz++] = n;
+                    if (i == 1 && k == Nz - 2)
+                        sendList_xZ[sendCount_xZ++] = n;
+                    if (i == Nx - 2 && k == 1)
+                        sendList_Xz[sendCount_Xz++] = n;
+                    if (i == Nx - 2 && k == Nz - 2)
+                        sendList_XZ[sendCount_XZ++] = n;
 
-                        if (j == 1 && k == 1)
-                            sendList_yz[sendCount_yz++] = n;
-                        if (j == 1 && k == Nz - 2)
-                            sendList_yZ[sendCount_yZ++] = n;
-                        if (j == Ny - 2 && k == 1)
-                            sendList_Yz[sendCount_Yz++] = n;
-                        if (j == Ny - 2 && k == Nz - 2)
-                            sendList_YZ[sendCount_YZ++] = n;
+                    if (j == 1 && k == 1)
+                        sendList_yz[sendCount_yz++] = n;
+                    if (j == 1 && k == Nz - 2)
+                        sendList_yZ[sendCount_yZ++] = n;
+                    if (j == Ny - 2 && k == 1)
+                        sendList_Yz[sendCount_Yz++] = n;
+                    if (j == Ny - 2 && k == Nz - 2)
+                        sendList_YZ[sendCount_YZ++] = n;
                 }
             }
         }
@@ -259,42 +272,42 @@ public: // Public variables (need to create accessors instead)
         int recvCount_x, recvCount_y, recvCount_z, recvCount_X, recvCount_Y, recvCount_Z;
         int recvCount_xy, recvCount_yz, recvCount_xz, recvCount_Xy, recvCount_Yz, recvCount_xZ;
         int recvCount_xY, recvCount_yZ, recvCount_Xz, recvCount_XY, recvCount_YZ, recvCount_XZ;
-        req1[0] = Comm.Isend(&sendCount_x, 1, rank_x(), sendtag + 0);
-        req2[0] = Comm.Irecv(&recvCount_X, 1, rank_X(), recvtag + 0);
-        req1[1] = Comm.Isend(&sendCount_X, 1, rank_X(), sendtag + 1);
-        req2[1] = Comm.Irecv(&recvCount_x, 1, rank_x(), recvtag + 1);
-        req1[2] = Comm.Isend(&sendCount_y, 1, rank_y(), sendtag + 2);
-        req2[2] = Comm.Irecv(&recvCount_Y, 1, rank_Y(), recvtag + 2);
-        req1[3] = Comm.Isend(&sendCount_Y, 1, rank_Y(), sendtag + 3);
-        req2[3] = Comm.Irecv(&recvCount_y, 1, rank_y(), recvtag + 3);
-        req1[4] = Comm.Isend(&sendCount_z, 1, rank_z(), sendtag + 4);
-        req2[4] = Comm.Irecv(&recvCount_Z, 1, rank_Z(), recvtag + 4);
-        req1[5] = Comm.Isend(&sendCount_Z, 1, rank_Z(), sendtag + 5);
-        req2[5] = Comm.Irecv(&recvCount_z, 1, rank_z(), recvtag + 5);
-        req1[6] = Comm.Isend(&sendCount_xy, 1, rank_xy(), sendtag + 6);
-        req2[6] = Comm.Irecv(&recvCount_XY, 1, rank_XY(), recvtag + 6);
-        req1[7] = Comm.Isend(&sendCount_XY, 1, rank_XY(), sendtag + 7);
-        req2[7] = Comm.Irecv(&recvCount_xy, 1, rank_xy(), recvtag + 7);
-        req1[8] = Comm.Isend(&sendCount_Xy, 1, rank_Xy(), sendtag + 8);
-        req2[8] = Comm.Irecv(&recvCount_xY, 1, rank_xY(), recvtag + 8);
-        req1[9] = Comm.Isend(&sendCount_xY, 1, rank_xY(), sendtag + 9);
-        req2[9] = Comm.Irecv(&recvCount_Xy, 1, rank_Xy(), recvtag + 9);
-        req1[10] = Comm.Isend(&sendCount_xz, 1, rank_xz(), sendtag + 10);
-        req2[10] = Comm.Irecv(&recvCount_XZ, 1, rank_XZ(), recvtag + 10);
-        req1[11] = Comm.Isend(&sendCount_XZ, 1, rank_XZ(), sendtag + 11);
-        req2[11] = Comm.Irecv(&recvCount_xz, 1, rank_xz(), recvtag + 11);
-        req1[12] = Comm.Isend(&sendCount_Xz, 1, rank_Xz(), sendtag + 12);
-        req2[12] = Comm.Irecv(&recvCount_xZ, 1, rank_xZ(), recvtag + 12);
-        req1[13] = Comm.Isend(&sendCount_xZ, 1, rank_xZ(), sendtag + 13);
-        req2[13] = Comm.Irecv(&recvCount_Xz, 1, rank_Xz(), recvtag + 13);
-        req1[14] = Comm.Isend(&sendCount_yz, 1, rank_yz(), sendtag + 14);
-        req2[14] = Comm.Irecv(&recvCount_YZ, 1, rank_YZ(), recvtag + 14);
-        req1[15] = Comm.Isend(&sendCount_YZ, 1, rank_YZ(), sendtag + 15);
-        req2[15] = Comm.Irecv(&recvCount_yz, 1, rank_yz(), recvtag + 15);
-        req1[16] = Comm.Isend(&sendCount_Yz, 1, rank_Yz(), sendtag + 16);
-        req2[16] = Comm.Irecv(&recvCount_yZ, 1, rank_yZ(), recvtag + 16);
-        req1[17] = Comm.Isend(&sendCount_yZ, 1, rank_yZ(), sendtag + 17);
-        req2[17] = Comm.Irecv(&recvCount_Yz, 1, rank_Yz(), recvtag + 17);
+        req1[0] = Isend( Comm, &sendCount_x, 1, rank_x(), 0 );
+        req2[0] = Irecv( Comm, &recvCount_X, 1, rank_X(), 0 );
+        req1[1] = Isend( Comm, &sendCount_X, 1, rank_X(), 1 );
+        req2[1] = Irecv( Comm, &recvCount_x, 1, rank_x(), 1 );
+        req1[2] = Isend( Comm, &sendCount_y, 1, rank_y(), 2 );
+        req2[2] = Irecv( Comm, &recvCount_Y, 1, rank_Y(), 2 );
+        req1[3] = Isend( Comm, &sendCount_Y, 1, rank_Y(), 3 );
+        req2[3] = Irecv( Comm, &recvCount_y, 1, rank_y(), 3 );
+        req1[4] = Isend( Comm, &sendCount_z, 1, rank_z(), 4 );
+        req2[4] = Irecv( Comm, &recvCount_Z, 1, rank_Z(), 4 );
+        req1[5] = Isend( Comm, &sendCount_Z, 1, rank_Z(), 5 );
+        req2[5] = Irecv( Comm, &recvCount_z, 1, rank_z(), 5 );
+        req1[6] = Isend( Comm, &sendCount_xy, 1, rank_xy(), 6 );
+        req2[6] = Irecv( Comm, &recvCount_XY, 1, rank_XY(), 6 );
+        req1[7] = Isend( Comm, &sendCount_XY, 1, rank_XY(), 7 );
+        req2[7] = Irecv( Comm, &recvCount_xy, 1, rank_xy(), 7 );
+        req1[8] = Isend( Comm, &sendCount_Xy, 1, rank_Xy(), 8 );
+        req2[8] = Irecv( Comm, &recvCount_xY, 1, rank_xY(), 8 );
+        req1[9] = Isend( Comm, &sendCount_xY, 1, rank_xY(), 9 );
+        req2[9] = Irecv( Comm, &recvCount_Xy, 1, rank_Xy(), 9 );
+        req1[10] = Isend( Comm, &sendCount_xz, 1, rank_xz(), 10 );
+        req2[10] = Irecv( Comm, &recvCount_XZ, 1, rank_XZ(), 10 );
+        req1[11] = Isend( Comm, &sendCount_XZ, 1, rank_XZ(), 11 );
+        req2[11] = Irecv( Comm, &recvCount_xz, 1, rank_xz(), 11 );
+        req1[12] = Isend( Comm, &sendCount_Xz, 1, rank_Xz(), 12 );
+        req2[12] = Irecv( Comm, &recvCount_xZ, 1, rank_xZ(), 12 );
+        req1[13] = Isend( Comm, &sendCount_xZ, 1, rank_xZ(), 13 );
+        req2[13] = Irecv( Comm, &recvCount_Xz, 1, rank_Xz(), 13 );
+        req1[14] = Isend( Comm, &sendCount_yz, 1, rank_yz(), 14 );
+        req2[14] = Irecv( Comm, &recvCount_YZ, 1, rank_YZ(), 14 );
+        req1[15] = Isend( Comm, &sendCount_YZ, 1, rank_YZ(), 15 );
+        req2[15] = Irecv( Comm, &recvCount_yz, 1, rank_yz(), 15 );
+        req1[16] = Isend( Comm, &sendCount_Yz, 1, rank_Yz(), 16 );
+        req2[16] = Irecv( Comm, &recvCount_yZ, 1, rank_yZ(), 16 );
+        req1[17] = Isend( Comm, &sendCount_yZ, 1, rank_yZ(), 17 );
+        req2[17] = Irecv( Comm, &recvCount_Yz, 1, rank_Yz(), 17 );
         Comm.waitAll(18, req1);
         Comm.waitAll(18, req2);
         Comm.barrier();
@@ -318,42 +331,42 @@ public: // Public variables (need to create accessors instead)
         recvList_YZ.resize(recvCount_YZ, 0);
         recvList_XZ.resize(recvCount_XZ, 0);
         //......................................................................................
-        req1[0] = Comm.Isend(sendList_x.data(), sendCount_x, rank_x(), sendtag);
-        req2[0] = Comm.Irecv(recvList_X.data(), recvCount_X, rank_X(), recvtag);
-        req1[1] = Comm.Isend(sendList_X.data(), sendCount_X, rank_X(), sendtag);
-        req2[1] = Comm.Irecv(recvList_x.data(), recvCount_x, rank_x(), recvtag);
-        req1[2] = Comm.Isend(sendList_y.data(), sendCount_y, rank_y(), sendtag);
-        req2[2] = Comm.Irecv(recvList_Y.data(), recvCount_Y, rank_Y(), recvtag);
-        req1[3] = Comm.Isend(sendList_Y.data(), sendCount_Y, rank_Y(), sendtag);
-        req2[3] = Comm.Irecv(recvList_y.data(), recvCount_y, rank_y(), recvtag);
-        req1[4] = Comm.Isend(sendList_z.data(), sendCount_z, rank_z(), sendtag);
-        req2[4] = Comm.Irecv(recvList_Z.data(), recvCount_Z, rank_Z(), recvtag);
-        req1[5] = Comm.Isend(sendList_Z.data(), sendCount_Z, rank_Z(), sendtag);
-        req2[5] = Comm.Irecv(recvList_z.data(), recvCount_z, rank_z(), recvtag);
-        req1[6] = Comm.Isend(sendList_xy.data(), sendCount_xy, rank_xy(), sendtag);
-        req2[6] = Comm.Irecv(recvList_XY.data(), recvCount_XY, rank_XY(), recvtag);
-        req1[7] = Comm.Isend(sendList_XY.data(), sendCount_XY, rank_XY(), sendtag);
-        req2[7] = Comm.Irecv(recvList_xy.data(), recvCount_xy, rank_xy(), recvtag);
-        req1[8] = Comm.Isend(sendList_Xy.data(), sendCount_Xy, rank_Xy(), sendtag);
-        req2[8] = Comm.Irecv(recvList_xY.data(), recvCount_xY, rank_xY(), recvtag);
-        req1[9] = Comm.Isend(sendList_xY.data(), sendCount_xY, rank_xY(), sendtag);
-        req2[9] = Comm.Irecv(recvList_Xy.data(), recvCount_Xy, rank_Xy(), recvtag);
-        req1[10] = Comm.Isend(sendList_xz.data(), sendCount_xz, rank_xz(), sendtag);
-        req2[10] = Comm.Irecv(recvList_XZ.data(), recvCount_XZ, rank_XZ(), recvtag);
-        req1[11] = Comm.Isend(sendList_XZ.data(), sendCount_XZ, rank_XZ(), sendtag);
-        req2[11] = Comm.Irecv(recvList_xz.data(), recvCount_xz, rank_xz(), recvtag);
-        req1[12] = Comm.Isend(sendList_Xz.data(), sendCount_Xz, rank_Xz(), sendtag);
-        req2[12] = Comm.Irecv(recvList_xZ.data(), recvCount_xZ, rank_xZ(), recvtag);
-        req1[13] = Comm.Isend(sendList_xZ.data(), sendCount_xZ, rank_xZ(), sendtag);
-        req2[13] = Comm.Irecv(recvList_Xz.data(), recvCount_Xz, rank_Xz(), recvtag);
-        req1[14] = Comm.Isend(sendList_yz.data(), sendCount_yz, rank_yz(), sendtag);
-        req2[14] = Comm.Irecv(recvList_YZ.data(), recvCount_YZ, rank_YZ(), recvtag);
-        req1[15] = Comm.Isend(sendList_YZ.data(), sendCount_YZ, rank_YZ(), sendtag);
-        req2[15] = Comm.Irecv(recvList_yz.data(), recvCount_yz, rank_yz(), recvtag);
-        req1[16] = Comm.Isend(sendList_Yz.data(), sendCount_Yz, rank_Yz(), sendtag);
-        req2[16] = Comm.Irecv(recvList_yZ.data(), recvCount_yZ, rank_yZ(), recvtag);
-        req1[17] = Comm.Isend(sendList_yZ.data(), sendCount_yZ, rank_yZ(), sendtag);
-        req2[17] = Comm.Irecv(recvList_Yz.data(), recvCount_Yz, rank_Yz(), recvtag);
+        req1[0] = Isend( Comm, sendList_x.data(), sendCount_x, rank_x(), 0 );
+        req2[0] = Irecv( Comm, recvList_X.data(), recvCount_X, rank_X(), 0 );
+        req1[1] = Isend( Comm, sendList_X.data(), sendCount_X, rank_X(), 1 );
+        req2[1] = Irecv( Comm, recvList_x.data(), recvCount_x, rank_x(), 1 );
+        req1[2] = Isend( Comm, sendList_y.data(), sendCount_y, rank_y(), 2 );
+        req2[2] = Irecv( Comm, recvList_Y.data(), recvCount_Y, rank_Y(), 2 );
+        req1[3] = Isend( Comm, sendList_Y.data(), sendCount_Y, rank_Y(), 3 );
+        req2[3] = Irecv( Comm, recvList_y.data(), recvCount_y, rank_y(), 3 );
+        req1[4] = Isend( Comm, sendList_z.data(), sendCount_z, rank_z(), 4 );
+        req2[4] = Irecv( Comm, recvList_Z.data(), recvCount_Z, rank_Z(), 4 );
+        req1[5] = Isend( Comm, sendList_Z.data(), sendCount_Z, rank_Z(), 5 );
+        req2[5] = Irecv( Comm, recvList_z.data(), recvCount_z, rank_z(), 5 );
+        req1[6] = Isend( Comm, sendList_xy.data(), sendCount_xy, rank_xy(), 6 );
+        req2[6] = Irecv( Comm, recvList_XY.data(), recvCount_XY, rank_XY(), 6 );
+        req1[7] = Isend( Comm, sendList_XY.data(), sendCount_XY, rank_XY(), 7 );
+        req2[7] = Irecv( Comm, recvList_xy.data(), recvCount_xy, rank_xy(), 7 );
+        req1[8] = Isend( Comm, sendList_Xy.data(), sendCount_Xy, rank_Xy(), 8 );
+        req2[8] = Irecv( Comm, recvList_xY.data(), recvCount_xY, rank_xY(), 8 );
+        req1[9] = Isend( Comm, sendList_xY.data(), sendCount_xY, rank_xY(), 9 );
+        req2[9] = Irecv( Comm, recvList_Xy.data(), recvCount_Xy, rank_Xy(), 9 );
+        req1[10] = Isend( Comm, sendList_xz.data(), sendCount_xz, rank_xz(), 10 );
+        req2[10] = Irecv( Comm, recvList_XZ.data(), recvCount_XZ, rank_XZ(), 10 );
+        req1[11] = Isend( Comm, sendList_XZ.data(), sendCount_XZ, rank_XZ(), 11 );
+        req2[11] = Irecv( Comm, recvList_xz.data(), recvCount_xz, rank_xz(), 11 );
+        req1[12] = Isend( Comm, sendList_Xz.data(), sendCount_Xz, rank_Xz(), 12 );
+        req2[12] = Irecv( Comm, recvList_xZ.data(), recvCount_xZ, rank_xZ(), 12 );
+        req1[13] = Isend( Comm, sendList_xZ.data(), sendCount_xZ, rank_xZ(), 13 );
+        req2[13] = Irecv( Comm, recvList_Xz.data(), recvCount_Xz, rank_Xz(), 13 );
+        req1[14] = Isend( Comm, sendList_yz.data(), sendCount_yz, rank_yz(), 14 );
+        req2[14] = Irecv( Comm, recvList_YZ.data(), recvCount_YZ, rank_YZ(), 14 );
+        req1[15] = Isend( Comm, sendList_YZ.data(), sendCount_YZ, rank_YZ(), 15 );
+        req2[15] = Irecv( Comm, recvList_yz.data(), recvCount_yz, rank_yz(), 15 );
+        req1[16] = Isend( Comm, sendList_Yz.data(), sendCount_Yz, rank_Yz(), 16 );
+        req2[16] = Irecv( Comm, recvList_yZ.data(), recvCount_yZ, rank_yZ(), 16 );
+        req1[17] = Isend( Comm, sendList_yZ.data(), sendCount_yZ, rank_yZ(), 17 );
+        req2[17] = Irecv( Comm, recvList_Yz.data(), recvCount_Yz, rank_Yz(), 17 );
         Comm.waitAll(18, req1);
         Comm.waitAll(18, req2);
         //......................................................................................

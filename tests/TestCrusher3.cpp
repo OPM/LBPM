@@ -35,6 +35,20 @@
 
 
 
+inline MPI_Request Isend( MPI_Comm comm, const int *buf, int count, int rank, int tag )
+{
+    MPI_Request req;
+    MPI_Isend( buf, count, MPI_INT, rank, tag, comm, &req );
+    return req;
+}
+inline MPI_Request Irecv( MPI_Comm comm, int *buf, int count, int rank, int tag )
+{
+    MPI_Request req;
+    MPI_Irecv( buf, count, MPI_INT, rank, tag, comm, &req );
+    return req;
+}
+
+
 struct RankInfoStruct2 {
     int nx;            //!<  The number of processors in the x direction
     int ny;            //!<  The number of processors in the y direction
@@ -263,42 +277,42 @@ public:
         int recvCount_x, recvCount_y, recvCount_z, recvCount_X, recvCount_Y, recvCount_Z;
         int recvCount_xy, recvCount_yz, recvCount_xz, recvCount_Xy, recvCount_Yz, recvCount_xZ;
         int recvCount_xY, recvCount_yZ, recvCount_Xz, recvCount_XY, recvCount_YZ, recvCount_XZ;
-        MPI_Isend(&sendCount_x, 1, MPI_INT, rank_x(), 0, Comm, &req1[0] );
-        MPI_Irecv(&recvCount_X, 1, MPI_INT, rank_X(), 0, Comm, &req2[0] );
-        MPI_Isend(&sendCount_X, 1, MPI_INT, rank_X(), 1, Comm, &req1[1] );
-        MPI_Irecv(&recvCount_x, 1, MPI_INT, rank_x(), 1, Comm, &req2[1] );
-        MPI_Isend(&sendCount_y, 1, MPI_INT, rank_y(), 2, Comm, &req1[2] );
-        MPI_Irecv(&recvCount_Y, 1, MPI_INT, rank_Y(), 2, Comm, &req2[2] );
-        MPI_Isend(&sendCount_Y, 1, MPI_INT, rank_Y(), 3, Comm, &req1[3] );
-        MPI_Irecv(&recvCount_y, 1, MPI_INT, rank_y(), 3, Comm, &req2[3] );
-        MPI_Isend(&sendCount_z, 1, MPI_INT, rank_z(), 4, Comm, &req1[4] );
-        MPI_Irecv(&recvCount_Z, 1, MPI_INT, rank_Z(), 4, Comm, &req2[4] );
-        MPI_Isend(&sendCount_Z, 1, MPI_INT, rank_Z(), 5, Comm, &req1[5] );
-        MPI_Irecv(&recvCount_z, 1, MPI_INT, rank_z(), 5, Comm, &req2[5] );
-        MPI_Isend(&sendCount_xy, 1, MPI_INT, rank_xy(), 6, Comm, &req1[6] );
-        MPI_Irecv(&recvCount_XY, 1, MPI_INT, rank_XY(), 6, Comm, &req2[6] );
-        MPI_Isend(&sendCount_XY, 1, MPI_INT, rank_XY(), 7, Comm, &req1[7] );
-        MPI_Irecv(&recvCount_xy, 1, MPI_INT, rank_xy(), 7, Comm, &req2[7] );
-        MPI_Isend(&sendCount_Xy, 1, MPI_INT, rank_Xy(), 8, Comm, &req1[8] );
-        MPI_Irecv(&recvCount_xY, 1, MPI_INT, rank_xY(), 8, Comm, &req2[8] );
-        MPI_Isend(&sendCount_xY, 1, MPI_INT, rank_xY(), 9, Comm, &req1[9] );
-        MPI_Irecv(&recvCount_Xy, 1, MPI_INT, rank_Xy(), 9, Comm, &req2[9] );
-        MPI_Isend(&sendCount_xz, 1, MPI_INT, rank_xz(), 10, Comm, &req1[10] );
-        MPI_Irecv(&recvCount_XZ, 1, MPI_INT, rank_XZ(), 10, Comm, &req2[10] );
-        MPI_Isend(&sendCount_XZ, 1, MPI_INT, rank_XZ(), 11, Comm, &req1[11] );
-        MPI_Irecv(&recvCount_xz, 1, MPI_INT, rank_xz(), 11, Comm, &req2[11] );
-        MPI_Isend(&sendCount_Xz, 1, MPI_INT, rank_Xz(), 12, Comm, &req1[12] );
-        MPI_Irecv(&recvCount_xZ, 1, MPI_INT, rank_xZ(), 12, Comm, &req2[12] );
-        MPI_Isend(&sendCount_xZ, 1, MPI_INT, rank_xZ(), 13, Comm, &req1[13] );
-        MPI_Irecv(&recvCount_Xz, 1, MPI_INT, rank_Xz(), 13, Comm, &req2[13] );
-        MPI_Isend(&sendCount_yz, 1, MPI_INT, rank_yz(), 14, Comm, &req1[14] );
-        MPI_Irecv(&recvCount_YZ, 1, MPI_INT, rank_YZ(), 14, Comm, &req2[14] );
-        MPI_Isend(&sendCount_YZ, 1, MPI_INT, rank_YZ(), 15, Comm, &req1[15] );
-        MPI_Irecv(&recvCount_yz, 1, MPI_INT, rank_yz(), 15, Comm, &req2[15] );
-        MPI_Isend(&sendCount_Yz, 1, MPI_INT, rank_Yz(), 16, Comm, &req1[16] );
-        MPI_Irecv(&recvCount_yZ, 1, MPI_INT, rank_yZ(), 16, Comm, &req2[16] );
-        MPI_Isend(&sendCount_yZ, 1, MPI_INT, rank_yZ(), 17, Comm, &req1[17] );
-        MPI_Irecv(&recvCount_Yz, 1, MPI_INT, rank_Yz(), 17, Comm, &req2[17] );
+        req1[0] = Isend( Comm, &sendCount_x, 1, rank_x(), 0 );
+        req2[0] = Irecv( Comm, &recvCount_X, 1, rank_X(), 0 );
+        req1[1] = Isend( Comm, &sendCount_X, 1, rank_X(), 1 );
+        req2[1] = Irecv( Comm, &recvCount_x, 1, rank_x(), 1 );
+        req1[2] = Isend( Comm, &sendCount_y, 1, rank_y(), 2 );
+        req2[2] = Irecv( Comm, &recvCount_Y, 1, rank_Y(), 2 );
+        req1[3] = Isend( Comm, &sendCount_Y, 1, rank_Y(), 3 );
+        req2[3] = Irecv( Comm, &recvCount_y, 1, rank_y(), 3 );
+        req1[4] = Isend( Comm, &sendCount_z, 1, rank_z(), 4 );
+        req2[4] = Irecv( Comm, &recvCount_Z, 1, rank_Z(), 4 );
+        req1[5] = Isend( Comm, &sendCount_Z, 1, rank_Z(), 5 );
+        req2[5] = Irecv( Comm, &recvCount_z, 1, rank_z(), 5 );
+        req1[6] = Isend( Comm, &sendCount_xy, 1, rank_xy(), 6 );
+        req2[6] = Irecv( Comm, &recvCount_XY, 1, rank_XY(), 6 );
+        req1[7] = Isend( Comm, &sendCount_XY, 1, rank_XY(), 7 );
+        req2[7] = Irecv( Comm, &recvCount_xy, 1, rank_xy(), 7 );
+        req1[8] = Isend( Comm, &sendCount_Xy, 1, rank_Xy(), 8 );
+        req2[8] = Irecv( Comm, &recvCount_xY, 1, rank_xY(), 8 );
+        req1[9] = Isend( Comm, &sendCount_xY, 1, rank_xY(), 9 );
+        req2[9] = Irecv( Comm, &recvCount_Xy, 1, rank_Xy(), 9 );
+        req1[10] = Isend( Comm, &sendCount_xz, 1, rank_xz(), 10 );
+        req2[10] = Irecv( Comm, &recvCount_XZ, 1, rank_XZ(), 10 );
+        req1[11] = Isend( Comm, &sendCount_XZ, 1, rank_XZ(), 11 );
+        req2[11] = Irecv( Comm, &recvCount_xz, 1, rank_xz(), 11 );
+        req1[12] = Isend( Comm, &sendCount_Xz, 1, rank_Xz(), 12 );
+        req2[12] = Irecv( Comm, &recvCount_xZ, 1, rank_xZ(), 12 );
+        req1[13] = Isend( Comm, &sendCount_xZ, 1, rank_xZ(), 13 );
+        req2[13] = Irecv( Comm, &recvCount_Xz, 1, rank_Xz(), 13 );
+        req1[14] = Isend( Comm, &sendCount_yz, 1, rank_yz(), 14 );
+        req2[14] = Irecv( Comm, &recvCount_YZ, 1, rank_YZ(), 14 );
+        req1[15] = Isend( Comm, &sendCount_YZ, 1, rank_YZ(), 15 );
+        req2[15] = Irecv( Comm, &recvCount_yz, 1, rank_yz(), 15 );
+        req1[16] = Isend( Comm, &sendCount_Yz, 1, rank_Yz(), 16 );
+        req2[16] = Irecv( Comm, &recvCount_yZ, 1, rank_yZ(), 16 );
+        req1[17] = Isend( Comm, &sendCount_yZ, 1, rank_yZ(), 17 );
+        req2[17] = Irecv( Comm, &recvCount_Yz, 1, rank_Yz(), 17 );
         MPI_Waitall( 18, req1, status );
         MPI_Waitall( 18, req2, status );
         MPI_Barrier( Comm );
@@ -322,42 +336,42 @@ public:
         recvList_YZ.resize(recvCount_YZ, 0);
         recvList_XZ.resize(recvCount_XZ, 0);
         //......................................................................................
-        MPI_Isend(sendList_x.data(), sendCount_x, MPI_INT, rank_x(), 0, Comm, &req1[0] );
-        MPI_Irecv(recvList_X.data(), recvCount_X, MPI_INT, rank_X(), 0, Comm, &req2[0] );
-        MPI_Isend(sendList_X.data(), sendCount_X, MPI_INT, rank_X(), 1, Comm, &req1[1] );
-        MPI_Irecv(recvList_x.data(), recvCount_x, MPI_INT, rank_x(), 1, Comm, &req2[1] );
-        MPI_Isend(sendList_y.data(), sendCount_y, MPI_INT, rank_y(), 2, Comm, &req1[2] );
-        MPI_Irecv(recvList_Y.data(), recvCount_Y, MPI_INT, rank_Y(), 2, Comm, &req2[2] );
-        MPI_Isend(sendList_Y.data(), sendCount_Y, MPI_INT, rank_Y(), 3, Comm, &req1[3] );
-        MPI_Irecv(recvList_y.data(), recvCount_y, MPI_INT, rank_y(), 3, Comm, &req2[3] );
-        MPI_Isend(sendList_z.data(), sendCount_z, MPI_INT, rank_z(), 4, Comm, &req1[4] );
-        MPI_Irecv(recvList_Z.data(), recvCount_Z, MPI_INT, rank_Z(), 4, Comm, &req2[4] );
-        MPI_Isend(sendList_Z.data(), sendCount_Z, MPI_INT, rank_Z(), 5, Comm, &req1[5] );
-        MPI_Irecv(recvList_z.data(), recvCount_z, MPI_INT, rank_z(), 5, Comm, &req2[5] );
-        MPI_Isend(sendList_xy.data(), sendCount_xy, MPI_INT, rank_xy(), 6, Comm, &req1[6] );
-        MPI_Irecv(recvList_XY.data(), recvCount_XY, MPI_INT, rank_XY(), 6, Comm, &req2[6] );
-        MPI_Isend(sendList_XY.data(), sendCount_XY, MPI_INT, rank_XY(), 7, Comm, &req1[7] );
-        MPI_Irecv(recvList_xy.data(), recvCount_xy, MPI_INT, rank_xy(), 7, Comm, &req2[7] );
-        MPI_Isend(sendList_Xy.data(), sendCount_Xy, MPI_INT, rank_Xy(), 8, Comm, &req1[8] );
-        MPI_Irecv(recvList_xY.data(), recvCount_xY, MPI_INT, rank_xY(), 8, Comm, &req2[8] );
-        MPI_Isend(sendList_xY.data(), sendCount_xY, MPI_INT, rank_xY(), 9, Comm, &req1[9] );
-        MPI_Irecv(recvList_Xy.data(), recvCount_Xy, MPI_INT, rank_Xy(), 9, Comm, &req2[9] );
-        MPI_Isend(sendList_xz.data(), sendCount_xz, MPI_INT, rank_xz(), 10, Comm, &req1[10] );
-        MPI_Irecv(recvList_XZ.data(), recvCount_XZ, MPI_INT, rank_XZ(), 10, Comm, &req2[10] );
-        MPI_Isend(sendList_XZ.data(), sendCount_XZ, MPI_INT, rank_XZ(), 11, Comm, &req1[11] );
-        MPI_Irecv(recvList_xz.data(), recvCount_xz, MPI_INT, rank_xz(), 11, Comm, &req2[11] );
-        MPI_Isend(sendList_Xz.data(), sendCount_Xz, MPI_INT, rank_Xz(), 12, Comm, &req1[12] );
-        MPI_Irecv(recvList_xZ.data(), recvCount_xZ, MPI_INT, rank_xZ(), 12, Comm, &req2[12] );
-        MPI_Isend(sendList_xZ.data(), sendCount_xZ, MPI_INT, rank_xZ(), 13, Comm, &req1[13] );
-        MPI_Irecv(recvList_Xz.data(), recvCount_Xz, MPI_INT, rank_Xz(), 13, Comm, &req2[13] );
-        MPI_Isend(sendList_yz.data(), sendCount_yz, MPI_INT, rank_yz(), 14, Comm, &req1[14] );
-        MPI_Irecv(recvList_YZ.data(), recvCount_YZ, MPI_INT, rank_YZ(), 14, Comm, &req2[14] );
-        MPI_Isend(sendList_YZ.data(), sendCount_YZ, MPI_INT, rank_YZ(), 15, Comm, &req1[15] );
-        MPI_Irecv(recvList_yz.data(), recvCount_yz, MPI_INT, rank_yz(), 15, Comm, &req2[15] );
-        MPI_Isend(sendList_Yz.data(), sendCount_Yz, MPI_INT, rank_Yz(), 16, Comm, &req1[16] );
-        MPI_Irecv(recvList_yZ.data(), recvCount_yZ, MPI_INT, rank_yZ(), 16, Comm, &req2[16] );
-        MPI_Isend(sendList_yZ.data(), sendCount_yZ, MPI_INT, rank_yZ(), 17, Comm, &req1[17] );
-        MPI_Irecv(recvList_Yz.data(), recvCount_Yz, MPI_INT, rank_Yz(), 17, Comm, &req2[17] );
+        req1[0] = Isend( Comm, sendList_x.data(), sendCount_x, rank_x(), 0 );
+        req2[0] = Irecv( Comm, recvList_X.data(), recvCount_X, rank_X(), 0 );
+        req1[1] = Isend( Comm, sendList_X.data(), sendCount_X, rank_X(), 1 );
+        req2[1] = Irecv( Comm, recvList_x.data(), recvCount_x, rank_x(), 1 );
+        req1[2] = Isend( Comm, sendList_y.data(), sendCount_y, rank_y(), 2 );
+        req2[2] = Irecv( Comm, recvList_Y.data(), recvCount_Y, rank_Y(), 2 );
+        req1[3] = Isend( Comm, sendList_Y.data(), sendCount_Y, rank_Y(), 3 );
+        req2[3] = Irecv( Comm, recvList_y.data(), recvCount_y, rank_y(), 3 );
+        req1[4] = Isend( Comm, sendList_z.data(), sendCount_z, rank_z(), 4 );
+        req2[4] = Irecv( Comm, recvList_Z.data(), recvCount_Z, rank_Z(), 4 );
+        req1[5] = Isend( Comm, sendList_Z.data(), sendCount_Z, rank_Z(), 5 );
+        req2[5] = Irecv( Comm, recvList_z.data(), recvCount_z, rank_z(), 5 );
+        req1[6] = Isend( Comm, sendList_xy.data(), sendCount_xy, rank_xy(), 6 );
+        req2[6] = Irecv( Comm, recvList_XY.data(), recvCount_XY, rank_XY(), 6 );
+        req1[7] = Isend( Comm, sendList_XY.data(), sendCount_XY, rank_XY(), 7 );
+        req2[7] = Irecv( Comm, recvList_xy.data(), recvCount_xy, rank_xy(), 7 );
+        req1[8] = Isend( Comm, sendList_Xy.data(), sendCount_Xy, rank_Xy(), 8 );
+        req2[8] = Irecv( Comm, recvList_xY.data(), recvCount_xY, rank_xY(), 8 );
+        req1[9] = Isend( Comm, sendList_xY.data(), sendCount_xY, rank_xY(), 9 );
+        req2[9] = Irecv( Comm, recvList_Xy.data(), recvCount_Xy, rank_Xy(), 9 );
+        req1[10] = Isend( Comm, sendList_xz.data(), sendCount_xz, rank_xz(), 10 );
+        req2[10] = Irecv( Comm, recvList_XZ.data(), recvCount_XZ, rank_XZ(), 10 );
+        req1[11] = Isend( Comm, sendList_XZ.data(), sendCount_XZ, rank_XZ(), 11 );
+        req2[11] = Irecv( Comm, recvList_xz.data(), recvCount_xz, rank_xz(), 11 );
+        req1[12] = Isend( Comm, sendList_Xz.data(), sendCount_Xz, rank_Xz(), 12 );
+        req2[12] = Irecv( Comm, recvList_xZ.data(), recvCount_xZ, rank_xZ(), 12 );
+        req1[13] = Isend( Comm, sendList_xZ.data(), sendCount_xZ, rank_xZ(), 13 );
+        req2[13] = Irecv( Comm, recvList_Xz.data(), recvCount_Xz, rank_Xz(), 13 );
+        req1[14] = Isend( Comm, sendList_yz.data(), sendCount_yz, rank_yz(), 14 );
+        req2[14] = Irecv( Comm, recvList_YZ.data(), recvCount_YZ, rank_YZ(), 14 );
+        req1[15] = Isend( Comm, sendList_YZ.data(), sendCount_YZ, rank_YZ(), 15 );
+        req2[15] = Irecv( Comm, recvList_yz.data(), recvCount_yz, rank_yz(), 15 );
+        req1[16] = Isend( Comm, sendList_Yz.data(), sendCount_Yz, rank_Yz(), 16 );
+        req2[16] = Irecv( Comm, recvList_yZ.data(), recvCount_yZ, rank_yZ(), 16 );
+        req1[17] = Isend( Comm, sendList_yZ.data(), sendCount_yZ, rank_yZ(), 17 );
+        req2[17] = Irecv( Comm, recvList_Yz.data(), recvCount_Yz, rank_Yz(), 17 );
         MPI_Waitall( 18, req1, status );
         MPI_Waitall( 18, req2, status );
         MPI_Barrier( Comm );
