@@ -45,8 +45,12 @@ ADD_LBPM_EXECUTABLE( TestIonModel )
 ADD_LBPM_EXECUTABLE( TestNernstPlanck )
 ADD_LBPM_EXECUTABLE( TestPNP_Stokes )
 ADD_LBPM_EXECUTABLE( TestMixedGrad )
+
+# Temporary tests for crusher MPI bug
 ADD_LBPM_EXECUTABLE( TestCrusher )
 ADD_LBPM_EXECUTABLE( TestCrusher2 )
+ADD_LBPM_EXECUTABLE( TestCrusher3 )
+ADD_LBPM_EXECUTABLE( TestCrusher4 )
 
 
 

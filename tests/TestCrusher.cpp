@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <iostream>
-#include "common/ScaLBL.h"
+#include "common/Domain.h"
 #include "common/MPI.h"
 
 

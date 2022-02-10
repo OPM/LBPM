@@ -11,18 +11,43 @@
 #include <time.h>
 #include <vector>
 
-#include "common/Database.h"
-#include "common/Utilities.h"
-#include "common/MPI.h"
+#include "StackTrace/StackTrace.h"
+#include "StackTrace/ErrorHandlers.h"
+
+#include "mpi.h"
 
 
-inline MPI_Request Isend( const Utilities::MPI &comm, const int *buf, int count, int rank, int tag )
+#define ASSERT(EXP)                                                 \
+    do {                                                            \
+        if (!(EXP)) {                                               \
+            std::stringstream tboxos;                               \
+            tboxos << "Failed assertion: " << #EXP << std::ends;    \
+            throw std::logic_error( tboxos.str() );                 \
+        }                                                           \
+    } while (0)
+#define INSIST(EXP, MSG)                                            \
+    do {                                                            \
+        if (!(EXP)) {                                               \
+            std::stringstream tboxos;                               \
+            tboxos << "Failed insist: " << #EXP << std::endl;       \
+            tboxos << "Message: " << MSG << std::ends;              \
+            throw std::logic_error( tboxos.str() );                 \
+        }                                                           \
+    } while (0)
+
+
+
+inline MPI_Request Isend( MPI_Comm comm, const int *buf, int count, int rank, int tag )
 {
-    return comm.Isend( buf, count, rank, tag );
+    MPI_Request req;
+    MPI_Isend( buf, count, MPI_INT, rank, tag, comm, &req );
+    return req;
 }
-inline MPI_Request Irecv( const Utilities::MPI &comm, int *buf, int count, int rank, int tag )
+inline MPI_Request Irecv( MPI_Comm comm, int *buf, int count, int rank, int tag )
 {
-    return comm.Irecv( buf, count, rank, tag );
+    MPI_Request req;
+    MPI_Irecv( buf, count, MPI_INT, rank, tag, comm, &req );
+    return req;
 }
 
 
@@ -34,7 +59,9 @@ struct RankInfoStruct2 {
     int jy;            //!<  The index of the current process in the y direction
     int kz;            //!<  The index of the current process in the z direction
     int rank[3][3][3]; //!<  The rank for the neighbor [i][j][k]
-    RankInfoStruct2() : RankInfoStruct2( 1, 0, 0, 0 ) {}
+    RankInfoStruct2() {
+       memset(this, 0, sizeof(RankInfoStruct2));
+    }
     RankInfoStruct2(int rank0, int nprocx, int nprocy, int nprocz) {
        memset(this, 0, sizeof(RankInfoStruct2));
        nx = nprocx;
@@ -77,23 +104,28 @@ struct RankInfoStruct2 {
 
 class Domain2 {
 public:
-    Domain2( std::array<int,3> nproc, std::array<int,3> n, const Utilities::MPI &Communicator ) {
-        Comm = Communicator.dup();
+    Domain2( std::array<int,3> nproc, std::array<int,3> n, MPI_Comm Communicator ) {
+        MPI_Comm_dup(Communicator, &Comm);
         Nx = n[0] + 2;
         Ny = n[1] + 2;
         Nz = n[2] + 2;
         N = Nx * Ny * Nz;
-        int rank = Comm.getRank();
-        int size = Comm.getSize();
+        int rank, size;
+        MPI_Comm_rank( Comm, &rank );
+        MPI_Comm_size( Comm, &size );
         rank_info = RankInfoStruct2( rank, nproc[0], nproc[1], nproc[2] );
         INSIST(size == nproc[0] * nproc[1] * nproc[2], "Fatal error in processor count!");
     }
 
     Domain2() = delete;
     Domain2(const Domain2 &) = delete;
-    ~Domain2() = default;
+    ~Domain2() {
+        int err = MPI_Comm_free(&Comm);
+        INSIST( err == MPI_SUCCESS, "Problem free'ing MPI_Comm object" );
+    }
 
 public:
+
     // MPI ranks for all 18 neighbors
     inline int rank_X() const { return rank_info.rank[2][1][1]; }
     inline int rank_x() const { return rank_info.rank[0][1][1]; }
@@ -116,6 +148,7 @@ public:
 
     // Initialize communication data structures within Domain object. 
     void CommInit() {
+        MPI_Status status[18];
         int sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z;
         int sendCount_xy, sendCount_yz, sendCount_xz, sendCount_Xy, sendCount_Yz, sendCount_xZ;
         int sendCount_xY, sendCount_yZ, sendCount_Xz, sendCount_XY, sendCount_YZ, sendCount_XZ;
@@ -282,9 +315,9 @@ public:
         req2[16] = Irecv( Comm, &recvCount_yZ, 1, rank_yZ(), 16 );
         req1[17] = Isend( Comm, &sendCount_yZ, 1, rank_yZ(), 17 );
         req2[17] = Irecv( Comm, &recvCount_Yz, 1, rank_Yz(), 17 );
-        Comm.waitAll(18, req1);
-        Comm.waitAll(18, req2);
-        Comm.barrier();
+        MPI_Waitall( 18, req1, status );
+        MPI_Waitall( 18, req2, status );
+        MPI_Barrier( Comm );
         // allocate recv lists
         recvList_x.resize(recvCount_x, 0);
         recvList_y.resize(recvCount_y, 0);
@@ -341,51 +374,15 @@ public:
         req2[16] = Irecv( Comm, recvList_yZ.data(), recvCount_yZ, rank_yZ(), 16 );
         req1[17] = Isend( Comm, sendList_yZ.data(), sendCount_yZ, rank_yZ(), 17 );
         req2[17] = Irecv( Comm, recvList_Yz.data(), recvCount_Yz, rank_Yz(), 17 );
-        Comm.waitAll(18, req1);
-        Comm.waitAll(18, req2);
-        //......................................................................................
-        for (int idx = 0; idx < recvCount_x; idx++)
-            recvList_x[idx] -= (Nx - 2);
-        for (int idx = 0; idx < recvCount_X; idx++)
-            recvList_X[idx] += (Nx - 2);
-        for (int idx = 0; idx < recvCount_y; idx++)
-            recvList_y[idx] -= (Ny - 2) * Nx;
-        for (int idx = 0; idx < recvCount_Y; idx++)
-            recvList_Y[idx] += (Ny - 2) * Nx;
-        for (int idx = 0; idx < recvCount_z; idx++)
-            recvList_z[idx] -= (Nz - 2) * Nx * Ny;
-        for (int idx = 0; idx < recvCount_Z; idx++)
-            recvList_Z[idx] += (Nz - 2) * Nx * Ny;
-        for (int idx = 0; idx < recvCount_xy; idx++)
-            recvList_xy[idx] -= (Nx - 2) + (Ny - 2) * Nx;
-        for (int idx = 0; idx < recvCount_XY; idx++)
-            recvList_XY[idx] += (Nx - 2) + (Ny - 2) * Nx;
-        for (int idx = 0; idx < recvCount_xY; idx++)
-            recvList_xY[idx] -= (Nx - 2) - (Ny - 2) * Nx;
-        for (int idx = 0; idx < recvCount_Xy; idx++)
-            recvList_Xy[idx] += (Nx - 2) - (Ny - 2) * Nx;
-        for (int idx = 0; idx < recvCount_xz; idx++)
-            recvList_xz[idx] -= (Nx - 2) + (Nz - 2) * Nx * Ny;
-        for (int idx = 0; idx < recvCount_XZ; idx++)
-            recvList_XZ[idx] += (Nx - 2) + (Nz - 2) * Nx * Ny;
-        for (int idx = 0; idx < recvCount_xZ; idx++)
-            recvList_xZ[idx] -= (Nx - 2) - (Nz - 2) * Nx * Ny;
-        for (int idx = 0; idx < recvCount_Xz; idx++)
-            recvList_Xz[idx] += (Nx - 2) - (Nz - 2) * Nx * Ny;
-        for (int idx = 0; idx < recvCount_yz; idx++)
-            recvList_yz[idx] -= (Ny - 2) * Nx + (Nz - 2) * Nx * Ny;
-        for (int idx = 0; idx < recvCount_YZ; idx++)
-            recvList_YZ[idx] += (Ny - 2) * Nx + (Nz - 2) * Nx * Ny;
-        for (int idx = 0; idx < recvCount_yZ; idx++)
-            recvList_yZ[idx] -= (Ny - 2) * Nx - (Nz - 2) * Nx * Ny;
-        for (int idx = 0; idx < recvCount_Yz; idx++)
-            recvList_Yz[idx] += (Ny - 2) * Nx - (Nz - 2) * Nx * Ny;
+        MPI_Waitall( 18, req1, status );
+        MPI_Waitall( 18, req2, status );
+        MPI_Barrier( Comm );
     }
 
 private:
     int Nx, Ny, Nz, N;
     RankInfoStruct2 rank_info;
-    Utilities::MPI Comm; // MPI Communicator for this domain
+    MPI_Comm Comm; // MPI Communicator for this domain
     MPI_Request req1[18], req2[18];
     std::vector<int> sendList_x, sendList_y, sendList_z, sendList_X, sendList_Y, sendList_Z;
     std::vector<int> sendList_xy, sendList_yz, sendList_xz, sendList_Xy, sendList_Yz, sendList_xZ;
@@ -393,8 +390,6 @@ private:
     std::vector<int> recvList_x, recvList_y, recvList_z, recvList_X, recvList_Y, recvList_Z;
     std::vector<int> recvList_xy, recvList_yz, recvList_xz, recvList_Xy, recvList_Yz, recvList_xZ;
     std::vector<int> recvList_xY, recvList_yZ, recvList_Xz, recvList_XY, recvList_YZ, recvList_XZ;
-    const std::vector<int> &getRecvList(const char *dir) const;
-    const std::vector<int> &getSendList(const char *dir) const;
 };
 
 
@@ -418,14 +413,23 @@ std::array<int,3> get_nproc( int P )
 int main(int argc, char **argv)
 {
     // Start MPI
-    Utilities::startup( argc, argv, true );
+    bool multiple = true;
+    if (multiple) {
+        int provided;
+        MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+        if (provided < MPI_THREAD_MULTIPLE)
+            std::cerr << "Warning: Failed to start MPI with thread support\n";
+        StackTrace::globalCallStackInitialize(MPI_COMM_WORLD);
+    } else {
+        MPI_Init(&argc, &argv);
+    }
 	
     // Run the problem
     int size = 0;
     MPI_Comm_size( MPI_COMM_WORLD, &size );
     {
         auto nproc = get_nproc( size );
-        std::array<int,3> n = { 10, 20, 30 };
+        std::array<int,3> n = { 222, 222, 222 };
         auto Dm  = std::make_shared<Domain2>(nproc,n,MPI_COMM_WORLD);
         Dm->CommInit();
         std::cout << "step 1" << std::endl << std::flush;
@@ -435,7 +439,9 @@ int main(int argc, char **argv)
     std::cout << "step 3" << std::endl << std::flush;
 
     // Shutdown MPI
-    Utilities::shutdown();
+    StackTrace::globalCallStackFinalize();
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Finalize();
     std::cout << "step 4" << std::endl << std::flush;
     return 0;
 }
