@@ -11,6 +11,7 @@
 #include <time.h>
 #include <vector>
 
+#include "common/Utilities.h"
 
 #include "mpi.h"
 
@@ -102,7 +103,7 @@ struct RankInfoStruct2 {
 
 class Domain2 {
 public:
-    Domain2(std::array<int,3> nproc, std::array<int,3> n, MPI_Comm Communicator) {
+    Domain2( std::array<int,3> nproc, std::array<int,3> n, MPI_Comm Communicator ) {
         MPI_Comm_dup(Communicator, &Comm);
         Nx = n[0] + 2;
         Ny = n[1] + 2;
@@ -411,20 +412,8 @@ std::array<int,3> get_nproc( int P )
 int main(int argc, char **argv)
 {
     // Start MPI
-    bool multiple = true;
-    if (multiple) {
-        int provided;
-        MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
-        if (provided < MPI_THREAD_MULTIPLE) {
-            int rank;
-            MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-            if (rank == 0)
-                std::cerr << "Warning: Failed to start MPI with thread support\n";
-        }
-    } else {
-        MPI_Init(&argc, &argv);
-    }
-
+    Utilities::startup( argc, argv, true );
+	
     // Run the problem
     int size = 0;
     MPI_Comm_size( MPI_COMM_WORLD, &size );
@@ -440,7 +429,7 @@ int main(int argc, char **argv)
     std::cout << "step 3" << std::endl << std::flush;
 
     // Shutdown MPI
-    MPI_Finalize();
+    Utilities::shutdown();
     std::cout << "step 4" << std::endl << std::flush;
     return 0;
 }

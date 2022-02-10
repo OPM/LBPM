@@ -77,46 +77,24 @@ struct RankInfoStruct2 {
 
 class Domain2 {
 public:
-    Domain2(std::shared_ptr<Database> db, const Utilities::MPI &Communicator) {
+    Domain2( std::array<int,3> nproc, std::array<int,3> n, const Utilities::MPI &Communicator ) {
         Comm = Communicator.dup();
-        auto nproc = db->getVector<int>("nproc");
-        auto n = db->getVector<int>("n");
-        ASSERT(n.size() == 3u);
-        ASSERT(nproc.size() == 3u);
-        int nx = n[0];
-        int ny = n[1];
-        int nz = n[2];
-        Nx = nx + 2;
-        Ny = ny + 2;
-        Nz = nz + 2;
+        Nx = n[0] + 2;
+        Ny = n[1] + 2;
+        Nz = n[2] + 2;
         N = Nx * Ny * Nz;
-        int myrank = Comm.getRank();
-        rank_info = RankInfoStruct2(myrank, nproc[0], nproc[1], nproc[2]);
-        int nprocs = Comm.getSize();
-        INSIST(nprocs == nproc[0] * nproc[1] * nproc[2], "Fatal error in processor count!");
+        int rank = Comm.getRank();
+        int size = Comm.getSize();
+        rank_info = RankInfoStruct2( rank, nproc[0], nproc[1], nproc[2] );
+        INSIST(size == nproc[0] * nproc[1] * nproc[2], "Fatal error in processor count!");
     }
 
     Domain2() = delete;
     Domain2(const Domain2 &) = delete;
     ~Domain2() = default;
 
-public: // Public variables (need to create accessors instead)
-    int Nx, Ny, Nz, N;
-    RankInfoStruct2 rank_info;
-
-    Utilities::MPI Comm; // MPI Communicator for this domain
-
-
-    //**********************************
+public:
     // MPI ranks for all 18 neighbors
-    //**********************************
-    inline int iproc() const { return rank_info.ix; }
-    inline int jproc() const { return rank_info.jy; }
-    inline int kproc() const { return rank_info.kz; }
-    inline int nprocx() const { return rank_info.nx; }
-    inline int nprocy() const { return rank_info.ny; }
-    inline int nprocz() const { return rank_info.nz; }
-    inline int rank() const { return rank_info.rank[1][1][1]; }
     inline int rank_X() const { return rank_info.rank[2][1][1]; }
     inline int rank_x() const { return rank_info.rank[0][1][1]; }
     inline int rank_Y() const { return rank_info.rank[1][2][1]; }
@@ -138,10 +116,6 @@ public: // Public variables (need to create accessors instead)
 
     // Initialize communication data structures within Domain object. 
     void CommInit() {
-        int i, j, k, n;
-        int sendtag = 21;
-        int recvtag = 21;
-        //......................................................................................
         int sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z;
         int sendCount_xy, sendCount_yz, sendCount_xz, sendCount_Xy, sendCount_Yz, sendCount_xZ;
         int sendCount_xY, sendCount_yZ, sendCount_Xz, sendCount_XY, sendCount_YZ, sendCount_XZ;
@@ -149,9 +123,9 @@ public: // Public variables (need to create accessors instead)
         sendCount_xy = sendCount_yz = sendCount_xz = sendCount_Xy = sendCount_Yz = sendCount_xZ = 0;
         sendCount_xY = sendCount_yZ = sendCount_Xz = sendCount_XY = sendCount_YZ = sendCount_XZ = 0;
         //......................................................................................
-        for (k = 1; k < Nz - 1; k++) {
-            for (j = 1; j < Ny - 1; j++) {
-                for (i = 1; i < Nx - 1; i++) {
+        for (int k = 1; k < Nz - 1; k++) {
+            for (int j = 1; j < Ny - 1; j++) {
+                for (int i = 1; i < Nx - 1; i++) {
                     // Counts for the six faces
                     if (i == 1)
                         sendCount_x++;
@@ -219,11 +193,11 @@ public: // Public variables (need to create accessors instead)
         sendCount_x = sendCount_y = sendCount_z = sendCount_X = sendCount_Y = sendCount_Z = 0;
         sendCount_xy = sendCount_yz = sendCount_xz = sendCount_Xy = sendCount_Yz = sendCount_xZ = 0;
         sendCount_xY = sendCount_yZ = sendCount_Xz = sendCount_XY = sendCount_YZ = sendCount_XZ = 0;
-        for (k = 1; k < Nz - 1; k++) {
-            for (j = 1; j < Ny - 1; j++) {
-                for (i = 1; i < Nx - 1; i++) {
+        for (int k = 1; k < Nz - 1; k++) {
+            for (int j = 1; j < Ny - 1; j++) {
+                for (int i = 1; i < Nx - 1; i++) {
                     // Local value to send
-                    n = k * Nx * Ny + j * Nx + i;
+                    int n = k * Nx * Ny + j * Nx + i;
                     // Counts for the six faces
                     if (i == 1)
                         sendList_x[sendCount_x++] = n;
@@ -409,7 +383,9 @@ public: // Public variables (need to create accessors instead)
     }
 
 private:
-
+    int Nx, Ny, Nz, N;
+    RankInfoStruct2 rank_info;
+    Utilities::MPI Comm; // MPI Communicator for this domain
     MPI_Request req1[18], req2[18];
     std::vector<int> sendList_x, sendList_y, sendList_z, sendList_X, sendList_Y, sendList_Z;
     std::vector<int> sendList_xy, sendList_yz, sendList_xz, sendList_Xy, sendList_Yz, sendList_xZ;
@@ -422,22 +398,43 @@ private:
 };
 
 
+std::array<int,3> get_nproc( int P )
+{
+    if ( P == 1 )
+        return { 1, 1, 1 };
+    else if ( P == 2 )
+        return { 2, 1, 1 };
+    else if ( P == 4 )
+        return { 2, 2, 1 };
+    else if ( P == 8 )
+        return { 2, 2, 2 };
+    else if ( P == 64 )
+        return { 4, 4, 4 };
+    else
+        throw std::logic_error("proccessor count not supported yet");
+}
+
 
 int main(int argc, char **argv)
 {
+    // Start MPI
     Utilities::startup( argc, argv, true );
-    Utilities::MPI comm( MPI_COMM_WORLD );
+	
+    // Run the problem
+    int size = 0;
+    MPI_Comm_size( MPI_COMM_WORLD, &size );
     {
-        auto filename = argv[1];
-        auto input_db = std::make_shared<Database>( filename );
-        auto db = input_db->getDatabase( "Domain" );
-        auto Dm  = std::make_shared<Domain2>(db,comm);
+        auto nproc = get_nproc( size );
+        std::array<int,3> n = { 10, 20, 30 };
+        auto Dm  = std::make_shared<Domain2>(nproc,n,MPI_COMM_WORLD);
         Dm->CommInit();
         std::cout << "step 1" << std::endl << std::flush;
     }
     std::cout << "step 2" << std::endl << std::flush;
-    comm.barrier();
+    MPI_Barrier( MPI_COMM_WORLD );
     std::cout << "step 3" << std::endl << std::flush;
+
+    // Shutdown MPI
     Utilities::shutdown();
     std::cout << "step 4" << std::endl << std::flush;
     return 0;
