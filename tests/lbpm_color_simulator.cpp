@@ -23,7 +23,7 @@ int main( int argc, char **argv )
 {
 
 	// Initialize
-        Utilities::startup( argc, argv, false );
+        Utilities::startup( argc, argv, true );
 
 	{ // Limit scope so variables that contain communicators will free before MPI_Finialize
 
