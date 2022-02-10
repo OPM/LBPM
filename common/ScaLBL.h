@@ -799,6 +799,12 @@ private:
 	int *dvcRecvDist_x, *dvcRecvDist_y, *dvcRecvDist_z, *dvcRecvDist_X, *dvcRecvDist_Y, *dvcRecvDist_Z;
 	int *dvcRecvDist_xy, *dvcRecvDist_yz, *dvcRecvDist_xz, *dvcRecvDist_Xy, *dvcRecvDist_Yz, *dvcRecvDist_xZ;
 	int *dvcRecvDist_xY, *dvcRecvDist_yZ, *dvcRecvDist_Xz, *dvcRecvDist_XY, *dvcRecvDist_YZ, *dvcRecvDist_XZ;
+    // MPI requests for persistent communications
+    std::vector<std::shared_ptr<MPI_Request>> req_D3Q19AA;
+    std::vector<std::shared_ptr<MPI_Request>> req_BiD3Q19AA;
+    std::vector<std::shared_ptr<MPI_Request>> req_TriD3Q19AA;
+    void start( std::vector<std::shared_ptr<MPI_Request>>& requests );
+    void wait( std::vector<std::shared_ptr<MPI_Request>>& requests );
 	//......................................................................................
 	int *bb_dist;
 	int *bb_interactions;
