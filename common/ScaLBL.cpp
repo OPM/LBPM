@@ -309,12 +309,12 @@ ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	MPI_COMM_SCALBL.barrier();
 	ScaLBL_DeviceBarrier();
 	//......................................................................................
-	SendCount = sendCount_x+sendCount_X+sendCount_y+sendCount_Y+sendCount_z+sendCount_Z+
+	SendCount = 5*(sendCount_x+sendCount_X+sendCount_y+sendCount_Y+sendCount_z+sendCount_Z)+
 			sendCount_xy+sendCount_Xy+sendCount_xY+sendCount_XY+
 			sendCount_xZ+sendCount_Xz+sendCount_xZ+sendCount_XZ+
 			sendCount_yz+sendCount_Yz+sendCount_yZ+sendCount_YZ;
 
-	RecvCount = recvCount_x+recvCount_X+recvCount_y+recvCount_Y+recvCount_z+recvCount_Z+
+	RecvCount = 5*(recvCount_x+recvCount_X+recvCount_y+recvCount_Y+recvCount_z+recvCount_Z)+
 			recvCount_xy+recvCount_Xy+recvCount_xY+recvCount_XY+
 			recvCount_xZ+recvCount_Xz+recvCount_xZ+recvCount_XZ+
 			recvCount_yz+recvCount_Yz+recvCount_yZ+recvCount_YZ;
