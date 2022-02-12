@@ -430,11 +430,11 @@ int main(int argc, char **argv)
 		// 18 reads and 18 writes for each lattice site
 		double MemoryRefs = double(Np)*36;
 		// number of memory references for the swap algorithm - GigaBytes / second
-		if (rank==0) printf("DRAM bandwidth (per process)= %f GB/sec \n",MemoryRefs*8*double(timestep)*1e-9);
+		if (rank==0) printf("DRAM bandwidth (per process)= %f GB/sec \n",MemoryRefs*8*double(timestep)/cputime*1e-9);
 		// Report bandwidth in Gigabits per second
 		// communication bandwidth includes both send and recieve
-		if (rank==0) printf("Communication bandwidth (per process)= %f Gbit/sec \n",ScaLBL_Comm.CommunicationCount*64*timestep/1e9);
-		if (rank==0) printf("Aggregated communication bandwidth = %f Gbit/sec \n",nprocs*ScaLBL_Comm.CommunicationCount*64*timestep/1e9);
+		if (rank==0) printf("Communication bandwidth (per process)= %f Gbit/sec \n",ScaLBL_Comm.CommunicationCount*64*timestep/cputime*1e-9);
+		if (rank==0) printf("Aggregated communication bandwidth = %f Gbit/sec \n",nprocs*ScaLBL_Comm.CommunicationCount*64*timestep/cputime*1e-9);
 		cout << flush;
 
 	}
