@@ -19,7 +19,7 @@
 //*************************************************************************
 #include "hip/hip_runtime.h"
 
-#define NBLOCKS 560
+#define NBLOCKS 1024
 #define NTHREADS 256
 
 __global__ void INITIALIZE(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz)
@@ -122,8 +122,7 @@ __global__ void Compute_VELOCITY(char *ID, double *disteven, double *distodd, do
 
 //*************************************************************************
 __global__ void 
-__launch_bounds__(512,2)
-D3Q19_MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz,
+__launch_bounds__(256,4) D3Q19_MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz,
 					double rlx_setA, double rlx_setB, double Fx, double Fy, double Fz)
 {
 

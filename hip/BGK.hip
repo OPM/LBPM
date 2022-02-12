@@ -18,7 +18,7 @@
 #include "hip/hip_runtime.h"
 
 #define NBLOCKS 1024
-#define NTHREADS 256
+#define NTHREADS 512
 
 
 __global__  void

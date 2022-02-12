@@ -19,7 +19,7 @@
 #include "hip/hip_cooperative_groups.h"
 
 #define NBLOCKS 1024
-#define NTHREADS 256
+#define NTHREADS 512
 
 /*
 1. constants that are known at compile time should be defined using preprocessor macros (e.g. #define) or via C/C++ const variables at global/file scope.
@@ -321,7 +321,7 @@ __global__  void dvc_ScaLBL_D3Q19_Swap_Compact(int *neighborList, double *distev
 	}
 }
 
-//__launch_bounds__(512,4)
+//__launch_bounds__(512,1)
 
 __global__ void 
 dvc_ScaLBL_AAodd_Compact(char * ID, int *d_neighborList, double *dist, int Np) {
@@ -464,7 +464,7 @@ dvc_ScaLBL_AAodd_Compact(char * ID, int *d_neighborList, double *dist, int Np) {
 
 
 __global__ void
-__launch_bounds__(256,1)
+__launch_bounds__(512,1)
 dvc_ScaLBL_AAodd_MRT(int *neighborList, double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx, double Fy, double Fz) {
 
 	int n;
@@ -934,7 +934,7 @@ dvc_ScaLBL_AAodd_MRT(int *neighborList, double *dist, int start, int finish, int
 
 //__launch_bounds__(512,1)
 __global__ void
-__launch_bounds__(256,1) 
+__launch_bounds__(512,1) 
 dvc_ScaLBL_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx, double Fy, double Fz) {
 
 	int n;
@@ -1355,7 +1355,7 @@ dvc_ScaLBL_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_se
 	}
 }
 
-//__launch_bounds__(512,4)
+//__launch_bounds__(512,1)
 
 __global__ void dvc_ScaLBL_AAeven_Compact(char * ID, double *dist, int Np) {
 

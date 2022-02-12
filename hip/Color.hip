@@ -21,6 +21,21 @@
 #define NBLOCKS 1024
 #define NTHREADS 256
 
+
+
+__device__ __constant__ double mrt_V1=0.05263157894736842;
+__device__ __constant__ double mrt_V2=0.012531328320802;
+__device__ __constant__ double mrt_V3=0.04761904761904762;
+__device__ __constant__ double mrt_V4=0.004594820384294068;
+__device__ __constant__ double mrt_V5=0.01587301587301587;
+__device__ __constant__ double mrt_V6=0.0555555555555555555555555;
+__device__ __constant__ double mrt_V7=0.02777777777777778;
+__device__ __constant__ double mrt_V8=0.08333333333333333;
+__device__ __constant__ double mrt_V9=0.003341687552213868;
+__device__ __constant__ double mrt_V10=0.003968253968253968;
+__device__ __constant__ double mrt_V11=0.01388888888888889;
+__device__ __constant__ double mrt_V12=0.04166666666666666;
+
 __global__  void dvc_ScaLBL_Color_Init(char *ID, double *Den, double *Phi, double das, double dbs, int Nx, int Ny, int Nz)
 {
 	//int i,j,k;
@@ -1274,19 +1289,6 @@ __launch_bounds__(256,1) dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, d
 	double ux,uy,uz;
 	double phi,tau,rho0,rlx_setA,rlx_setB;
 
-	const double mrt_V1=0.05263157894736842;
-	const double mrt_V2=0.012531328320802;
-	const double mrt_V3=0.04761904761904762;
-	const double mrt_V4=0.004594820384294068;
-	const double mrt_V5=0.01587301587301587;
-	const double mrt_V6=0.0555555555555555555555555;
-	const double mrt_V7=0.02777777777777778;
-	const double mrt_V8=0.08333333333333333;
-	const double mrt_V9=0.003341687552213868;
-	const double mrt_V10=0.003968253968253968;
-	const double mrt_V11=0.01388888888888889;
-	const double mrt_V12=0.04166666666666666;
-
 	int S = Np/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
@@ -1296,9 +1298,10 @@ __launch_bounds__(256,1) dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, d
 			// read the component number densities
 			nA = Den[n];
 			nB = Den[Np + n];
+			nAB = 1.0/(nA+nB);
 
 			// compute phase indicator field
-			phi=(nA-nB)/(nA+nB);
+			phi=(nA-nB)*nAB;
 
 			// local density
 			rho0=rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
@@ -1373,11 +1376,11 @@ __launch_bounds__(256,1) dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, d
 
 			//...........Normalize the Color Gradient.................................
 			C = sqrt(nx*nx+ny*ny+nz*nz);
-			double ColorMag = C;
-			if (C==0.0) ColorMag=1.0;
-			nx = nx/ColorMag;
-			ny = ny/ColorMag;
-			nz = nz/ColorMag;		
+			double iColorMag = 1.0/C;
+			if (C==0.0) iColorMag=1.0;
+			nx = nx*iColorMag;
+			ny = ny*iColorMag;
+			nz = nz*iColorMag;		
 
 			// q=0
 			fq = dist[n];
@@ -1652,19 +1655,20 @@ __launch_bounds__(256,1) dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, d
 			//........................................................................
 			//..............carry out relaxation process..............................
 			//..........Toelke, Fruediger et. al. 2006................................
+			double irho0 = 1.0/rho0;
 			if (C == 0.0)	nx = ny = nz = 0.0;
-			m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)/rho0 - 11*rho) -19*alpha*C - m1);
-			m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)/rho0)- m2);
+			m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)*irho0 - 11*rho) -19*alpha*C - m1);
+			m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)*irho0)- m2);
 			m4 = m4 + rlx_setB*((-0.6666666666666666*jx)- m4);
 			m6 = m6 + rlx_setB*((-0.6666666666666666*jy)- m6);
 			m8 = m8 + rlx_setB*((-0.6666666666666666*jz)- m8);
-			m9 = m9 + rlx_setA*(((2*jx*jx-jy*jy-jz*jz)/rho0) + 0.5*alpha*C*(2*nx*nx-ny*ny-nz*nz) - m9);
+			m9 = m9 + rlx_setA*(((2*jx*jx-jy*jy-jz*jz)*irho0) + 0.5*alpha*C*(2*nx*nx-ny*ny-nz*nz) - m9);
 			m10 = m10 + rlx_setA*( - m10);
-			m11 = m11 + rlx_setA*(((jy*jy-jz*jz)/rho0) + 0.5*alpha*C*(ny*ny-nz*nz)- m11);
+			m11 = m11 + rlx_setA*(((jy*jy-jz*jz)*irho0) + 0.5*alpha*C*(ny*ny-nz*nz)- m11);
 			m12 = m12 + rlx_setA*( - m12);
-			m13 = m13 + rlx_setA*( (jx*jy/rho0) + 0.5*alpha*C*nx*ny - m13);
-			m14 = m14 + rlx_setA*( (jy*jz/rho0) + 0.5*alpha*C*ny*nz - m14);
-			m15 = m15 + rlx_setA*( (jx*jz/rho0) + 0.5*alpha*C*nx*nz - m15);
+			m13 = m13 + rlx_setA*( (jx*jy*irho0) + 0.5*alpha*C*nx*ny - m13);
+			m14 = m14 + rlx_setA*( (jy*jz*irho0) + 0.5*alpha*C*ny*nz - m14);
+			m15 = m15 + rlx_setA*( (jx*jz*irho0) + 0.5*alpha*C*nx*nz - m15);
 			m16 = m16 + rlx_setB*( - m16);
 			m17 = m17 + rlx_setB*( - m17);
 			m18 = m18 + rlx_setB*( - m18);
@@ -1777,9 +1781,9 @@ __launch_bounds__(256,1) dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, d
 			//........................................................................
 
 			// write the velocity 
-			ux = jx / rho0;
-			uy = jy / rho0;
-			uz = jz / rho0;
+			ux = jx*irho0;
+			uy = jy*irho0;
+			uz = jz*irho0;
 			Velocity[n] = ux;
 			Velocity[Np+n] = uy;
 			Velocity[2*Np+n] = uz;
@@ -1787,7 +1791,6 @@ __launch_bounds__(256,1) dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, d
 			// Instantiate mass transport distributions
 			// Stationary value - distribution 0
 
-			nAB = 1.0/(nA+nB);
 			Aq[n] = 0.3333333333333333*nA;
 			Bq[n] = 0.3333333333333333*nB;
 
@@ -1862,19 +1865,6 @@ __launch_bounds__(256,1) dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Ma
 	double ux,uy,uz;
 	double phi,tau,rho0,rlx_setA,rlx_setB;
 
-	const double mrt_V1=0.05263157894736842;
-	const double mrt_V2=0.012531328320802;
-	const double mrt_V3=0.04761904761904762;
-	const double mrt_V4=0.004594820384294068;
-	const double mrt_V5=0.01587301587301587;
-	const double mrt_V6=0.0555555555555555555555555;
-	const double mrt_V7=0.02777777777777778;
-	const double mrt_V8=0.08333333333333333;
-	const double mrt_V9=0.003341687552213868;
-	const double mrt_V10=0.003968253968253968;
-	const double mrt_V11=0.01388888888888889;
-	const double mrt_V12=0.04166666666666666;
-
 	int S = Np/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
@@ -1883,9 +1873,10 @@ __launch_bounds__(256,1) dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Ma
 			// read the component number densities
 			nA = Den[n];
 			nB = Den[Np + n];
+			nAB = 1.0/(nA+nB);
 
 			// compute phase indicator field
-			phi=(nA-nB)/(nA+nB);
+			phi=(nA-nB)*nAB;
 
 			// local density
 			rho0=rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
@@ -1960,11 +1951,11 @@ __launch_bounds__(256,1) dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Ma
 
 			//...........Normalize the Color Gradient.................................
 			C = sqrt(nx*nx+ny*ny+nz*nz);
-			double ColorMag = C;
-			if (C==0.0) ColorMag=1.0;
-			nx = nx/ColorMag;
-			ny = ny/ColorMag;
-			nz = nz/ColorMag;		
+			double iColorMag = 1.0/C;
+			if (C==0.0) iColorMag=1.0;
+			nx = nx*iColorMag;
+			ny = ny*iColorMag;
+			nz = nz*iColorMag;		
 
 			// q=0
 			fq = dist[n];
@@ -2291,18 +2282,19 @@ __launch_bounds__(256,1) dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Ma
 			//..............carry out relaxation process..............................
 			//..........Toelke, Fruediger et. al. 2006................................
 			if (C == 0.0)	nx = ny = nz = 0.0;
-			m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)/rho0 - 11*rho) -19*alpha*C - m1);
-			m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)/rho0)- m2);
+			double irho0=1.0/rho0;
+			m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)*irho0 - 11*rho) -19*alpha*C - m1);
+			m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)*irho0)- m2);
 			m4 = m4 + rlx_setB*((-0.6666666666666666*jx)- m4);
 			m6 = m6 + rlx_setB*((-0.6666666666666666*jy)- m6);
 			m8 = m8 + rlx_setB*((-0.6666666666666666*jz)- m8);
-			m9 = m9 + rlx_setA*(((2*jx*jx-jy*jy-jz*jz)/rho0) + 0.5*alpha*C*(2*nx*nx-ny*ny-nz*nz) - m9);
+			m9 = m9 + rlx_setA*(((2*jx*jx-jy*jy-jz*jz)*irho0) + 0.5*alpha*C*(2*nx*nx-ny*ny-nz*nz) - m9);
 			m10 = m10 + rlx_setA*( - m10);
-			m11 = m11 + rlx_setA*(((jy*jy-jz*jz)/rho0) + 0.5*alpha*C*(ny*ny-nz*nz)- m11);
+			m11 = m11 + rlx_setA*(((jy*jy-jz*jz)*irho0) + 0.5*alpha*C*(ny*ny-nz*nz)- m11);
 			m12 = m12 + rlx_setA*( - m12);
-			m13 = m13 + rlx_setA*( (jx*jy/rho0) + 0.5*alpha*C*nx*ny - m13);
-			m14 = m14 + rlx_setA*( (jy*jz/rho0) + 0.5*alpha*C*ny*nz - m14);
-			m15 = m15 + rlx_setA*( (jx*jz/rho0) + 0.5*alpha*C*nx*nz - m15);
+			m13 = m13 + rlx_setA*( (jx*jy*irho0) + 0.5*alpha*C*nx*ny - m13);
+			m14 = m14 + rlx_setA*( (jy*jz*irho0) + 0.5*alpha*C*ny*nz - m14);
+			m15 = m15 + rlx_setA*( (jx*jz*irho0) + 0.5*alpha*C*nx*nz - m15);
 			m16 = m16 + rlx_setB*( - m16);
 			m17 = m17 + rlx_setB*( - m17);
 			m18 = m18 + rlx_setB*( - m18);
@@ -2427,16 +2419,15 @@ __launch_bounds__(256,1) dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Ma
 			dist[nread] = fq;
 
 			// write the velocity 
-			ux = jx / rho0;
-			uy = jy / rho0;
-			uz = jz / rho0;
+			ux = jx*irho0;
+			uy = jy*irho0;
+			uz = jz*irho0;
 			Velocity[n] = ux;
 			Velocity[Np+n] = uy;
 			Velocity[2*Np+n] = uz;
 
 			// Instantiate mass transport distributions
 			// Stationary value - distribution 0
-			nAB = 1.0/(nA+nB);
 			Aq[n] = 0.3333333333333333*nA;
 			Bq[n] = 0.3333333333333333*nB;
 
