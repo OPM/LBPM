@@ -5,6 +5,11 @@
 
 Membrane::Membrane(std::shared_ptr <Domain> Dm, int *initialNeighborList, int Nsites) {
 
+	Lock=false; // unlock the communicator
+	//......................................................................................
+	// Create a separate copy of the communicator for the device
+    MPI_COMM_SCALBL = Dm->Comm.dup();
+    
 	Np = Nsites;
 	neighborList = new int[18*Np];
 	/* Copy neighborList */
@@ -187,6 +192,25 @@ Membrane::Membrane(std::shared_ptr <Domain> Dm, int *initialNeighborList, int Ns
 	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_Yz, recvCount_Yz*sizeof(int));	// Allocate device memory
 	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_YZ, recvCount_YZ*sizeof(int));	// Allocate device memory
 	//......................................................................................
+	ScaLBL_AllocateZeroCopy((void **) &dvcRecvLinks_x, 5*recvCount_x*sizeof(int));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &dvcRecvLinks_X, 5*recvCount_X*sizeof(int));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &dvcRecvLinks_y, 5*recvCount_y*sizeof(int));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &dvcRecvLinks_Y, 5*recvCount_Y*sizeof(int));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &dvcRecvLinks_z, 5*recvCount_z*sizeof(int));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &dvcRecvLinks_Z, 5*recvCount_Z*sizeof(int));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &dvcRecvLinks_xy, recvCount_xy*sizeof(int));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &dvcRecvLinks_xY, recvCount_xY*sizeof(int));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &dvcRecvLinks_Xy, recvCount_Xy*sizeof(int));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &dvcRecvLinks_XY, recvCount_XY*sizeof(int));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &dvcRecvLinks_xz, recvCount_xz*sizeof(int));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &dvcRecvLinks_xZ, recvCount_xZ*sizeof(int));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &dvcRecvLinks_Xz, recvCount_Xz*sizeof(int));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &dvcRecvLinks_XZ, recvCount_XZ*sizeof(int));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &dvcRecvLinks_yz, recvCount_yz*sizeof(int));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &dvcRecvLinks_yZ, recvCount_yZ*sizeof(int));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &dvcRecvLinks_Yz, recvCount_Yz*sizeof(int));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &dvcRecvLinks_YZ, recvCount_YZ*sizeof(int));	// Allocate device memory
+	//......................................................................................
 	ScaLBL_AllocateZeroCopy((void **) &dvcRecvDist_x, 5*recvCount_x*sizeof(int));	// Allocate device memory
 	ScaLBL_AllocateZeroCopy((void **) &dvcRecvDist_X, 5*recvCount_X*sizeof(int));	// Allocate device memory
 	ScaLBL_AllocateZeroCopy((void **) &dvcRecvDist_y, 5*recvCount_y*sizeof(int));	// Allocate device memory
@@ -323,6 +347,24 @@ Membrane::~Membrane() {
 	ScaLBL_FreeDeviceMemory( dvcRecvList_yZ );
 	ScaLBL_FreeDeviceMemory( dvcRecvList_Yz );
 	ScaLBL_FreeDeviceMemory( dvcRecvList_YZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvLinks_x );
+	ScaLBL_FreeDeviceMemory( dvcRecvLinks_X );
+	ScaLBL_FreeDeviceMemory( dvcRecvLinks_y );
+	ScaLBL_FreeDeviceMemory( dvcRecvLinks_Y );
+	ScaLBL_FreeDeviceMemory( dvcRecvLinks_z );
+	ScaLBL_FreeDeviceMemory( dvcRecvLinks_Z );
+	ScaLBL_FreeDeviceMemory( dvcRecvLinks_xy );
+	ScaLBL_FreeDeviceMemory( dvcRecvLinks_xY );
+	ScaLBL_FreeDeviceMemory( dvcRecvLinks_Xy );
+	ScaLBL_FreeDeviceMemory( dvcRecvLinks_XY );
+	ScaLBL_FreeDeviceMemory( dvcRecvLinks_xz );
+	ScaLBL_FreeDeviceMemory( dvcRecvLinks_xZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvLinks_Xz );
+	ScaLBL_FreeDeviceMemory( dvcRecvLinks_XZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvLinks_yz );
+	ScaLBL_FreeDeviceMemory( dvcRecvLinks_yZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvLinks_Yz );
+	ScaLBL_FreeDeviceMemory( dvcRecvLinks_YZ );
 	ScaLBL_FreeDeviceMemory( dvcRecvDist_x );
 	ScaLBL_FreeDeviceMemory( dvcRecvDist_X );
 	ScaLBL_FreeDeviceMemory( dvcRecvDist_y );
@@ -341,76 +383,6 @@ Membrane::~Membrane() {
 	ScaLBL_FreeDeviceMemory( dvcRecvDist_yZ );
 	ScaLBL_FreeDeviceMemory( dvcRecvDist_Yz );
 	ScaLBL_FreeDeviceMemory( dvcRecvDist_YZ );
-}
-
-int Membrane::D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz, 
-		const int shift_x, const int shift_y, const int shift_z, 
-		const int sendCount, const int recvCount,
-		int rank_q, int rank_Q, int startSend, int startRecv,
-		std::shared_ptr <Domain> Dm, const int *originalSendList, 
-		const DoubleArray &Distance, int *membraneSendList, int *membraneRecvList){
-
-	int sendtag = 2389;
-	int recvtag = 2389;
-	int i,j,k,n,nn,idx;
-	double dist,locdist;
-	
-	int *SendList;
-	int *RecvList;
-	int *RecvList_q;
-	SendList = new int [sendCount]; // for this process
-	RecvList = new int [recvCount];   // filled in by the neighbor process
-	RecvList_q = new int [sendCount]; // goes to the neighbor process
-
-	int regularCount = 0;
-	int membraneCount = 0;
-	for (idx=0; idx<sendCount; idx++){
-		// Get the value from the list -- note that n is the index is from the send (non-local) process
-		n = originalSendList[idx]; // if (rank == 0) printf("@ rank:%d n=%d\n",rank,n);
-		// Get the 3-D indices from the send process
-		k = n/(Nx*Ny); j = (n-Nx*Ny*k)/Nx; i = n-Nx*Ny*k-Nx*j;
-		// if (rank ==0) printf("@ Get 3D indices from the send process: i=%d, j=%d, k=%d\n",i,j,k);
-		
-		/* distance to membrane at the send site */
-		dist = Distance(i,j,k);
-
-		// Streaming for the non-local distribution
-		i += Cqx; j += Cqy; k += Cqz;
-		// if (rank == 0) printf("@ Streaming for the non-local distribution: i=%d, j=%d, k=%d\n",i,j,k);
-		/* distance to membrane at the recv site */
-		locdist = Distance(i,j,k);
-		
-		// Compute 1D index for the neighbor and save
-		i += shift_x;
-		j += shift_y;
-		k += shift_z;
-		nn = k*Nx*Ny+j*Nx+i;
-		
-		if (dist*locdist < 0.0){
-			/* store membrane values at the end */
-			membraneCount++;
-			RecvList_q[sendCount-membraneCount] = nn;
-			SendList[sendCount-membraneCount] = n;
-		}
-		else {
-			RecvList_q[regularCount] = nn;
-			SendList[regularCount++] = n;
-		}
-	}
-	// send the recv list to the neighbor process
-    req1[0] = Dm->Comm.Isend(RecvList_q, sendCount, rank_q, sendtag);
-    req2[0] = Dm->Comm.Irecv(RecvList, recvCount, rank_Q, recvtag);
-    Dm->Comm.barrier();
-	
-	// Return updated version to the device
-	ScaLBL_CopyToDevice(&membraneSendList[startSend], SendList, sendCount*sizeof(int));
-	ScaLBL_CopyToDevice(&membraneRecvList[startRecv], RecvList, recvCount*sizeof(int));
-
-	// clean up the work arrays
-	delete [] SendList;
-	delete [] RecvList;
-	delete [] RecvList_q;
-	return membraneCount;
 }
 
 int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArray &Map){
@@ -718,6 +690,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 						}
 						else{
 							insideMem = 2*mlink+1;
+							
 							outsideMem = 2*mlink;
 						}
 						membraneLinks[insideMem] = idx + 17*Np;
@@ -732,84 +705,71 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 	}
 	
 	/* Re-organize communication based on membrane structure*/
-	//membraneCount_x = D3Q19_MapSendRecv(Cx, Cy, Cz, Dm->sendList("x"), Distance, );
-	// MPI_COMM_SCALBL.barrier();
-	
-	/*	int Membrane::D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz, 
-			const int shift_x, const int shift_y, const int shift_z, 
-			const int sendCount, const int recvCount,
-			int rank_q, int rank_Q, int startSend, int startRecv,
-			std::shared_ptr <Domain> Dm, const int *originalSendList, 
-			const DoubleArray &Distance, int *membraneSendList, int *membraneRecvList)
-	*/
-	//...................................................................................
-	// Set up the recieve distribution lists
-	//...................................................................................
 	//...Map recieve list for the X face: q=2,8,10,12,14 .................................
-/*	D3Q19_MapRecv(-1,0,0, Dm->recvList("X"),0,recvCount_X,dvcRecvDist_X);
-	D3Q19_MapRecv(-1,-1,0,Dm->recvList("X"),recvCount_X,recvCount_X,dvcRecvDist_X);
-	D3Q19_MapRecv(-1,1,0, Dm->recvList("X"),2*recvCount_X,recvCount_X,dvcRecvDist_X);
-	D3Q19_MapRecv(-1,0,-1,Dm->recvList("X"),3*recvCount_X,recvCount_X,dvcRecvDist_X);
-	D3Q19_MapRecv(-1,0,1, Dm->recvList("X"),4*recvCount_X,recvCount_X,dvcRecvDist_X);
+	linkCount_X[0]= D3Q19_MapRecv(-1,0,0, Dm->recvList("X"),0,recvCount_X,dvcRecvDist_X,dvcRecvLinks_X,Distance,Map);
+	linkCount_X[1] = D3Q19_MapRecv(-1,-1,0,Dm->recvList("X"),recvCount_X,recvCount_X,dvcRecvDist_X,dvcRecvLinks_X,Distance,Map);
+	linkCount_X[2] = D3Q19_MapRecv(-1,1,0, Dm->recvList("X"),2*recvCount_X,recvCount_X,dvcRecvDist_X,dvcRecvLinks_X,Distance,Map);
+	linkCount_X[3]= D3Q19_MapRecv(-1,0,-1,Dm->recvList("X"),3*recvCount_X,recvCount_X,dvcRecvDist_X,dvcRecvLinks_X,Distance,Map);
+	linkCount_X[4] = D3Q19_MapRecv(-1,0,1, Dm->recvList("X"),4*recvCount_X,recvCount_X,dvcRecvDist_X,dvcRecvLinks_X,Distance,Map);
 	//...................................................................................
 	//...Map recieve list for the x face: q=1,7,9,11,13..................................
-	D3Q19_MapRecv(1,0,0, Dm->recvList("x"),0,recvCount_x,dvcRecvDist_x);
-	D3Q19_MapRecv(1,1,0, Dm->recvList("x"),recvCount_x,recvCount_x,dvcRecvDist_x);
-	D3Q19_MapRecv(1,-1,0,Dm->recvList("x"),2*recvCount_x,recvCount_x,dvcRecvDist_x);
-	D3Q19_MapRecv(1,0,1, Dm->recvList("x"),3*recvCount_x,recvCount_x,dvcRecvDist_x);
-	D3Q19_MapRecv(1,0,-1,Dm->recvList("x"),4*recvCount_x,recvCount_x,dvcRecvDist_x);
+	linkCount_x[0] = D3Q19_MapRecv(1,0,0, Dm->recvList("x"),0,recvCount_x,dvcRecvDist_x,dvcRecvLinks_x,Distance,Map);
+	linkCount_x[1] = D3Q19_MapRecv(1,1,0, Dm->recvList("x"),recvCount_x,recvCount_x,dvcRecvDist_x,dvcRecvLinks_x,Distance,Map);
+	linkCount_x[2] = D3Q19_MapRecv(1,-1,0,Dm->recvList("x"),2*recvCount_x,recvCount_x,dvcRecvDist_x,dvcRecvLinks_x,Distance,Map);
+	linkCount_x[3] = D3Q19_MapRecv(1,0,1, Dm->recvList("x"),3*recvCount_x,recvCount_x,dvcRecvDist_x,dvcRecvLinks_x,Distance,Map);
+	linkCount_x[4] = D3Q19_MapRecv(1,0,-1,Dm->recvList("x"),4*recvCount_x,recvCount_x,dvcRecvDist_x,dvcRecvLinks_x,Distance,Map);
 	//...................................................................................
 	//...Map recieve list for the y face: q=4,8,9,16,18 ...................................
-	D3Q19_MapRecv(0,-1,0, Dm->recvList("Y"),0,recvCount_Y,dvcRecvDist_Y);
-	D3Q19_MapRecv(-1,-1,0,Dm->recvList("Y"),recvCount_Y,recvCount_Y,dvcRecvDist_Y);
-	D3Q19_MapRecv(1,-1,0, Dm->recvList("Y"),2*recvCount_Y,recvCount_Y,dvcRecvDist_Y);
-	D3Q19_MapRecv(0,-1,-1,Dm->recvList("Y"),3*recvCount_Y,recvCount_Y,dvcRecvDist_Y);
-	D3Q19_MapRecv(0,-1,1, Dm->recvList("Y"),4*recvCount_Y,recvCount_Y,dvcRecvDist_Y);
+	linkCount_Y[0] = D3Q19_MapRecv(0,-1,0, Dm->recvList("Y"),0,recvCount_Y,dvcRecvDist_Y,dvcRecvLinks_Y,Distance,Map);
+	linkCount_Y[1] = D3Q19_MapRecv(-1,-1,0,Dm->recvList("Y"),recvCount_Y,recvCount_Y,dvcRecvDist_Y,dvcRecvLinks_Y,Distance,Map);
+	linkCount_Y[2] = D3Q19_MapRecv(1,-1,0, Dm->recvList("Y"),2*recvCount_Y,recvCount_Y,dvcRecvDist_Y,dvcRecvLinks_Y,Distance,Map);
+	linkCount_Y[3] = D3Q19_MapRecv(0,-1,-1,Dm->recvList("Y"),3*recvCount_Y,recvCount_Y,dvcRecvDist_Y,dvcRecvLinks_Y,Distance,Map);
+	linkCount_Y[4] = D3Q19_MapRecv(0,-1,1, Dm->recvList("Y"),4*recvCount_Y,recvCount_Y,dvcRecvDist_Y,dvcRecvLinks_Y,Distance,Map);
 	//...................................................................................
 	//...Map recieve list for the Y face: q=3,7,10,15,17 ..................................
-	D3Q19_MapRecv(0,1,0, Dm->recvList("y"),0,recvCount_y,dvcRecvDist_y);
-	D3Q19_MapRecv(1,1,0, Dm->recvList("y"),recvCount_y,recvCount_y,dvcRecvDist_y);
-	D3Q19_MapRecv(-1,1,0,Dm->recvList("y"),2*recvCount_y,recvCount_y,dvcRecvDist_y);
-	D3Q19_MapRecv(0,1,1, Dm->recvList("y"),3*recvCount_y,recvCount_y,dvcRecvDist_y);
-	D3Q19_MapRecv(0,1,-1,Dm->recvList("y"),4*recvCount_y,recvCount_y,dvcRecvDist_y);
+	linkCount_y[0] = D3Q19_MapRecv(0,1,0, Dm->recvList("y"),0,recvCount_y,dvcRecvDist_y,dvcRecvLinks_y,Distance,Map);
+	linkCount_y[1] = D3Q19_MapRecv(1,1,0, Dm->recvList("y"),recvCount_y,recvCount_y,dvcRecvDist_y,dvcRecvLinks_y,Distance,Map);
+	linkCount_y[2] = D3Q19_MapRecv(-1,1,0,Dm->recvList("y"),2*recvCount_y,recvCount_y,dvcRecvDist_y,dvcRecvLinks_y,Distance,Map);
+	linkCount_y[3] = D3Q19_MapRecv(0,1,1, Dm->recvList("y"),3*recvCount_y,recvCount_y,dvcRecvDist_y,dvcRecvLinks_y,Distance,Map);
+	linkCount_y[4] = D3Q19_MapRecv(0,1,-1,Dm->recvList("y"),4*recvCount_y,recvCount_y,dvcRecvDist_y,dvcRecvLinks_y,Distance,Map);
 	//...................................................................................
 	//...Map recieve list for the z face<<<6,12,13,16,17)..............................................
-	D3Q19_MapRecv(0,0,-1, Dm->recvList("Z"),0,recvCount_Z,dvcRecvDist_Z);
-	D3Q19_MapRecv(-1,0,-1,Dm->recvList("Z"),recvCount_Z,recvCount_Z,dvcRecvDist_Z);
-	D3Q19_MapRecv(1,0,-1, Dm->recvList("Z"),2*recvCount_Z,recvCount_Z,dvcRecvDist_Z);
-	D3Q19_MapRecv(0,-1,-1,Dm->recvList("Z"),3*recvCount_Z,recvCount_Z,dvcRecvDist_Z);
-	D3Q19_MapRecv(0,1,-1, Dm->recvList("Z"),4*recvCount_Z,recvCount_Z,dvcRecvDist_Z);
+	linkCount_Z[0] = D3Q19_MapRecv(0,0,-1, Dm->recvList("Z"),0,recvCount_Z,dvcRecvDist_Z,dvcRecvLinks_Z,Distance,Map);
+	linkCount_Z[1] = D3Q19_MapRecv(-1,0,-1,Dm->recvList("Z"),recvCount_Z,recvCount_Z,dvcRecvDist_Z,dvcRecvLinks_Z,Distance,Map);
+	linkCount_Z[2] = D3Q19_MapRecv(1,0,-1, Dm->recvList("Z"),2*recvCount_Z,recvCount_Z,dvcRecvDist_Z,dvcRecvLinks_Z,Distance,Map);
+	linkCount_Z[3] = D3Q19_MapRecv(0,-1,-1,Dm->recvList("Z"),3*recvCount_Z,recvCount_Z,dvcRecvDist_Z,dvcRecvLinks_Z,Distance,Map);
+	linkCount_Z[4] = D3Q19_MapRecv(0,1,-1, Dm->recvList("Z"),4*recvCount_Z,recvCount_Z,dvcRecvDist_Z,dvcRecvLinks_Z,Distance,Map);
 	//...Map recieve list for the Z face<<<5,11,14,15,18)..............................................
-	D3Q19_MapRecv(0,0,1, Dm->recvList("z"),0,recvCount_z,dvcRecvDist_z);
-	D3Q19_MapRecv(1,0,1, Dm->recvList("z"),recvCount_z,recvCount_z,dvcRecvDist_z);
-	D3Q19_MapRecv(-1,0,1,Dm->recvList("z"),2*recvCount_z,recvCount_z,dvcRecvDist_z);
-	D3Q19_MapRecv(0,1,1, Dm->recvList("z"),3*recvCount_z,recvCount_z,dvcRecvDist_z);
-	D3Q19_MapRecv(0,-1,1,Dm->recvList("z"),4*recvCount_z,recvCount_z,dvcRecvDist_z);
+	linkCount_z[0] = D3Q19_MapRecv(0,0,1, Dm->recvList("z"),0,recvCount_z,dvcRecvDist_z,dvcRecvLinks_z,Distance,Map);
+	linkCount_z[1] = D3Q19_MapRecv(1,0,1, Dm->recvList("z"),recvCount_z,recvCount_z,dvcRecvDist_z,dvcRecvLinks_z,Distance,Map);
+	linkCount_z[2] = D3Q19_MapRecv(-1,0,1,Dm->recvList("z"),2*recvCount_z,recvCount_z,dvcRecvDist_z,dvcRecvLinks_z,Distance,Map);
+	linkCount_z[3] = D3Q19_MapRecv(0,1,1, Dm->recvList("z"),3*recvCount_z,recvCount_z,dvcRecvDist_z,dvcRecvLinks_z,Distance,Map);
+	linkCount_z[4] = D3Q19_MapRecv(0,-1,1,Dm->recvList("z"),4*recvCount_z,recvCount_z,dvcRecvDist_z,dvcRecvLinks_z,Distance,Map);
 	//..................................................................................
 	//...Map recieve list for the xy edge <<<8)................................
-	D3Q19_MapRecv(-1,-1,0,Dm->recvList("XY"),0,recvCount_XY,dvcRecvDist_XY);
+	linkCount_XY = D3Q19_MapRecv(-1,-1,0,Dm->recvList("XY"),0,recvCount_XY,dvcRecvDist_XY,dvcRecvLinks_XY,Distance,Map);
 	//...Map recieve list for the Xy edge <<<9)................................
-	D3Q19_MapRecv(1,-1,0,Dm->recvList("xY"),0,recvCount_xY,dvcRecvDist_xY);
+	linkCount_xY = D3Q19_MapRecv(1,-1,0,Dm->recvList("xY"),0,recvCount_xY,dvcRecvDist_xY,dvcRecvLinks_xY,Distance,Map);
 	//...Map recieve list for the xY edge <<<10)................................
-	D3Q19_MapRecv(-1,1,0,Dm->recvList("Xy"),0,recvCount_Xy,dvcRecvDist_Xy);
+	linkCount_Xy = D3Q19_MapRecv(-1,1,0,Dm->recvList("Xy"),0,recvCount_Xy,dvcRecvDist_Xy,dvcRecvLinks_Xy,Distance,Map);
 	//...Map recieve list for the XY edge <<<7)................................
-	D3Q19_MapRecv(1,1,0,Dm->recvList("xy"),0,recvCount_xy,dvcRecvDist_xy);
+	linkCount_xy = D3Q19_MapRecv(1,1,0,Dm->recvList("xy"),0,recvCount_xy,dvcRecvDist_xy,dvcRecvLinks_xy,Distance,Map);
 	//...Map recieve list for the xz edge <<<12)................................
-	D3Q19_MapRecv(-1,0,-1,Dm->recvList("XZ"),0,recvCount_XZ,dvcRecvDist_XZ);
+	linkCount_XZ = D3Q19_MapRecv(-1,0,-1,Dm->recvList("XZ"),0,recvCount_XZ,dvcRecvDist_XZ,dvcRecvLinks_XZ,Distance,Map);
 	//...Map recieve list for the xZ edge <<<14)................................
-	D3Q19_MapRecv(-1,0,1,Dm->recvList("Xz"),0,recvCount_Xz,dvcRecvDist_Xz);
+	linkCount_Xz = D3Q19_MapRecv(-1,0,1,Dm->recvList("Xz"),0,recvCount_Xz,dvcRecvDist_Xz,dvcRecvLinks_Xz,Distance,Map);
 	//...Map recieve list for the Xz edge <<<13)................................
-	D3Q19_MapRecv(1,0,-1,Dm->recvList("xZ"),0,recvCount_xZ,dvcRecvDist_xZ);
+	linkCount_xZ = D3Q19_MapRecv(1,0,-1,Dm->recvList("xZ"),0,recvCount_xZ,dvcRecvDist_xZ,dvcRecvLinks_xZ,Distance,Map);
 	//...Map recieve list for the XZ edge <<<11)................................
-	D3Q19_MapRecv(1,0,1,Dm->recvList("xz"),0,recvCount_xz,dvcRecvDist_xz);
+	linkCount_xz = D3Q19_MapRecv(1,0,1,Dm->recvList("xz"),0,recvCount_xz,dvcRecvDist_xz,dvcRecvLinks_xz,Distance,Map);
 	//...Map recieve list for the yz edge <<<16)................................
-	D3Q19_MapRecv(0,-1,-1,Dm->recvList("YZ"),0,recvCount_YZ,dvcRecvDist_YZ);
+	linkCount_YZ = D3Q19_MapRecv(0,-1,-1,Dm->recvList("YZ"),0,recvCount_YZ,dvcRecvDist_YZ,dvcRecvLinks_YZ,Distance,Map);
 	//...Map recieve list for the yZ edge <<<18)................................
-	D3Q19_MapRecv(0,-1,1,Dm->recvList("Yz"),0,recvCount_Yz,dvcRecvDist_Yz);
+	linkCount_Yz = D3Q19_MapRecv(0,-1,1,Dm->recvList("Yz"),0,recvCount_Yz,dvcRecvDist_Yz,dvcRecvLinks_Yz,Distance,Map);
 	//...Map recieve list for the Yz edge <<<17)................................
-	D3Q19_MapRecv(0,1,-1,Dm->recvList("yZ"),0,recvCount_yZ,dvcRecvDist_yZ);
+	linkCount_yZ = D3Q19_MapRecv(0,1,-1,Dm->recvList("yZ"),0,recvCount_yZ,dvcRecvDist_yZ,dvcRecvLinks_yZ,Distance,Map);
 	//...Map recieve list for the YZ edge <<<15)................................
-	D3Q19_MapRecv(0,1,1,Dm->recvList("yz"),0,recvCount_yz,dvcRecvDist_yz);
+	linkCount_yz = D3Q19_MapRecv(0,1,1,Dm->recvList("yz"),0,recvCount_yz,dvcRecvDist_yz,dvcRecvLinks_yz,Distance,Map);
 	//...................................................................................
 
 	//......................................................................................
@@ -828,6 +788,271 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 
 	CommunicationCount = SendCount+RecvCount;
 	//......................................................................................
-	*/
+
 	return mlink;
 }
+
+int Membrane::D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, const int *list, int start, int count,
+		int *d3q19_recvlist, int *d3q19_linkList, DoubleArray &Distance,  IntArray &Map){
+	
+	int linkCount = 0;
+	int memLinkCount=0;
+	int i,j,k,n,nn,idx;
+	int * ReturnDist;
+	double distanceNonLocal,distanceLocal;
+	ReturnDist=new int [count];
+	int *LinkList=new int [count];
+	int *memLinkList=new int [count];
+	
+	for (idx=0; idx<count; idx++){
+
+		// Get the value from the list -- note that n is the index is from the send (non-local) process
+		n = list[idx];
+		// Get the 3-D indices from the send process
+		k = n/(Nx*Ny); j = (n-Nx*Ny*k)/Nx; i = n-Nx*Ny*k-Nx*j;
+		// if (rank ==0) printf("@ Get 3D indices from the send process: i=%d, j=%d, k=%d\n",i,j,k);
+
+		distanceLocal = Distance(i,j,k);  // this site should be in the halo
+
+		// Streaming for the non-local distribution
+		i += Cqx; j += Cqy; k += Cqz;
+
+		nn = Map(i,j,k);
+		distanceNonLocal = Distance(i,j,k);
+		
+		ReturnDist[idx] = nn;
+
+		/* tag the links to swap out later*/
+		if (distanceLocal*distanceNonLocal < 0.0){
+			memLinkList[memLinkCount++] = idx;
+		}
+		else {
+			LinkList[linkCount++] = idx;
+		}
+	}
+	
+	/* add membrane links at the end */
+	for (int link=0; link<memLinkCount; link++){
+		idx = memLinkList[link];
+		LinkList[linkCount+link] = idx;
+	}
+	
+	/* quick check */
+	if (idx != count){
+		printf("ERROR forming membrane communication links! \n");
+	}
+	
+	// Return updated version to the device
+	ScaLBL_CopyToDevice(&d3q19_recvlist[start], ReturnDist, count*sizeof(int));
+	ScaLBL_CopyToDevice(&d3q19_linkList[start], LinkList, count*sizeof(int));
+
+	// clean up the work arrays
+	delete [] ReturnDist;
+	delete [] memLinkList;
+	delete [] LinkList;
+	return linkCount;
+}
+
+void Membrane::SendD3Q19AA(double *dist){
+
+	if (Lock==true){
+		ERROR("Membrane Error (SendD3Q19): Membrane communicator is locked -- did you forget to match Send/Recv calls?");
+	}
+	else{
+		Lock=true;
+	}
+	// assign tag of 19 to D3Q19 communication
+	sendtag = recvtag = 19;
+	ScaLBL_DeviceBarrier();
+	// Pack the distributions
+	//...Packing for x face(2,8,10,12,14)................................
+	ScaLBL_D3Q19_Pack(2,dvcSendList_x,0,sendCount_x,sendbuf_x,dist,N);
+	ScaLBL_D3Q19_Pack(8,dvcSendList_x,sendCount_x,sendCount_x,sendbuf_x,dist,N);
+	ScaLBL_D3Q19_Pack(10,dvcSendList_x,2*sendCount_x,sendCount_x,sendbuf_x,dist,N);
+	ScaLBL_D3Q19_Pack(12,dvcSendList_x,3*sendCount_x,sendCount_x,sendbuf_x,dist,N);
+	ScaLBL_D3Q19_Pack(14,dvcSendList_x,4*sendCount_x,sendCount_x,sendbuf_x,dist,N);
+	
+	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, 5*sendCount_x,rank_x,sendtag);
+	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, 5*recvCount_X,rank_X,recvtag);
+	//...Packing for X face(1,7,9,11,13)................................
+	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,dist,N);
+	ScaLBL_D3Q19_Pack(7,dvcSendList_X,sendCount_X,sendCount_X,sendbuf_X,dist,N);
+	ScaLBL_D3Q19_Pack(9,dvcSendList_X,2*sendCount_X,sendCount_X,sendbuf_X,dist,N);
+	ScaLBL_D3Q19_Pack(11,dvcSendList_X,3*sendCount_X,sendCount_X,sendbuf_X,dist,N);
+	ScaLBL_D3Q19_Pack(13,dvcSendList_X,4*sendCount_X,sendCount_X,sendbuf_X,dist,N);
+	
+	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, 5*sendCount_X,rank_X,sendtag);
+	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, 5*recvCount_x,rank_x,recvtag);
+	//...Packing for y face(4,8,9,16,18).................................
+	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,dist,N);
+	ScaLBL_D3Q19_Pack(8,dvcSendList_y,sendCount_y,sendCount_y,sendbuf_y,dist,N);
+	ScaLBL_D3Q19_Pack(9,dvcSendList_y,2*sendCount_y,sendCount_y,sendbuf_y,dist,N);
+	ScaLBL_D3Q19_Pack(16,dvcSendList_y,3*sendCount_y,sendCount_y,sendbuf_y,dist,N);
+	ScaLBL_D3Q19_Pack(18,dvcSendList_y,4*sendCount_y,sendCount_y,sendbuf_y,dist,N);
+	
+	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, 5*sendCount_y,rank_y,sendtag);
+	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, 5*recvCount_Y,rank_Y,recvtag);
+	//...Packing for Y face(3,7,10,15,17).................................
+	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,dist,N);
+	ScaLBL_D3Q19_Pack(7,dvcSendList_Y,sendCount_Y,sendCount_Y,sendbuf_Y,dist,N);
+	ScaLBL_D3Q19_Pack(10,dvcSendList_Y,2*sendCount_Y,sendCount_Y,sendbuf_Y,dist,N);
+	ScaLBL_D3Q19_Pack(15,dvcSendList_Y,3*sendCount_Y,sendCount_Y,sendbuf_Y,dist,N);
+	ScaLBL_D3Q19_Pack(17,dvcSendList_Y,4*sendCount_Y,sendCount_Y,sendbuf_Y,dist,N);
+	
+	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, 5*sendCount_Y,rank_Y,sendtag);
+	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, 5*recvCount_y,rank_y,recvtag);
+	//...Packing for z face(6,12,13,16,17)................................
+	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,dist,N);
+	ScaLBL_D3Q19_Pack(12,dvcSendList_z,sendCount_z,sendCount_z,sendbuf_z,dist,N);
+	ScaLBL_D3Q19_Pack(13,dvcSendList_z,2*sendCount_z,sendCount_z,sendbuf_z,dist,N);
+	ScaLBL_D3Q19_Pack(16,dvcSendList_z,3*sendCount_z,sendCount_z,sendbuf_z,dist,N);
+	ScaLBL_D3Q19_Pack(17,dvcSendList_z,4*sendCount_z,sendCount_z,sendbuf_z,dist,N);
+	
+	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, 5*sendCount_z,rank_z,sendtag);
+	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, 5*recvCount_Z,rank_Z,recvtag);
+	
+	//...Packing for Z face(5,11,14,15,18)................................
+	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,dist,N);
+	ScaLBL_D3Q19_Pack(11,dvcSendList_Z,sendCount_Z,sendCount_Z,sendbuf_Z,dist,N);
+	ScaLBL_D3Q19_Pack(14,dvcSendList_Z,2*sendCount_Z,sendCount_Z,sendbuf_Z,dist,N);
+	ScaLBL_D3Q19_Pack(15,dvcSendList_Z,3*sendCount_Z,sendCount_Z,sendbuf_Z,dist,N);
+	ScaLBL_D3Q19_Pack(18,dvcSendList_Z,4*sendCount_Z,sendCount_Z,sendbuf_Z,dist,N);
+	
+	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, 5*sendCount_Z,rank_Z,sendtag);
+	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, 5*recvCount_z,rank_z,recvtag);
+	
+	//...Pack the xy edge (8)................................
+	ScaLBL_D3Q19_Pack(8,dvcSendList_xy,0,sendCount_xy,sendbuf_xy,dist,N);
+	req1[6] = MPI_COMM_SCALBL.Isend(sendbuf_xy, sendCount_xy,rank_xy,sendtag);
+	req2[6] = MPI_COMM_SCALBL.Irecv(recvbuf_XY, recvCount_XY,rank_XY,recvtag);
+	//...Pack the Xy edge (9)................................
+	ScaLBL_D3Q19_Pack(9,dvcSendList_Xy,0,sendCount_Xy,sendbuf_Xy,dist,N);
+	req1[8] = MPI_COMM_SCALBL.Isend(sendbuf_Xy, sendCount_Xy,rank_Xy,sendtag);
+	req2[8] = MPI_COMM_SCALBL.Irecv(recvbuf_xY, recvCount_xY,rank_xY,recvtag);
+	//...Pack the xY edge (10)................................
+	ScaLBL_D3Q19_Pack(10,dvcSendList_xY,0,sendCount_xY,sendbuf_xY,dist,N);
+	req1[9] = MPI_COMM_SCALBL.Isend(sendbuf_xY, sendCount_xY,rank_xY,sendtag);
+	req2[9] = MPI_COMM_SCALBL.Irecv(recvbuf_Xy, recvCount_Xy,rank_Xy,recvtag);
+	//...Pack the XY edge (7)................................
+	ScaLBL_D3Q19_Pack(7,dvcSendList_XY,0,sendCount_XY,sendbuf_XY,dist,N);
+	req1[7] = MPI_COMM_SCALBL.Isend(sendbuf_XY, sendCount_XY,rank_XY,sendtag);
+	req2[7] = MPI_COMM_SCALBL.Irecv(recvbuf_xy, recvCount_xy,rank_xy,recvtag);
+	//...Pack the xz edge (12)................................
+	ScaLBL_D3Q19_Pack(12,dvcSendList_xz,0,sendCount_xz,sendbuf_xz,dist,N);
+	req1[10] = MPI_COMM_SCALBL.Isend(sendbuf_xz, sendCount_xz,rank_xz,sendtag);
+	req2[10] = MPI_COMM_SCALBL.Irecv(recvbuf_XZ, recvCount_XZ,rank_XZ,recvtag);
+	//...Pack the xZ edge (14)................................
+	ScaLBL_D3Q19_Pack(14,dvcSendList_xZ,0,sendCount_xZ,sendbuf_xZ,dist,N);
+	req1[13] = MPI_COMM_SCALBL.Isend(sendbuf_xZ, sendCount_xZ,rank_xZ,sendtag);
+	req2[13] = MPI_COMM_SCALBL.Irecv(recvbuf_Xz, recvCount_Xz,rank_Xz,recvtag);
+	//...Pack the Xz edge (13)................................
+	ScaLBL_D3Q19_Pack(13,dvcSendList_Xz,0,sendCount_Xz,sendbuf_Xz,dist,N);
+	req1[12] = MPI_COMM_SCALBL.Isend(sendbuf_Xz, sendCount_Xz,rank_Xz,sendtag);
+	req2[12] = MPI_COMM_SCALBL.Irecv(recvbuf_xZ, recvCount_xZ,rank_xZ,recvtag);
+	//...Pack the XZ edge (11)................................
+	ScaLBL_D3Q19_Pack(11,dvcSendList_XZ,0,sendCount_XZ,sendbuf_XZ,dist,N);
+	req1[11] = MPI_COMM_SCALBL.Isend(sendbuf_XZ, sendCount_XZ,rank_XZ,sendtag);
+	req2[11] = MPI_COMM_SCALBL.Irecv(recvbuf_xz, recvCount_xz,rank_xz,recvtag);
+	//...Pack the yz edge (16)................................
+	ScaLBL_D3Q19_Pack(16,dvcSendList_yz,0,sendCount_yz,sendbuf_yz,dist,N);
+	req1[14] = MPI_COMM_SCALBL.Isend(sendbuf_yz, sendCount_yz,rank_yz,sendtag);
+	req2[14] = MPI_COMM_SCALBL.Irecv(recvbuf_YZ, recvCount_YZ,rank_YZ,recvtag);
+	//...Pack the yZ edge (18)................................
+	ScaLBL_D3Q19_Pack(18,dvcSendList_yZ,0,sendCount_yZ,sendbuf_yZ,dist,N);
+	req1[17] = MPI_COMM_SCALBL.Isend(sendbuf_yZ, sendCount_yZ,rank_yZ,sendtag);
+	req2[17] = MPI_COMM_SCALBL.Irecv(recvbuf_Yz, recvCount_Yz,rank_Yz,recvtag);
+	//...Pack the Yz edge (17)................................
+	ScaLBL_D3Q19_Pack(17,dvcSendList_Yz,0,sendCount_Yz,sendbuf_Yz,dist,N);
+	req1[16] = MPI_COMM_SCALBL.Isend(sendbuf_Yz, sendCount_Yz,rank_Yz,sendtag);
+	req2[16] = MPI_COMM_SCALBL.Irecv(recvbuf_yZ, recvCount_yZ,rank_yZ,recvtag);
+	//...Pack the YZ edge (15)................................
+	ScaLBL_D3Q19_Pack(15,dvcSendList_YZ,0,sendCount_YZ,sendbuf_YZ,dist,N);
+	req1[15] = MPI_COMM_SCALBL.Isend(sendbuf_YZ, sendCount_YZ,rank_YZ,sendtag);
+	req2[15] = MPI_COMM_SCALBL.Irecv(recvbuf_yz, recvCount_yz,rank_yz,recvtag);
+	//...................................................................................
+
+}
+
+void Membrane::RecvD3Q19AA(double *dist){
+
+	//...................................................................................
+	// Wait for completion of D3Q19 communication
+	MPI_COMM_SCALBL.waitAll(18,req1);
+	MPI_COMM_SCALBL.waitAll(18,req2);
+	ScaLBL_DeviceBarrier();
+
+	//...................................................................................
+	// NOTE: AA Routine writes to opposite 
+	// Unpack the distributions on the device
+	//...................................................................................
+	//...Unpacking for x face(2,8,10,12,14)................................
+	Membrane_D3Q19_Unpack(2,dvcRecvDist_x, dvcRecvLinks_x,0,linkCount_x[0],recvbuf_x,dist,N);
+	Membrane_D3Q19_Unpack(8,dvcRecvDist_x, dvcRecvLinks_x,recvCount_x,linkCount_x[1],recvbuf_x,dist,N);
+	Membrane_D3Q19_Unpack(10,dvcRecvDist_x, dvcRecvLinks_x,2*recvCount_x,linkCount_x[2],recvbuf_x,dist,N);
+	Membrane_D3Q19_Unpack(12,dvcRecvDist_x, dvcRecvLinks_x,3*recvCount_x,linkCount_x[3],recvbuf_x,dist,N);
+	Membrane_D3Q19_Unpack(14,dvcRecvDist_x, dvcRecvLinks_x,4*recvCount_x,linkCount_x[4],recvbuf_x,dist,N);
+	//...................................................................................
+	//...Packing for X face(1,7,9,11,13)................................
+	Membrane_D3Q19_Unpack(1,dvcRecvDist_X, dvcRecvLinks_X,0,linkCount_X[0],recvbuf_X,dist,N);
+	Membrane_D3Q19_Unpack(7,dvcRecvDist_X, dvcRecvLinks_X,recvCount_X,linkCount_X[1],recvbuf_X,dist,N);
+	Membrane_D3Q19_Unpack(9,dvcRecvDist_X, dvcRecvLinks_X,2*recvCount_X,linkCount_X[2],recvbuf_X,dist,N);
+	Membrane_D3Q19_Unpack(11,dvcRecvDist_X, dvcRecvLinks_X,3*recvCount_X,linkCount_X[3],recvbuf_X,dist,N);
+	Membrane_D3Q19_Unpack(13,dvcRecvDist_X, dvcRecvLinks_X,4*recvCount_X,linkCount_X[4],recvbuf_X,dist,N);
+	//...................................................................................
+	//...Packing for y face(4,8,9,16,18).................................
+	Membrane_D3Q19_Unpack(4,dvcRecvDist_y, dvcRecvLinks_y,0,linkCount_y[0],recvbuf_y,dist,N);
+	Membrane_D3Q19_Unpack(8,dvcRecvDist_y, dvcRecvLinks_y,recvCount_y,linkCount_y[1],recvbuf_y,dist,N);
+	Membrane_D3Q19_Unpack(9,dvcRecvDist_y, dvcRecvLinks_y,2*recvCount_y,linkCount_y[2],recvbuf_y,dist,N);
+	Membrane_D3Q19_Unpack(16,dvcRecvDist_y, dvcRecvLinks_y,3*recvCount_y,linkCount_y[3],recvbuf_y,dist,N);
+	Membrane_D3Q19_Unpack(18,dvcRecvDist_y, dvcRecvLinks_y,4*recvCount_y,linkCount_y[4],recvbuf_y,dist,N);
+	//...................................................................................
+	//...Packing for Y face(3,7,10,15,17).................................
+	Membrane_D3Q19_Unpack(3,dvcRecvDist_Y, dvcRecvLinks_Y,0,linkCount_Y[0],recvbuf_Y,dist,N);
+	Membrane_D3Q19_Unpack(7,dvcRecvDist_Y, dvcRecvLinks_Y,recvCount_Y,linkCount_Y[1],recvbuf_Y,dist,N);
+	Membrane_D3Q19_Unpack(10,dvcRecvDist_Y, dvcRecvLinks_Y,2*recvCount_Y,linkCount_Y[2],recvbuf_Y,dist,N);
+	Membrane_D3Q19_Unpack(15,dvcRecvDist_Y, dvcRecvLinks_Y,3*recvCount_Y,linkCount_Y[3],recvbuf_Y,dist,N);
+	Membrane_D3Q19_Unpack(17,dvcRecvDist_Y, dvcRecvLinks_Y,4*recvCount_Y,linkCount_Y[4],recvbuf_Y,dist,N);
+	//...................................................................................
+	//...Packing for z face(6,12,13,16,17)................................
+	Membrane_D3Q19_Unpack(6,dvcRecvDist_z, dvcRecvLinks_z,0,linkCount_z[0],recvbuf_z,dist,N);
+	Membrane_D3Q19_Unpack(12,dvcRecvDist_z, dvcRecvLinks_z,recvCount_z,linkCount_z[1],recvbuf_z,dist,N);
+	Membrane_D3Q19_Unpack(13,dvcRecvDist_z, dvcRecvLinks_z,2*recvCount_z,linkCount_z[2],recvbuf_z,dist,N);
+	Membrane_D3Q19_Unpack(16,dvcRecvDist_z, dvcRecvLinks_z,3*recvCount_z,linkCount_z[3],recvbuf_z,dist,N);
+	Membrane_D3Q19_Unpack(17,dvcRecvDist_z, dvcRecvLinks_z,4*recvCount_z,linkCount_z[4],recvbuf_z,dist,N);
+	//...Packing for Z face(5,11,14,15,18)................................
+	Membrane_D3Q19_Unpack(5,dvcRecvDist_Z, dvcRecvLinks_Z,0,linkCount_Z[0],recvbuf_Z,dist,N);
+	Membrane_D3Q19_Unpack(11,dvcRecvDist_Z, dvcRecvLinks_Z,recvCount_Z,linkCount_Z[1],recvbuf_Z,dist,N);
+	Membrane_D3Q19_Unpack(14,dvcRecvDist_Z, dvcRecvLinks_Z,2*recvCount_Z,linkCount_Z[2],recvbuf_Z,dist,N);
+	Membrane_D3Q19_Unpack(15,dvcRecvDist_Z, dvcRecvLinks_Z,3*recvCount_Z,linkCount_Z[3],recvbuf_Z,dist,N);
+	Membrane_D3Q19_Unpack(18,dvcRecvDist_Z, dvcRecvLinks_Z,4*recvCount_Z,linkCount_Z[4],recvbuf_Z,dist,N);
+	//..................................................................................
+	//...Pack the xy edge (8)................................
+	Membrane_D3Q19_Unpack(8,dvcRecvDist_xy, dvcRecvLinks_xy,0,recvCount_xy,recvbuf_xy,dist,N);
+	//...Pack the Xy edge (9)................................
+	Membrane_D3Q19_Unpack(9,dvcRecvDist_Xy, dvcRecvLinks_Xy,0,recvCount_Xy,recvbuf_Xy,dist,N);
+	//...Pack the xY edge (10)................................
+	Membrane_D3Q19_Unpack(10,dvcRecvDist_xY, dvcRecvLinks_xY,0,recvCount_xY,recvbuf_xY,dist,N);
+	//...Pack the XY edge (7)................................
+	Membrane_D3Q19_Unpack(7,dvcRecvDist_XY, dvcRecvLinks_XY,0,recvCount_XY,recvbuf_XY,dist,N);
+	//...Pack the xz edge (12)................................
+	Membrane_D3Q19_Unpack(12,dvcRecvDist_xz, dvcRecvLinks_xz,0,recvCount_xz,recvbuf_xz,dist,N);
+	//...Pack the xZ edge (14)................................
+	Membrane_D3Q19_Unpack(14,dvcRecvDist_xZ, dvcRecvLinks_xZ,0,recvCount_xZ,recvbuf_xZ,dist,N);
+	//...Pack the Xz edge (13)................................
+	Membrane_D3Q19_Unpack(13,dvcRecvDist_Xz, dvcRecvLinks_Xz,0,recvCount_Xz,recvbuf_Xz,dist,N);
+	//...Pack the XZ edge (11)................................
+	Membrane_D3Q19_Unpack(11,dvcRecvDist_XZ, dvcRecvLinks_XZ,0,recvCount_XZ,recvbuf_XZ,dist,N);
+	//...Pack the yz edge (16)................................
+	Membrane_D3Q19_Unpack(16,dvcRecvDist_yz, dvcRecvLinks_yz,0,recvCount_yz,recvbuf_yz,dist,N);
+	//...Pack the yZ edge (18)................................
+	Membrane_D3Q19_Unpack(18,dvcRecvDist_yZ, dvcRecvLinks_yZ,0,recvCount_yZ,recvbuf_yZ,dist,N);
+	//...Pack the Yz edge (17)................................
+	Membrane_D3Q19_Unpack(17,dvcRecvDist_Yz, dvcRecvLinks_Yz,0,recvCount_Yz,recvbuf_Yz,dist,N);
+	//...Pack the YZ edge (15)................................
+	Membrane_D3Q19_Unpack(15,dvcRecvDist_YZ, dvcRecvLinks_YZ,0,recvCount_YZ,recvbuf_YZ,dist,N);
+	//...................................................................................
+	Lock=false; // unlock the communicator after communications complete
+	//...................................................................................
+
+}
+

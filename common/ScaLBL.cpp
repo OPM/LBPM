@@ -1386,7 +1386,6 @@ void ScaLBL_Communicator::SolidSlippingVelocityBCD3Q19(double *fq, double *zeta_
 
 void ScaLBL_Communicator::SendD3Q19AA(double *dist){
 
-	// NOTE: the center distribution f0 must NOT be at the start of feven, provide offset to start of f2
 	if (Lock==true){
 		ERROR("ScaLBL Error (SendD3Q19): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
 	}

@@ -13,6 +13,36 @@
 #include "common/ScaLBL.h"
 
 /**
+* \brief  Unpack D3Q19 distributions after communication using links determined based on membrane location
+* @param q  - index for distribution based on D3Q19 discrete velocity structure
+* @param list - list of distributions to communicate
+* @param links - list of active links based on the membrane location
+* @param start -  index to start parsing the list 
+* @param count -  number of values to unppack 
+* @param recvbuf - memory buffer where recieved values have been stored
+* @param dist - memory buffer to hold the distributions
+* @param N - size of the distributions (derived from Domain structure)
+*/
+extern "C" void Membrane_D3Q19_Unpack(int q, int *list, int *links, int start, int count, double *recvbuf, double *dist, int N);
+
+
+/**
+* \brief Set custom link rules for D3Q19 distribution based on membrane location
+* @param q  - index for distribution based on D3Q19 discrete velocity structure
+* @param list - list of distributions to communicate
+* @param links - list of active links based on the membrane location
+* @param coef  - coefficient to determine the local mass transport for each membrane link
+* @param start -  index to start parsing the list 
+* @param offset - offset to start reading membrane links
+* @param count -  number of values to unppack 
+* @param recvbuf - memory buffer where recieved values have been stored
+* @param dist - memory buffer to hold the distributions
+* @param N - size of the distributions (derived from Domain structure)
+*/
+extern "C" void Membrane_D3Q19_Transport(int q, int *list, int *links, double *coef, int start, int offset, 
+		int linkCount, double *recvbuf, double *dist, int N);
+
+/**
  * \class Membrane
  * @brief 
  * The Membrane class operates on ScaLBL data structures to insert membrane
@@ -49,8 +79,9 @@ public:
     * @param Map            - mapping between regular layout and compact layout
     */
     int Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArray &Map);
-    
-    void SendRecv(double *dist);
+        
+	void SendD3Q19AA(double *dist);
+	void RecvD3Q19AA(double *dist);
 	//......................................................................................
 	// Buffers to store data sent and recieved by this MPI process
 	double *sendbuf_x, *sendbuf_y, *sendbuf_z, *sendbuf_X, *sendbuf_Y, *sendbuf_Z;
@@ -62,6 +93,8 @@ public:
 	//......................................................................................
     
 private:
+	bool Lock; 	// use Lock to make sure only one call at a time to protect data in transit
+	int sendtag, recvtag;
     int iproc,jproc,kproc;
     int nprocx,nprocy,nprocz;
 	// Give the object it's own MPI communicator
@@ -79,16 +112,13 @@ private:
     * @param Cqz            - discrete velocity (z)
     * @param list           - list of recieved values
     * @param count          - number recieved values
-    * @param Distance       - signed distance to membrane 
-    * @param recvDistance   - distance values from neighboring processor
     * @param d3q19_recvlist - device array with the saved list
+    * @param d3q19_linkList - sorted list with regular and membrane links
+    * @param Distance       - signed distance to membrane 
+    * @param Map      		- data structure used to define mapping between dense and sparse representation
     * */
-    int D3Q19_MapSendRecv(const int Cqx, const int Cqy, const int Cqz, 
-    		const int shift_x, const int shift_y, const int shift_z, 
-    		const int sendCount, const int recvCount,
-    		int rank_q, int rank_Q, int startSend, int startRecv,
-    		std::shared_ptr <Domain> Dm, const int *originalSendList, 
-    		const DoubleArray &Distance, int *membraneSendList, int *membraneRecvList);
+    int D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, const int *list, int start, int count,
+    		int *d3q19_recvlist, int *d3q19_linkList, DoubleArray &Distance,  IntArray &Map);
 	//......................................................................................
 	// MPI ranks for all 18 neighbors
 	//......................................................................................
@@ -100,6 +130,7 @@ private:
 	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
 	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
 	//......................................................................................
+	int SendCount, RecvCount, CommunicationCount;
 	//......................................................................................
 	int sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z;
 	int sendCount_xy, sendCount_yz, sendCount_xz, sendCount_Xy, sendCount_Yz, sendCount_xZ;
@@ -109,6 +140,10 @@ private:
 	int recvCount_xy, recvCount_yz, recvCount_xz, recvCount_Xy, recvCount_Yz, recvCount_xZ;
 	int recvCount_xY, recvCount_yZ, recvCount_Xz, recvCount_XY, recvCount_YZ, recvCount_XZ;
 	//......................................................................................
+	int linkCount_x[5], linkCount_y[5], linkCount_z[5], linkCount_X[5], linkCount_Y[5], linkCount_Z[5];
+	int linkCount_xy, linkCount_yz, linkCount_xz, linkCount_Xy, linkCount_Yz, linkCount_xZ;
+	int linkCount_xY, linkCount_yZ, linkCount_Xz, linkCount_XY, linkCount_YZ, linkCount_XZ;
+	//......................................................................................
 	// Send buffers that reside on the compute device
 	int *dvcSendList_x, *dvcSendList_y, *dvcSendList_z, *dvcSendList_X, *dvcSendList_Y, *dvcSendList_Z;
 	int *dvcSendList_xy, *dvcSendList_yz, *dvcSendList_xz, *dvcSendList_Xy, *dvcSendList_Yz, *dvcSendList_xZ;
@@ -117,6 +152,10 @@ private:
 	int *dvcRecvList_x, *dvcRecvList_y, *dvcRecvList_z, *dvcRecvList_X, *dvcRecvList_Y, *dvcRecvList_Z;
 	int *dvcRecvList_xy, *dvcRecvList_yz, *dvcRecvList_xz, *dvcRecvList_Xy, *dvcRecvList_Yz, *dvcRecvList_xZ;
 	int *dvcRecvList_xY, *dvcRecvList_yZ, *dvcRecvList_Xz, *dvcRecvList_XY, *dvcRecvList_YZ, *dvcRecvList_XZ;
+	// Link lists  that reside on the compute device
+	int *dvcRecvLinks_x, *dvcRecvLinks_y, *dvcRecvLinks_z, *dvcRecvLinks_X, *dvcRecvLinks_Y, *dvcRecvLinks_Z;
+	int *dvcRecvLinks_xy, *dvcRecvLinks_yz, *dvcRecvLinks_xz, *dvcRecvLinks_Xy, *dvcRecvLinks_Yz, *dvcRecvLinks_xZ;
+	int *dvcRecvLinks_xY, *dvcRecvLinks_yZ, *dvcRecvLinks_Xz, *dvcRecvLinks_XY, *dvcRecvLinks_YZ, *dvcRecvLinks_XZ;
 	// Recieve buffers for the distributions
 	int *dvcRecvDist_x, *dvcRecvDist_y, *dvcRecvDist_z, *dvcRecvDist_X, *dvcRecvDist_Y, *dvcRecvDist_Z;
 	int *dvcRecvDist_xy, *dvcRecvDist_yz, *dvcRecvDist_xz, *dvcRecvDist_Xy, *dvcRecvDist_Yz, *dvcRecvDist_xZ;
