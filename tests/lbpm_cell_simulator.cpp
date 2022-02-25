@@ -89,7 +89,6 @@ int main(int argc, char **argv)
         PoissonSolver.Create();       
         PoissonSolver.Initialize(Study.time_conv_max);   
 
-
         int timestep=0;
         while (timestep < Study.timestepMax){
             
