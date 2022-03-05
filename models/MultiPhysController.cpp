@@ -4,7 +4,7 @@ ScaLBL_Multiphys_Controller::ScaLBL_Multiphys_Controller(
     int RANK, int NP, const Utilities::MPI &COMM)
     : rank(RANK), nprocs(NP), Restart(0), timestepMax(0), num_iter_Stokes(0),
       num_iter_Ion(0), analysis_interval(0), visualization_interval(0),
-      tolerance(0), time_conv_max(0), comm(COMM) {}
+      tolerance(0), time_conv_max(0), time_conv_MainLoop(0), comm(COMM) {}
 ScaLBL_Multiphys_Controller::~ScaLBL_Multiphys_Controller() {}
 
 void ScaLBL_Multiphys_Controller::ReadParams(string filename) {
@@ -22,6 +22,7 @@ void ScaLBL_Multiphys_Controller::ReadParams(string filename) {
     visualization_interval = 10000;
     tolerance = 1.0e-6;
     time_conv_max = 0.0;
+    time_conv_MainLoop = 0.0;
 
     // load input parameters
     if (study_db->keyExists("timestepMax")) {

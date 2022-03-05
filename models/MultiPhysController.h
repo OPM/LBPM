@@ -40,6 +40,7 @@ public:
     int visualization_interval;
     double tolerance;
     double time_conv_max;
+    double time_conv_MainLoop;
     //double SchmidtNum;//Schmidt number = kinematic_viscosity/mass_diffusivity
 
     int rank, nprocs;
