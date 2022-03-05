@@ -876,6 +876,14 @@ double ScaLBL_ColorModel::Run(int returntime) {
                     double vBd_x = Averages->gwd.Px / Mass_w;
                     double vBd_y = Averages->gwd.Py / Mass_w;
                     double vBd_z = Averages->gwd.Pz / Mass_w;
+                    
+                    /* contribution from water films */
+                    double water_film_flow_rate =
+                    		Averages->gwb.V * (Averages->giwn.Pwx * dir_x + Averages->giwn.Pwy * dir_y + Averages->giwn.Pwz * dir_z) /
+                    		Averages->gwb.M / Dm->Volume;
+                    double not_water_film_flow_rate =
+                    		Averages->gnb.V * (Averages->giwn.Pnx * dir_x + Averages->giwn.Pny * dir_y + Averages->giwn.Pnz * dir_z) /
+                    		Averages->gnb.M / Dm->Volume;
 
                     double flow_rate_A_connected =
                         Vol_nc *
@@ -912,6 +920,11 @@ double ScaLBL_ColorModel::Run(int returntime) {
                     double kAeff = h * h * muA * (flow_rate_A) / (force_mag);
                     double kBeff = h * h * muB * (flow_rate_B) / (force_mag);
 
+                    
+                    /* not counting films */
+                    double krnf = kAeff - h * h * muA * not_water_film_flow_rate / force_mag;
+                    double krwf = kBeff - h * h * muB * water_film_flow_rate / force_mag;
+
                     // Saturation normalized effective permeability to account for decoupled phases and
                     // effective porosity.
                     double kAeff_low = (1.0 - current_saturation) * h * h *
@@ -936,6 +949,8 @@ double ScaLBL_ColorModel::Run(int returntime) {
                         fprintf(kr_log_file, "timesteps sat.water ");
                         fprintf(kr_log_file, "eff.perm.oil.upper.bound "
                                              "eff.perm.water.upper.bound ");
+                        fprintf(kr_log_file, "eff.perm.oil.film "
+                                             "eff.perm.water.film ");
                         fprintf(kr_log_file, "eff.perm.oil.lower.bound "
                                              "eff.perm.water.lower.bound ");
                         fprintf(kr_log_file,
@@ -953,6 +968,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
                     fprintf(kr_log_file, "%i %.5g ", CURRENT_TIMESTEP,
                             current_saturation);
                     fprintf(kr_log_file, "%.5g %.5g ", kAeff, kBeff);
+                    fprintf(kr_log_file, "%.5g %.5g ", krnf, krwf);
                     fprintf(kr_log_file, "%.5g %.5g ", kAeff_low, kBeff_low);
                     fprintf(kr_log_file, "%.5g %.5g ", kAeff_connected,
                             kBeff_connected);
