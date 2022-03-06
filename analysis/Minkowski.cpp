@@ -67,6 +67,7 @@ Minkowski::~Minkowski() {
 
 void Minkowski::ComputeScalar(const DoubleArray &Field, const double isovalue) {
     PROFILE_START("ComputeScalar");
+
     Xi = Ji = Ai = 0.0;
     DCEL object;
     int e1, e2, e3;
@@ -160,6 +161,10 @@ void Minkowski::MeasureObject() {
 	 *    1 - labels the rest of the 
 	 */
     //DoubleArray smooth_distance(Nx,Ny,Nz);
+	
+    
+    fillHalo<double> fillData(Dm->Comm, Dm->rank_info, {Nx-2,Ny-2,Nz-2}, {1, 1, 1}, 0, 1);
+
     for (int k = 0; k < Nz; k++) {
         for (int j = 0; j < Ny; j++) {
             for (int i = 0; i < Nx; i++) {
@@ -168,6 +173,8 @@ void Minkowski::MeasureObject() {
         }
     }
     CalcDist(distance, id, *Dm);
+    fillData.fill(distance);
+
     //Mean3D(distance,smooth_distance);
     //Eikonal(distance, id, *Dm, 20, {true, true, true});
     ComputeScalar(distance, 0.0);
