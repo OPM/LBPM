@@ -1,5 +1,32 @@
 #include <stdio.h>
 
+extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q, int *list, int start, int count, 
+		double *recvbuf, double *dist, int N, int nlinks, double *coef) {
+    //....................................................................................
+    // Unack distribution from the recv buffer
+    // Distribution q matche Cqx, Cqy, Cqz
+    // swap rule means that the distributions in recvbuf are OPPOSITE of q
+    // dist may be even or odd distributions stored by stream layout
+    //....................................................................................
+    int n, idx, link;
+    double fq fp,fqq,ap,aq; // coefficient
+    for (link = 0; link < nlinks; link++) {
+    	// pick out links from the end of the list
+    	idx = count - nlinks + link;
+        // Get the value from the list -- note that n is the index is from the send (non-local) process
+        n = list[idx];
+        // update link based on mass transfer coefficients
+        if (!(n < 0)){
+        	aq = coef[2*link];
+        	ap = coef[2*link+1];
+        	fq = dist[q * N + n];
+        	fp = recvbuf[start + idx];
+        	fqq = (1-aq)*fq+ap*fp;
+            dist[q * N + n] = fqq;
+        }
+    }
+}
+
 extern "C" void ScaLBL_D3Q7_Membrane_IonTransport(int *membrane, double *coef, 
 		double *dist, double *Den, int memLinks, int Np){
 	

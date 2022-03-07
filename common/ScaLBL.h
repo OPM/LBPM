@@ -221,6 +221,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_BGK(int *neighborList, double *dist, int star
 
 extern "C" void ScaLBL_D3Q7_Membrane_IonTransport(int *membrane, double *coef, double *dist, double *Den, int memLinks, int Np);
 
+extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q, int *list, int start, int count, double *recvbuf, double *dist, int N, int nlinks, double *coef);
 
 // GREYSCALE MODEL (Single-component)
 
