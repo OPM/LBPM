@@ -1,5 +1,24 @@
 #include <stdio.h>
 
+extern "C" void ScaLBL_D3Q7_Membrane_IonTransport(int *membrane, double *coef, 
+		double *dist, double *Den, int memLinks, int Np){
+	
+	int link,iq,ip,nq,np;
+	double aq, ap, fq, fp, fqq, fpp, Cq, Cp;
+	for (link=0; link<memLinks; link++){
+		// inside             	//outside
+		aq = coef[2*link];		ap = coef[2*link+1];
+		iq = membrane[2*link]; 	ip = membrane[2*link+1];
+		nq = iq%Np;				np = ip%Np;
+		fq  = dist[iq];			fp = dist[ip];
+		fqq = (1-aq)*fq+ap*fp;	fpp = (1-ap)*fp+ap*fq;
+		Cq = Den[nq];			Cp = Den[np];
+		Cq += fqq - fq;			Cp += fpp - fp;
+		Den[nq] = Cq;			Den[np] = Cp;
+		dist[iq] = fqq;			dist[ip] = fpp;
+	}
+}
+
 extern "C" void ScaLBL_D3Q7_AAodd_IonConcentration(int *neighborList,
                                                    double *dist, double *Den,
                                                    int start, int finish,
