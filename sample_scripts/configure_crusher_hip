@@ -24,6 +24,7 @@ export CMAKE_DIR=/gpfs/alpine/csc380/proj-shared/LBPM/cmake-3.21.0/bin
 #THIS IS HOW TO CHECK FOR SPILLS (example)
 # hipcc -c -g -ggdb --save-temps Color.hip
 
+# -munsafe-fp-atomics
 # configure
 rm -rf CMake*
 ${CMAKE_DIR}/cmake                             \
