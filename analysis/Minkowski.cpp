@@ -162,9 +162,6 @@ void Minkowski::MeasureObject() {
 	 */
     //DoubleArray smooth_distance(Nx,Ny,Nz);
 	
-    
-    fillHalo<double> fillData(Dm->Comm, Dm->rank_info, {Nx-2,Ny-2,Nz-2}, {1, 1, 1}, 0, 1);
-
     for (int k = 0; k < Nz; k++) {
         for (int j = 0; j < Ny; j++) {
             for (int i = 0; i < Nx; i++) {
@@ -173,7 +170,7 @@ void Minkowski::MeasureObject() {
         }
     }
     CalcDist(distance, id, *Dm);
-    fillData.fill(distance);
+    Dm->CommunicateMeshHalo(distance);
 
     //Mean3D(distance,smooth_distance);
     //Eikonal(distance, id, *Dm, 20, {true, true, true});
@@ -186,7 +183,7 @@ void Minkowski::MeasureObject(double factor, const DoubleArray &Phi) {
 	 * 
 	 * THIS ALGORITHM ASSUMES THAT id() is populated with phase id to distinguish objects
 	 *    0 - labels the object
-	 *    1 - labels the rest of the 
+	 *    1 - labels the rest 
 	 */
     for (int k = 0; k < Nz; k++) {
         for (int j = 0; j < Ny; j++) {

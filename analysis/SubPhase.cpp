@@ -595,7 +595,7 @@ void SubPhase::Full() {
         for (j = 0; j < Ny; j++) {
             for (i = 0; i < Nx; i++) {
                 n = k * Nx * Ny + j * Nx + i;
-                if (!(Dm->id[n] > 0)) {
+                if (SDs(n) <= 0.0) {
                     // Solid phase
                     morph_n->id(i, j, k) = 1;
 
@@ -642,7 +642,7 @@ void SubPhase::Full() {
         for (j = 0; j < Ny; j++) {
             for (i = 0; i < Nx; i++) {
                 n = k * Nx * Ny + j * Nx + i;
-                if (!(Dm->id[n] > 0)) {
+                if (SDs(n) <= 0.0) {
                     // Solid phase
                     morph_w->id(i, j, k) = 1;
 
@@ -688,7 +688,7 @@ void SubPhase::Full() {
         for (j = 0; j < Ny; j++) {
             for (i = 0; i < Nx; i++) {
                 n = k * Nx * Ny + j * Nx + i;
-                if (!(Dm->id[n] > 0)) {
+                if (SDs(n) <= 0.0) {
                     // Solid phase
                     morph_i->id(i, j, k) = 1;
                 } else if (DelPhi(n) > 1e-4) {
@@ -731,7 +731,7 @@ void SubPhase::Full() {
             for (i = imin; i < Nx - 1; i++) {
                 n = k * Nx * Ny + j * Nx + i;
                 // Compute volume averages
-                if (Dm->id[n] > 0) {
+                if (SDs(n) > 0.0) {
                     // compute density
                     double nA = Rho_n(n);
                     double nB = Rho_w(n);
