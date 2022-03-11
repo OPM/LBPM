@@ -58,8 +58,15 @@ public:
     int *membraneLinks;    // D3Q19 links that cross membrane
     int *membraneTag;      // label each link in the membrane
     double *membraneDist;  // distance to membrane for each linked site
-    double *membraneCoef;  // mass transport coefficient for the membrane 
 
+    /* 
+     * Device data structures
+     */
+    int *dvcNeighborList;
+    double *dvcMembraneLinks;
+    double *dvcMembraneCoef;  // mass transport coefficient for the membrane 
+    double *dvcMembraneDistance;
+    
     /**
     * \brief Create a flow adaptor to operate on the LB model
     * @param         ScaLBL - originating data structures 
@@ -83,6 +90,9 @@ public:
         
 	void SendD3Q19AA(double *dist);
 	void RecvD3Q19AA(double *dist);
+	void SendD3Q7AA(double *dist);
+	void RecvD37AA(double *dist);
+	void AssignCoefficients(double *dvcPsi, double *dvcDistance, double *dvcMap, std::string method);
 	//......................................................................................
 	// Buffers to store data sent and recieved by this MPI process
 	double *sendbuf_x, *sendbuf_y, *sendbuf_z, *sendbuf_X, *sendbuf_Y, *sendbuf_Z;
@@ -162,5 +172,9 @@ private:
 	int *dvcRecvDist_xy, *dvcRecvDist_yz, *dvcRecvDist_xz, *dvcRecvDist_Xy, *dvcRecvDist_Yz, *dvcRecvDist_xZ;
 	int *dvcRecvDist_xY, *dvcRecvDist_yZ, *dvcRecvDist_Xz, *dvcRecvDist_XY, *dvcRecvDist_YZ, *dvcRecvDist_XZ;
 	//......................................................................................
+	// mass transfer coefficient arrays
+	double *coefficient_x, *coefficient_X, *coefficient_y, *coefficient_Y, *coefficient_z, *coefficient_Z;
+	//......................................................................................
+
 };
 #endif

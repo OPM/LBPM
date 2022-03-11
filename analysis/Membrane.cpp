@@ -275,6 +275,17 @@ Membrane::Membrane(std::shared_ptr <Domain> Dm, int *initialNeighborList, int Ns
 
 Membrane::~Membrane() {
 	
+	ScaLBL_FreeDeviceMemory( coefficient_x );
+	ScaLBL_FreeDeviceMemory( coefficient_X );
+	ScaLBL_FreeDeviceMemory( coefficient_y );
+	ScaLBL_FreeDeviceMemory( coefficient_Y );
+	ScaLBL_FreeDeviceMemory( coefficient_z );
+	ScaLBL_FreeDeviceMemory( coefficient_Z );
+	
+	ScaLBL_FreeDeviceMemory( dvcNeighborList );
+	ScaLBL_FreeDeviceMemory( dvcMembraneLinks );
+	ScaLBL_FreeDeviceMemory( dvcMembraneCoef );
+	
 	ScaLBL_FreeDeviceMemory( sendbuf_x );
 	ScaLBL_FreeDeviceMemory( sendbuf_X );
 	ScaLBL_FreeDeviceMemory( sendbuf_y );
@@ -525,7 +536,6 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 	membraneTag = new int [mlink];
 	membraneLinks = new int [2*mlink];
 	membraneDist = new double [2*mlink];
-	membraneCoef = new double [2*mlink];
 
 	/* construct the membrane*/
 	/* *
@@ -707,6 +717,17 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 			}
 		}
 	}
+
+	/* Create device copies of data structures */
+    ScaLBL_AllocateDeviceMemory((void **)&dvcNeighborList, 18*Np*sizeof(int));
+    ScaLBL_AllocateDeviceMemory((void **)&dvcMembraneLinks, 2*mlink*sizeof(int));
+    ScaLBL_AllocateDeviceMemory((void **)&dvcMembraneCoef, 2*mlink*sizeof(double));
+    ScaLBL_AllocateDeviceMemory((void **)&dvcMembraneDistance, 2*mlink*sizeof(double));
+    
+    ScaLBL_CopyToDevice(dvcNeighborList, neighborList, 18*Np*sizeof(int));
+    ScaLBL_CopyToDevice(dvcMembraneLinks, membraneLinks, 2*mlink*sizeof(int));
+    ScaLBL_CopyToDevice(dvcMembraneDistance, membraneDist, 2*mlink*sizeof(double));
+
 	
 	/* Re-organize communication based on membrane structure*/
 	//...Map recieve list for the X face: q=2,8,10,12,14 .................................
@@ -792,7 +813,15 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 
 	CommunicationCount = SendCount+RecvCount;
 	//......................................................................................
-
+	// Allocate membrane coefficient buffers (for d3q7 recv)
+	ScaLBL_AllocateZeroCopy((void **) &coefficient_x, (recvCount_x - linkCount_x[0])*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &coefficient_X, (recvCount_X - linkCount_X[0])*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &coefficient_y, (recvCount_y - linkCount_y[0])*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &coefficient_Y, (recvCount_Y - linkCount_Y[0])*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &coefficient_z, (recvCount_z - linkCount_z[0])*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &coefficient_Z, (recvCount_Z - linkCount_Z[0])*sizeof(double));
+	//......................................................................................
+	
 	return mlink;
 }
 
@@ -1030,7 +1059,7 @@ void Membrane::RecvD3Q19AA(double *dist){
 	Membrane_D3Q19_Unpack(15,dvcRecvDist_Z, dvcRecvLinks_Z,3*recvCount_Z,linkCount_Z[3],recvbuf_Z,dist,N);
 	Membrane_D3Q19_Unpack(18,dvcRecvDist_Z, dvcRecvLinks_Z,4*recvCount_Z,linkCount_Z[4],recvbuf_Z,dist,N);
 	//..................................................................................
-	//...Pack the xy edge (8)................................
+	//...Pack the xy edge (8)...............................
 	Membrane_D3Q19_Unpack(8,dvcRecvDist_xy, dvcRecvLinks_xy,0,recvCount_xy,recvbuf_xy,dist,N);
 	//...Pack the Xy edge (9)................................
 	Membrane_D3Q19_Unpack(9,dvcRecvDist_Xy, dvcRecvLinks_Xy,0,recvCount_Xy,recvbuf_Xy,dist,N);
@@ -1057,6 +1086,83 @@ void Membrane::RecvD3Q19AA(double *dist){
 	//...................................................................................
 	Lock=false; // unlock the communicator after communications complete
 	//...................................................................................
+}
+
+void Membrane::SendD3Q7AA(double *dist){
+
+	if (Lock==true){
+		ERROR("Membrane Error (SendD3Q7): Membrane communicator is locked -- did you forget to match Send/Recv calls?");
+	}
+	else{
+		Lock=true;
+	}
+	// assign tag of 37 to D3Q7 communication
+	sendtag = recvtag = 37;
+	ScaLBL_DeviceBarrier();
+	// Pack the distributions
+	//...Packing for x face(q=2)................................
+	ScaLBL_D3Q19_Pack(2,dvcSendList_x,0,sendCount_x,sendbuf_x,dist,N);
+	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, sendCount_x,rank_x,sendtag);
+	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, recvCount_X,rank_X,recvtag);
+	//...Packing for X face(q=1)................................
+	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,dist,N);
+	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, sendCount_X,rank_X,sendtag);
+	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, recvCount_x,rank_x,recvtag);
+	//...Packing for y face(q=4).................................
+	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,dist,N);	
+	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, sendCount_y,rank_y,sendtag);
+	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, recvCount_Y,rank_Y,recvtag);
+	//...Packing for Y face(q=3).................................
+	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,dist,N);
+	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, sendCount_Y,rank_Y,sendtag);
+	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, recvCount_y,rank_y,recvtag);
+	//...Packing for z face(q=6)................................
+	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,dist,N);
+	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, sendCount_z,rank_z,sendtag);
+	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, recvCount_Z,rank_Z,recvtag);
+	//...Packing for Z face(q=5)................................
+	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,dist,N);
+	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, sendCount_Z,rank_Z,sendtag);
+	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, recvCount_z,rank_z,recvtag);
+}
+
+void Membrane::RecvD37AA(double *dist){
+
+	//...................................................................................
+	// Wait for completion of D3Q19 communication
+	MPI_COMM_SCALBL.waitAll(6,req1);
+	MPI_COMM_SCALBL.waitAll(6,req2);
+	ScaLBL_DeviceBarrier();
+	//...................................................................................
+	// NOTE: AA Routine writes to opposite 
+	// Unpack the distributions on the device
+	//...................................................................................
+	//...Unpacking for x face(q=2)................................
+	ScaLBL_D3Q7_Membrane_Unpack(2,dvcRecvDist_x, dvcRecvLinks_x,0,linkCount_x[0],recvCount_x,recvbuf_x,dist,N,coefficient_x);
+	//...................................................................................
+	//...Packing for X face(q=1)................................
+	ScaLBL_D3Q7_Membrane_Unpack(1,dvcRecvDist_X, dvcRecvLinks_X,0,linkCount_X[0],recvCount_X,recvbuf_X,dist,N,coefficient_X);
+	//...................................................................................
+	//...Packing for y face(q=4).................................
+	ScaLBL_D3Q7_Membrane_Unpack(4,dvcRecvDist_y, dvcRecvLinks_y,0,linkCount_y[0],recvCount_y,recvbuf_y,dist,N,coefficient_y);
+	//...................................................................................
+	//...Packing for Y face(q=3).................................
+	ScaLBL_D3Q7_Membrane_Unpack(3,dvcRecvDist_Y, dvcRecvLinks_Y,0,linkCount_Y[0],recvCount_Y,recvbuf_Y,dist,N,coefficient_Y);
+	//...................................................................................
+	//...Packing for z face(q=6)................................
+	ScaLBL_D3Q7_Membrane_Unpack(6,dvcRecvDist_z, dvcRecvLinks_z,0,linkCount_z[0],recvCount_z,recvbuf_z,dist,N,coefficient_z);
+	//...Packing for Z face(q=5)................................
+	ScaLBL_D3Q7_Membrane_Unpack(5,dvcRecvDist_Z, dvcRecvLinks_Z,0,linkCount_Z[0],recvCount_Z,recvbuf_Z,dist,N,coefficient_Z);
+	//..................................................................................
+
+	//...................................................................................
+	Lock=false; // unlock the communicator after communications complete
+	//...................................................................................
 
 }
 
+void Membrane::AssignCoefficients(double *dvcPsi, double *dvcDistance, double *dvcMap, std::string method){
+	/* Assign mass transfer coefficients to the membrane data structure */
+	
+	
+}

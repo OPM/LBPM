@@ -1,7 +1,13 @@
 #include <stdio.h>
 
-extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q, int *list, int start, int count, 
-		double *recvbuf, double *dist, int N, int nlinks, double *coef) {
+extern "C" void ScaLBL_D3Q7_AssignLinkCoef(){
+	
+}
+
+
+extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,  
+		int *d3q7_recvlist, int *d3q7_linkList, int start, int nlinks, int count,
+		double *recvbuf, double *dist, int N,  double *coef) {
     //....................................................................................
     // Unack distribution from the recv buffer
     // Distribution q matche Cqx, Cqy, Cqz
@@ -9,16 +15,28 @@ extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q, int *list, int start, int cou
     // dist may be even or odd distributions stored by stream layout
     //....................................................................................
     int n, idx, link;
-    double fq fp,fqq,ap,aq; // coefficient
+    double fq,fp,fqq,ap,aq; // coefficient
+    /* First unpack the regular links */
     for (link = 0; link < nlinks; link++) {
-    	// pick out links from the end of the list
-    	idx = count - nlinks + link;
-        // Get the value from the list -- note that n is the index is from the send (non-local) process
-        n = list[idx];
+    	// get the index for the recv list (deal with reordering of links)
+    	idx = d3q7_linkList[link]; 
+        // get the distribution index
+        n = d3q7_recvlist[start+idx];
+        if (!(n < 0)){
+        	fp = recvbuf[start + idx];
+            dist[q * N + n] = fp;
+        }
+    }
+    /* second enforce custom rule for membrane links */
+    for (link = nlinks; link < count; link++) {
+    	// get the index for the recv list (deal with reordering of links)
+    	idx = d3q7_linkList[link]; 
+        // get the distribution index
+        n = d3q7_recvlist[start+idx];
         // update link based on mass transfer coefficients
         if (!(n < 0)){
-        	aq = coef[2*link];
-        	ap = coef[2*link+1];
+        	aq = coef[2*(link-nlinks)];
+        	ap = coef[2*(link-nlinks)+1];
         	fq = dist[q * N + n];
         	fp = recvbuf[start + idx];
         	fqq = (1-aq)*fq+ap*fp;
