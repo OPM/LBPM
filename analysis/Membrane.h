@@ -92,7 +92,7 @@ public:
 	void RecvD3Q19AA(double *dist);
 	void SendD3Q7AA(double *dist);
 	void RecvD37AA(double *dist);
-	void AssignCoefficients(double *dvcPsi, double *dvcDistance, double *dvcMap, std::string method);
+	void AssignCoefficients(int *Map, double *Psi, double *Distance, std::string method);
 	//......................................................................................
 	// Buffers to store data sent and recieved by this MPI process
 	double *sendbuf_x, *sendbuf_y, *sendbuf_z, *sendbuf_X, *sendbuf_Y, *sendbuf_Z;

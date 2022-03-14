@@ -221,6 +221,17 @@ extern "C" void ScaLBL_D3Q19_AAodd_BGK(int *neighborList, double *dist, int star
 
 extern "C" void ScaLBL_D3Q7_Membrane_IonTransport(int *membrane, double *coef, double *dist, double *Den, int memLinks, int Np);
 
+extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef(int *membrane, int *Map, double *Distance, double *Psi, double *coef,
+		double Threshold, double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn, double ThresholdMassFractionOut,
+		int memLinks, int Nx, int Ny, int Nz, int Np);
+
+extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(
+		const int Cqx, const int Cqy, int const Cqz, 
+		int *Map, double *Distance, double *Psi, double Threshold, 
+		double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn, double ThresholdMassFractionOut,
+		int *d3q7_recvlist, int *d3q7_linkList, double *coef, int start, int nlinks, int count,
+		const int N, const int Nx, const int Ny, const int Nz);
+
 extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,  
 		int *d3q7_recvlist, int *d3q7_linkList, int start, int nlinks, int count,
 		double *recvbuf, double *dist, int N,  double *coef);

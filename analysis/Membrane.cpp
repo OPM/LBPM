@@ -1161,8 +1161,40 @@ void Membrane::RecvD37AA(double *dist){
 
 }
 
-void Membrane::AssignCoefficients(double *dvcPsi, double *dvcDistance, double *dvcMap, std::string method){
+void Membrane::AssignCoefficients(int *Map, double *Psi, double *Distance, std::string method){
 	/* Assign mass transfer coefficients to the membrane data structure */
 	
+	double Threshold;
+	double MassFractionIn,MassFractionOut,ThresholdMassFractionIn,ThresholdMassFractionOut;
+	
+	ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(-1,0,0,Map,Distance,Psi,Threshold,
+			MassFractionIn,MassFractionOut,ThresholdMassFractionIn,ThresholdMassFractionOut,
+			dvcRecvDist_X,dvcRecvLinks_X,coefficient_X,0,linkCount_X[0],recvCount_X,
+			Np,Nx,Ny,Nz);
+
+	ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(1,0,0,Map,Distance,Psi,Threshold,
+			MassFractionIn,MassFractionOut,ThresholdMassFractionIn,ThresholdMassFractionOut,
+			dvcRecvDist_x,dvcRecvLinks_x,coefficient_x,0,linkCount_x[0],recvCount_x,
+			Np,Nx,Ny,Nz);
+	
+	ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(0,-1,0,Map,Distance,Psi,Threshold,
+			MassFractionIn,MassFractionOut,ThresholdMassFractionIn,ThresholdMassFractionOut,
+			dvcRecvDist_Y,dvcRecvLinks_Y,coefficient_Y,0,linkCount_Y[0],recvCount_Y,
+			Np,Nx,Ny,Nz);
+	
+	ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(0,1,0,Map,Distance,Psi,Threshold,
+			MassFractionIn,MassFractionOut,ThresholdMassFractionIn,ThresholdMassFractionOut,
+			dvcRecvDist_y,dvcRecvLinks_y,coefficient_y,0,linkCount_y[0],recvCount_y,
+			Np,Nx,Ny,Nz);
+	
+	ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(0,0,-1,Map,Distance,Psi,Threshold,
+			MassFractionIn,MassFractionOut,ThresholdMassFractionIn,ThresholdMassFractionOut,
+			dvcRecvDist_Z,dvcRecvLinks_Z,coefficient_Z,0,linkCount_Z[0],recvCount_Z,
+			Np,Nx,Ny,Nz);
+	
+	ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(0,0,1,Map,Distance,Psi,Threshold,
+			MassFractionIn,MassFractionOut,ThresholdMassFractionIn,ThresholdMassFractionOut,
+			dvcRecvDist_z,dvcRecvLinks_z,coefficient_z,0,linkCount_z[0],recvCount_z,
+			Np,Nx,Ny,Nz);
 	
 }
