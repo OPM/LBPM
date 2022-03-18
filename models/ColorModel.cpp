@@ -925,6 +925,10 @@ double ScaLBL_ColorModel::Run(int returntime) {
                     double krnf = kAeff - h * h * muA * not_water_film_flow_rate / force_mag;
                     double krwf = kBeff - h * h * muB * water_film_flow_rate / force_mag;
 
+		    /* not counting films */
+                    double krnf_low = (1.0 - current_saturation) * krnf;
+		    double krwf_low = current_saturation * krwf;
+
                     // Saturation normalized effective permeability to account for decoupled phases and
                     // effective porosity.
                     double kAeff_low = (1.0 - current_saturation) * h * h *
@@ -951,6 +955,8 @@ double ScaLBL_ColorModel::Run(int returntime) {
                                              "eff.perm.water.upper.bound ");
                         fprintf(kr_log_file, "eff.perm.oil.film "
                                              "eff.perm.water.film ");
+			fprintf(kr_log_file, "eff.perm.oil.film.lower.bound "
+                                             "eff.perm.water.film.lower.bound ");
                         fprintf(kr_log_file, "eff.perm.oil.lower.bound "
                                              "eff.perm.water.lower.bound ");
                         fprintf(kr_log_file,
@@ -969,6 +975,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
                             current_saturation);
                     fprintf(kr_log_file, "%.5g %.5g ", kAeff, kBeff);
                     fprintf(kr_log_file, "%.5g %.5g ", krnf, krwf);
+                    fprintf(kr_log_file, "%.5g %.5g ", krnf_low, krwf_low);
                     fprintf(kr_log_file, "%.5g %.5g ", kAeff_low, kBeff_low);
                     fprintf(kr_log_file, "%.5g %.5g ", kAeff_connected,
                             kBeff_connected);
@@ -990,17 +997,23 @@ double ScaLBL_ColorModel::Run(int returntime) {
                     		WriteHeader = true;
                     	scal_log_file = fopen("SCAL.csv", "a");
                     	if (WriteHeader) {
-                    		fprintf(scal_log_file, "timesteps sat.water ");
+                    		fprintf(scal_log_file, "timesteps "
+					"sat.water ");
                     		fprintf(scal_log_file, "eff.perm.oil.upper.bound "
-                    				"eff.perm.water.upper.bound ");
+					"eff.perm.water.upper.bound ");
                     		fprintf(scal_log_file,
-                    				"eff.perm.oil.lower.bound "
-                    				"eff.perm.water.lower.bound ");
+					"eff.perm.oil.lower.bound "
+					"eff.perm.water.lower.bound ");
                     		fprintf(scal_log_file, "eff.perm.oil.disconnected "
-                    				"eff.perm.water.disconnected ");
+					"eff.perm.water.disconnected ");
+				fprintf(scal_log_file,
+					"eff.perm.oil.film.lower.bound "
+					"eff.perm.water.film.lower.bound ");
                     		fprintf(scal_log_file,
-                    				"cap.pressure cap.pressure.connected "
-                    				"Ca eff.pressure\n");
+					"cap.pressure "
+					"cap.pressure.connected "
+					"Ca " 
+					"eff.pressure\n");
                     	}
                     	fprintf(scal_log_file, "%i %.5g ", CURRENT_TIMESTEP,
                     			current_saturation);
@@ -1009,6 +1022,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
                     			kBeff_connected_low);
                     	fprintf(scal_log_file, "%.5g %.5g ", kAeff_disconnected,
                     			kBeff_disconnected);
+                    	fprintf(scal_log_file, "%.5g %.5g ", krnf_low, krwf_low);
                     	fprintf(scal_log_file, "%.5g %.5g %.5g ", pAB,
                     			pAB_connected, Ca);
                     	fprintf(scal_log_file, "%.5g\n", eff_pres);
