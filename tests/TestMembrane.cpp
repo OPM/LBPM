@@ -95,6 +95,14 @@ int main(int argc, char **argv)
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];
+		
+		//......................device distributions.................................
+		int *NeighborList;
+		int *dvcMap;
+		//...........................................................................
+		ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
+		ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Npad);
+	    ScaLBL_CopyToDevice(NeighborList, neighborList, 18*Np*sizeof(int));
 
 		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id.data(),Np,1);
 		comm.barrier();
@@ -120,7 +128,7 @@ int main(int argc, char **argv)
 		}
 		
 		/* create a membrane data structure */
-	    Membrane M(Dm, neighborList, Np);
+	    Membrane M(Dm, NeighborList, Np);
 
 	    int MembraneCount = M.Create(Dm, Distance, Map);
 		if (rank==0)	printf (" Number of membrane links: %i \n", MembraneCount);
@@ -159,13 +167,6 @@ int main(int argc, char **argv)
 		if (argc > 1)
 			Dm->AggregateLabels("membrane.raw");
 				 
-		//......................device distributions.................................
-		int *NeighborList;
-		int *dvcMap;
-		//...........................................................................
-		ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
-		ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Npad);
-		
 		//...........................................................................
 		// Update GPU data structures
 		if (rank==0)	printf ("Setting up device map and neighbor list \n");

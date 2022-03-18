@@ -54,7 +54,10 @@ public:
     int Np;
     int Nx,Ny,Nz,N;
     
-    int *neighborList;     // modified neighborlist
+    int *initialNeighborList;   // original neighborlist
+    int *NeighborList;			// modified neighborlist
+
+    /* host data structures */
     int *membraneLinks;    // D3Q19 links that cross membrane
     int *membraneTag;      // label each link in the membrane
     double *membraneDist;  // distance to membrane for each linked site
@@ -62,10 +65,9 @@ public:
     /* 
      * Device data structures
      */
-    int *dvcNeighborList;
-    double *dvcMembraneLinks;
-    double *dvcMembraneCoef;  // mass transport coefficient for the membrane 
-    double *dvcMembraneDistance;
+    double *MembraneLinks;
+    double *MembraneCoef;  // mass transport coefficient for the membrane 
+    double *MembraneDistance;
     
     /**
     * \brief Create a flow adaptor to operate on the LB model
@@ -91,7 +93,7 @@ public:
 	void SendD3Q19AA(double *dist);
 	void RecvD3Q19AA(double *dist);
 	void SendD3Q7AA(double *dist);
-	void RecvD37AA(double *dist);
+	void RecvD3Q7AA(double *dist);
 	void AssignCoefficients(int *Map, double *Psi, double *Distance, std::string method);
 	//......................................................................................
 	// Buffers to store data sent and recieved by this MPI process

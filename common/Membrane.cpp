@@ -3,21 +3,21 @@
 #include "common/Membrane.h"
 #include "analysis/distance.h"
 
-Membrane::Membrane(std::shared_ptr <Domain> Dm, int *initialNeighborList, int Nsites) {
+Membrane::Membrane(std::shared_ptr <Domain> Dm, int *dvcNeighborList, int Nsites) {
+
+	Np = Nsites;
+	int * initialNeighborList = new int[18*Np];
+    ScaLBL_AllocateDeviceMemory((void **)&NeighborList, 18*Np*sizeof(int));
 
 	Lock=false; // unlock the communicator
 	//......................................................................................
 	// Create a separate copy of the communicator for the device
     MPI_COMM_SCALBL = Dm->Comm.dup();
     
-	Np = Nsites;
-	neighborList = new int[18*Np];
-	/* Copy neighborList */
-	for (int idx=0; idx<Np; idx++){
-		for (int q = 0; q<18; q++){
-			neighborList[q*Np+idx] = initialNeighborList[q*18+idx];
-		}
-	}
+    ScaLBL_CopyToHost(initialNeighborList, dvcNeighborList, 18*Np*sizeof(int));
+    Dm->Comm.barrier();
+    ScaLBL_CopyToDevice(NeighborList, initialNeighborList, 18*Np*sizeof(int));
+    
 	/* Copy communication lists */
 	//......................................................................................
 	//Lock=false; // unlock the communicator
@@ -275,6 +275,11 @@ Membrane::Membrane(std::shared_ptr <Domain> Dm, int *initialNeighborList, int Ns
 
 Membrane::~Membrane() {
 	
+	delete [] initialNeighborList;
+	delete [] membraneLinks;    
+	delete [] membraneTag; 
+	delete [] membraneDist;
+	
 	ScaLBL_FreeDeviceMemory( coefficient_x );
 	ScaLBL_FreeDeviceMemory( coefficient_X );
 	ScaLBL_FreeDeviceMemory( coefficient_y );
@@ -282,9 +287,9 @@ Membrane::~Membrane() {
 	ScaLBL_FreeDeviceMemory( coefficient_z );
 	ScaLBL_FreeDeviceMemory( coefficient_Z );
 	
-	ScaLBL_FreeDeviceMemory( dvcNeighborList );
-	ScaLBL_FreeDeviceMemory( dvcMembraneLinks );
-	ScaLBL_FreeDeviceMemory( dvcMembraneCoef );
+	ScaLBL_FreeDeviceMemory( NeighborList );
+	ScaLBL_FreeDeviceMemory( MembraneLinks );
+	ScaLBL_FreeDeviceMemory( MembraneCoef );
 	
 	ScaLBL_FreeDeviceMemory( sendbuf_x );
 	ScaLBL_FreeDeviceMemory( sendbuf_X );
@@ -401,6 +406,15 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 	int i,j,k;
 	int idx, neighbor;
 	double dist, locdist;
+	
+	int * neighborList = new int[18*Np];
+	/* Copy neighborList */
+	for (int idx=0; idx<Np; idx++){
+		for (int q = 0; q<18; q++){
+			neighborList[q*Np+idx] = initialNeighborList[q*Np+idx];
+		}
+	}
+	
 	/* go through the neighborlist structure */
 	/* count & cut the links */
 	for (k=1;k<Nz-1;k++){
@@ -531,7 +545,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 			}
 		}
 	}
-	
+
 	/* allocate memory */
 	membraneTag = new int [mlink];
 	membraneLinks = new int [2*mlink];
@@ -719,14 +733,13 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 	}
 
 	/* Create device copies of data structures */
-    ScaLBL_AllocateDeviceMemory((void **)&dvcNeighborList, 18*Np*sizeof(int));
-    ScaLBL_AllocateDeviceMemory((void **)&dvcMembraneLinks, 2*mlink*sizeof(int));
-    ScaLBL_AllocateDeviceMemory((void **)&dvcMembraneCoef, 2*mlink*sizeof(double));
-    ScaLBL_AllocateDeviceMemory((void **)&dvcMembraneDistance, 2*mlink*sizeof(double));
+    ScaLBL_AllocateDeviceMemory((void **)&MembraneLinks, 2*mlink*sizeof(int));
+    ScaLBL_AllocateDeviceMemory((void **)&MembraneCoef, 2*mlink*sizeof(double));
+    ScaLBL_AllocateDeviceMemory((void **)&MembraneDistance, 2*mlink*sizeof(double));
     
-    ScaLBL_CopyToDevice(dvcNeighborList, neighborList, 18*Np*sizeof(int));
-    ScaLBL_CopyToDevice(dvcMembraneLinks, membraneLinks, 2*mlink*sizeof(int));
-    ScaLBL_CopyToDevice(dvcMembraneDistance, membraneDist, 2*mlink*sizeof(double));
+    ScaLBL_CopyToDevice(NeighborList, neighborList, 18*Np*sizeof(int));
+    ScaLBL_CopyToDevice(MembraneLinks, membraneLinks, 2*mlink*sizeof(int));
+    ScaLBL_CopyToDevice(MembraneDistance, membraneDist, 2*mlink*sizeof(double));
 
 	
 	/* Re-organize communication based on membrane structure*/
@@ -1126,7 +1139,7 @@ void Membrane::SendD3Q7AA(double *dist){
 	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, recvCount_z,rank_z,recvtag);
 }
 
-void Membrane::RecvD37AA(double *dist){
+void Membrane::RecvD3Q7AA(double *dist){
 
 	//...................................................................................
 	// Wait for completion of D3Q19 communication

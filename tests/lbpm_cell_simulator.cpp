@@ -69,6 +69,7 @@ int main(int argc, char **argv)
         IonModel.SetDomain();    
         IonModel.ReadInput();    
         IonModel.Create();      
+        IonModel.SetMembrane();
         
         // Create analysis object
         ElectroChemistryAnalyzer Analysis(IonModel.Dm);
@@ -95,7 +96,7 @@ int main(int argc, char **argv)
             timestep++;
             PoissonSolver.Run(IonModel.ChargeDensity,timestep);//solve Poisson equtaion to get steady-state electrical potental
             StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
-            IonModel.Run(StokesModel.Velocity,PoissonSolver.ElectricField); //solve for ion transport and electric potential
+            IonModel.RunMembrane(StokesModel.Velocity,PoissonSolver.ElectricField,PoissonSolver.Psi); //solve for ion transport with membrane
             
             timestep++;//AA operations
 
