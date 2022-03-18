@@ -1161,12 +1161,24 @@ void Membrane::RecvD37AA(double *dist){
 
 }
 
-void Membrane::AssignCoefficients(int *Map, double *Psi, double *Distance, std::string method){
+//	std::shared_ptr<Database> db){
+void Membrane::AssignCoefficients(int *Map, double *Psi, double *Distance, string method){
+}
 	/* Assign mass transfer coefficients to the membrane data structure */
 	
 	double Threshold;
 	double MassFractionIn,MassFractionOut,ThresholdMassFractionIn,ThresholdMassFractionOut;
 	
+	membrane_db = db->getDatabase("Membrane");
+
+	if (method == "Voltage Gated Potassium"){
+		MassFractionIn = 0.0;
+		MassFractionOut = 0.0;
+		MassFractionIn = 0.0;
+		ThresholdMassFractionOut = 0.0;				
+		ThresholdMassFractionIn = -55.0;
+	}
+
 	ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(-1,0,0,Map,Distance,Psi,Threshold,
 			MassFractionIn,MassFractionOut,ThresholdMassFractionIn,ThresholdMassFractionOut,
 			dvcRecvDist_X,dvcRecvLinks_X,coefficient_X,0,linkCount_X[0],recvCount_X,
