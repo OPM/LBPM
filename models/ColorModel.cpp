@@ -1020,14 +1020,14 @@ double ScaLBL_ColorModel::Run(int returntime) {
 			// values closer to measured data
                     	fprintf(scal_log_file, "%i %.5g ", CURRENT_TIMESTEP,
                     			current_saturation);
-                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_low * Mask->Porosity, 
-				kBeff_low * Mask->Porosity);
-                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_connected_low * Mask->Porosity,
-				kBeff_connected_low * Mask->Porosity);
-                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_disconnected * Mask->Porosity,
-				kBeff_disconnected * Mask->Porosity);
-                    	fprintf(scal_log_file, "%.5g %.5g ", krnf_low * Mask->Porosity, 
-				krwf_low * Mask->Porosity);
+                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_low * Mask->Porosity(), 
+				kBeff_low * Mask->Porosity());
+                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_connected_low * Mask->Porosity(),
+				kBeff_connected_low * Mask->Porosity());
+                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_disconnected * Mask->Porosity(),
+				kBeff_disconnected * Mask->Porosity());
+                    	fprintf(scal_log_file, "%.5g %.5g ", krnf_low * Mask->Porosity(), 
+				krwf_low * Mask->Porosity());
                     	fprintf(scal_log_file, "%.5g %.5g %.5g ", pAB,
                     			pAB_connected, Ca);
                     	fprintf(scal_log_file, "%.5g\n", eff_pres);

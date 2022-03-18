@@ -384,7 +384,7 @@ void ScaLBL_MRTModel::Run() {
             double h = Dm->voxel_length;
             double absperm =
                 h * h * mu * Mask->Porosity() * flow_rate / force_mag;
-            double absperm_adj =
+            double absperm_adjusted =
                 h * h * mu * Mask->Porosity() * Mask->Porosity() * flow_rate / force_mag;
 
             if (rank == 0) {
@@ -394,7 +394,7 @@ void ScaLBL_MRTModel::Run() {
                         "%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g "
                         "%.8g %.8g %.8g\n",
                         timestep, Fx, Fy, Fz, mu, h * h * h * Vs, h * h * As,
-                        h * Hs, Xs, vax, vay, vaz, absperm, absperm_adj);
+                        h * Hs, Xs, vax, vay, vaz, absperm, absperm_adjusted);
                 fclose(log_file);
             }
         }
