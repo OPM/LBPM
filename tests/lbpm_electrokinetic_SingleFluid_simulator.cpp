@@ -93,12 +93,14 @@ int main(int argc, char **argv)
         PoissonSolver.Initialize(Study.time_conv_MainLoop);   
 
 
-        printf("********************************************************\n");
-        printf("Key Summary of LBPM electrokinetic single-fluid solver \n");
-        printf("   1. Max LB Timestep: %i [lt]\n", Study.timestepMax);
-        printf("   2. Time conversion factor per LB Timestep: %.6g [sec/lt]\n",Study.time_conv_MainLoop);
-        printf("   3. Max Physical Time: %.6g [sec]\n",Study.timestepMax*Study.time_conv_MainLoop);
-        printf("********************************************************\n");
+        if (rank == 0){
+            printf("********************************************************\n");
+            printf("Key Summary of LBPM electrokinetic single-fluid solver \n");
+            printf("   1. Max LB Timestep: %i [lt]\n", Study.timestepMax);
+            printf("   2. Time conversion factor per LB Timestep: %.6g [sec/lt]\n",Study.time_conv_MainLoop);
+            printf("   3. Max Physical Time: %.6g [sec]\n",Study.timestepMax*Study.time_conv_MainLoop);
+            printf("********************************************************\n");
+        }
 
         int timestep=0;
         while (timestep < Study.timestepMax){
