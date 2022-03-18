@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include "common/MPI.h"
-#include "analysis/Membrane.h"
+#include "common/Membrane.h"
 
 using namespace std;
 
