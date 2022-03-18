@@ -758,7 +758,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
             double volA = Averages->gnb.V;
             volA /= Dm->Volume;
             volB /= Dm->Volume;
-            ;
+
             //initial_volume = volA*Dm->Volume;
             double vA_x = Averages->gnb.Px / Averages->gnb.M;
             double vA_y = Averages->gnb.Py / Averages->gnb.M;
@@ -1015,14 +1015,19 @@ double ScaLBL_ColorModel::Run(int returntime) {
 					"Ca " 
 					"eff.pressure\n");
                     	}
+
+			// Adjust the effperms with porosity term to make the nominal
+			// values closer to measured data
                     	fprintf(scal_log_file, "%i %.5g ", CURRENT_TIMESTEP,
                     			current_saturation);
-                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_low, kBeff_low);
-                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_connected_low,
-                    			kBeff_connected_low);
-                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_disconnected,
-                    			kBeff_disconnected);
-                    	fprintf(scal_log_file, "%.5g %.5g ", krnf_low, krwf_low);
+                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_low * Mask->Porosity, 
+				kBeff_low * Mask->Porosity);
+                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_connected_low * Mask->Porosity,
+				kBeff_connected_low * Mask->Porosity);
+                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_disconnected * Mask->Porosity,
+				kBeff_disconnected * Mask->Porosity);
+                    	fprintf(scal_log_file, "%.5g %.5g ", krnf_low * Mask->Porosity, 
+				krwf_low * Mask->Porosity);
                     	fprintf(scal_log_file, "%.5g %.5g %.5g ", pAB,
                     			pAB_connected, Ca);
                     	fprintf(scal_log_file, "%.5g\n", eff_pres);
