@@ -584,10 +584,12 @@ void ScaLBL_IonModel::SetDomain() {
 }
 
 void ScaLBL_IonModel::SetMembrane() {
+    size_t NLABELS = 0;
+
     membrane_db = db->getDatabase("Membrane");
     
     /* set distance based on labels inside the membrane (all other labels will be outside) */
-    auto InsideMembraneLabels = membrane_db->getVector<int>("InsideMembraneLabels");
+    auto MembraneLabels = membrane_db->getVector<int>("MembraneLabels");
     IonMembrane = std::shared_ptr<Membrane>(new Membrane(Dm, NeighborList, Np));
     
     signed char LABEL = 0;
@@ -608,7 +610,7 @@ void ScaLBL_IonModel::SetMembrane() {
             	membrane_id(i,j,k) = 1; // default value
             	LABEL = Dm->id[k*Nx*Ny + j*Nx + i]; 
             	for (size_t m=0; m<MembraneLabels.size(); m++){
-                    if (LABEL == InsideMembraneLabels[m]) {
+                    if (LABEL == MembraneLabels[m]) {
                         label_count[m] += 1.0;
                     	membrane_id(i,j,k) = 0;    // inside
                         m = MembraneLabels.size(); //exit loop
@@ -623,7 +625,7 @@ void ScaLBL_IonModel::SetMembrane() {
     if (rank == 0) {
         printf("Membrane labels: %lu \n", MembraneLabels.size());
     	for (size_t m=0; m<MembraneLabels.size(); m++){
-    		LABEL = InsideMembraneLabels[m];
+    		LABEL = MembraneLabels[m];
             double volume_fraction =  double(label_count_global[m]) /
                 double((Nx - 2) * (Ny - 2) * (Nz - 2) * nprocs);
             printf("   label=%d, volume fraction==%f\n", LABEL, volume_fraction);
@@ -638,9 +640,8 @@ void ScaLBL_IonModel::SetMembrane() {
         }
     }
     CalcDist(MembraneDistance, membrane_id, *Dm);
-    ComputeScalar(MembraneDistance, 0.0);
     /* create the membrane data structure */
-    MembraneCount = M.Create(Dm, MembraneDistance, Map);
+    MembraneCount = IonMembrane->Create(Dm, MembraneDistance, Map);
     
     // clean up
     delete [] label_count;

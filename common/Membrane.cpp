@@ -1,6 +1,6 @@
 /* Flow adaptor class for multiphase flow methods */
 
-#include "analysis/Membrane.h"
+#include "common/Membrane.h"
 #include "analysis/distance.h"
 
 Membrane::Membrane(std::shared_ptr <Domain> Dm, int *initialNeighborList, int Nsites) {
@@ -1163,14 +1163,11 @@ void Membrane::RecvD37AA(double *dist){
 
 //	std::shared_ptr<Database> db){
 void Membrane::AssignCoefficients(int *Map, double *Psi, double *Distance, string method){
-}
 	/* Assign mass transfer coefficients to the membrane data structure */
 	
 	double Threshold;
 	double MassFractionIn,MassFractionOut,ThresholdMassFractionIn,ThresholdMassFractionOut;
 	
-	membrane_db = db->getDatabase("Membrane");
-
 	if (method == "Voltage Gated Potassium"){
 		MassFractionIn = 0.0;
 		MassFractionOut = 0.0;
