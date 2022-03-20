@@ -590,6 +590,7 @@ void ScaLBL_IonModel::SetMembrane() {
     
     /* set distance based on labels inside the membrane (all other labels will be outside) */
     auto MembraneLabels = membrane_db->getVector<int>("MembraneLabels");
+
     IonMembrane = std::shared_ptr<Membrane>(new Membrane(Dm, NeighborList, Np));
     
     signed char LABEL = 0;
@@ -890,7 +891,7 @@ void ScaLBL_IonModel::Initialize() {
     if (ion_db->keyExists("IonConcentrationFile")) {
         //NOTE: "IonConcentrationFile" is a vector, including "file_name, datatype"
         auto File_ion = ion_db->getVector<std::string>("IonConcentrationFile");
-        if (File_ion.size() == 2 * number_ion_species) {
+        if (File_ion.size() == 2*number_ion_species) {
             double *Ci_host;
             Ci_host = new double[number_ion_species * Np];
             for (size_t ic = 0; ic < number_ion_species; ic++) {

@@ -99,14 +99,13 @@ public:
     double *FluxDiffusive;
     double *FluxAdvective;
     double *FluxElectrical;
-
     
     /* these support membrane capabilities      */
     std::shared_ptr<Database> membrane_db;
     std::shared_ptr<Membrane> IonMembrane;
     DoubleArray MembraneDistance;
     int MembraneCount; // number of links the cross the membrane
-    
+
 private:
     Utilities::MPI comm;
 
