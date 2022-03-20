@@ -53,6 +53,7 @@ class Membrane {
 public:
     int Np;
     int Nx,Ny,Nz,N;
+    int membraneLinkCount;
     
     int *initialNeighborList;   // original neighborlist
     int *NeighborList;			// modified neighborlist
@@ -65,7 +66,7 @@ public:
     /* 
      * Device data structures
      */
-    double *MembraneLinks;
+    int *MembraneLinks;
     double *MembraneCoef;  // mass transport coefficient for the membrane 
     double *MembraneDistance;
     
@@ -94,7 +95,7 @@ public:
 	void RecvD3Q19AA(double *dist);
 	void SendD3Q7AA(double *dist);
 	void RecvD3Q7AA(double *dist);
-	void AssignCoefficients(int *Map, double *Psi, double *Distance, std::string method);
+	void AssignCoefficients(int *Map, double *Psi, std::string method);
 	//......................................................................................
 	// Buffers to store data sent and recieved by this MPI process
 	double *sendbuf_x, *sendbuf_y, *sendbuf_z, *sendbuf_X, *sendbuf_Y, *sendbuf_Z;

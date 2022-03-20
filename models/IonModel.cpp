@@ -629,7 +629,7 @@ void ScaLBL_IonModel::SetMembrane() {
     		LABEL = MembraneLabels[m];
             double volume_fraction =  double(label_count_global[m]) /
                 double((Nx - 2) * (Ny - 2) * (Nz - 2) * nprocs);
-            printf("      label=%d, volume fraction==%f\n", LABEL, volume_fraction);
+            printf("      label=%d, volume fraction = %f\n", LABEL, volume_fraction);
         }
     }
     /* signed distance to the membrane ( - inside / + outside) */
@@ -844,6 +844,7 @@ void ScaLBL_IonModel::Create() {
     int neighborSize = 18 * (Np * sizeof(int));
     //...........................................................................
     ScaLBL_AllocateDeviceMemory((void **)&NeighborList, neighborSize);
+    ScaLBL_AllocateDeviceMemory((void **)&dvcMap, sizeof(int) * Np);
     ScaLBL_AllocateDeviceMemory((void **)&fq,
                                 number_ion_species * 7 * dist_mem_size);
     ScaLBL_AllocateDeviceMemory((void **)&Ci,
@@ -860,6 +861,37 @@ void ScaLBL_IonModel::Create() {
     if (rank == 0)
         printf("LB Ion Solver: Setting up device map and neighbor list \n");
     // copy the neighbor list
+    int *TmpMap;
+    TmpMap = new int[Np];
+    for (int k = 1; k < Nz - 1; k++) {
+        for (int j = 1; j < Ny - 1; j++) {
+            for (int i = 1; i < Nx - 1; i++) {
+                int idx = Map(i, j, k);
+                if (!(idx < 0))
+                    TmpMap[idx] = k * Nx * Ny + j * Nx + i;
+            }
+        }
+    }
+    // check that TmpMap is valid
+    for (int idx = 0; idx < ScaLBL_Comm->LastExterior(); idx++) {
+        auto n = TmpMap[idx];
+        if (n > Nx * Ny * Nz) {
+            printf("Bad value! idx=%i \n", n);
+            TmpMap[idx] = Nx * Ny * Nz - 1;
+        }
+    }
+    for (int idx = ScaLBL_Comm->FirstInterior();
+         idx < ScaLBL_Comm->LastInterior(); idx++) {
+        auto n = TmpMap[idx];
+        if (n > Nx * Ny * Nz) {
+            printf("Bad value! idx=%i \n", n);
+            TmpMap[idx] = Nx * Ny * Nz - 1;
+        }
+    }
+    ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int) * Np);
+    ScaLBL_Comm->Barrier();
+    delete[] TmpMap;
+    
     ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
     comm.barrier();
 
@@ -1263,7 +1295,9 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
     //double starttime,stoptime,cputime;
     //ScaLBL_Comm->Barrier(); comm.barrier();
     //auto t1 = std::chrono::system_clock::now();
-
+    /* set the mass transfer coefficients for the membrane */
+    IonMembrane->AssignCoefficients(dvcMap, Psi, "default");
+    
     for (size_t ic = 0; ic < number_ion_species; ic++) {
         timestep = 0;
         while (timestep < timestepMax[ic]) {

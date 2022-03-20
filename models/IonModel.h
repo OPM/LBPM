@@ -90,6 +90,7 @@ public:
     IntArray Map;
     DoubleArray Distance;
     int *NeighborList;
+    int *dvcMap;
     double *fq;
     double *Ci;
     double *ChargeDensity;
