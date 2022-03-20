@@ -6,10 +6,9 @@
 Membrane::Membrane(std::shared_ptr <Domain> Dm, int *dvcNeighborList, int Nsites) {
 
 	Np = Nsites;
-	int * initialNeighborList = new int[18*Np];
-    ScaLBL_AllocateDeviceMemory((void **)&NeighborList, 18*Np*sizeof(int));
-
-	Lock=false; // unlock the communicator
+	initialNeighborList = new int[18*Np];
+    ScaLBL_AllocateDeviceMemory((void **)&NeighborList, 18*Np*sizeof(int));    
+    Lock=false; // unlock the communicator
 	//......................................................................................
 	// Create a separate copy of the communicator for the device
     MPI_COMM_SCALBL = Dm->Comm.dup();
@@ -85,7 +84,12 @@ Membrane::Membrane(std::shared_ptr <Domain> Dm, int *dvcNeighborList, int Nsites
 	recvCount_Xz=Dm->recvCount("Xz");
 	recvCount_XY=Dm->recvCount("XY");
 	recvCount_YZ=Dm->recvCount("YZ");
-	recvCount_XZ=Dm->recvCount("XZ");\
+	recvCount_XZ=Dm->recvCount("XZ");
+	
+	if (rank == 0){
+		printf("**** Creating membrane data structure ****** \n");
+	}
+	printf("   Number of active lattice sites (rank = %i): %i \n",rank, Np);
 	
 	/* check symmetry for send / recv counts */
 	if (sendCount_x != recvCount_X)   printf("WARNING: rank %i send/recv mismatch (x/X)! \n",rank);
@@ -407,6 +411,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 	int idx, neighbor;
 	double dist, locdist;
 	
+	if (rank == 0) printf("   Copy initial neighborlist... \n");
 	int * neighborList = new int[18*Np];
 	/* Copy neighborList */
 	for (int idx=0; idx<Np; idx++){
@@ -417,6 +422,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 	
 	/* go through the neighborlist structure */
 	/* count & cut the links */
+	if (rank == 0) printf("   Cut membrane links... \n");
 	for (k=1;k<Nz-1;k++){
 		for (j=1;j<Ny-1;j++){
 			for (i=1;i<Nx-1;i++){
@@ -556,6 +562,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 	 *  Sites inside the membrane (negative distance) -- store at 2*mlink
 	 *  Sites outside the membrane (positive distance) -- store at 2*mlink+1
 	 */
+	if (rank == 0) printf("   Construct membrane data structures... \n");
 	mlink = 0;
 	int localSite = 0; int neighborSite = 0;
 	for (k=1;k<Nz-1;k++){
@@ -731,6 +738,8 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 			}
 		}
 	}
+	
+	if (rank == 0) printf("   Create device data structures... \n");
 
 	/* Create device copies of data structures */
     ScaLBL_AllocateDeviceMemory((void **)&MembraneLinks, 2*mlink*sizeof(int));
@@ -742,6 +751,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
     ScaLBL_CopyToDevice(MembraneDistance, membraneDist, 2*mlink*sizeof(double));
 
 	
+	if (rank == 0) printf("   Construct communication data structures... \n");
 	/* Re-organize communication based on membrane structure*/
 	//...Map recieve list for the X face: q=2,8,10,12,14 .................................
 	linkCount_X[0] = D3Q19_MapRecv(-1,0,0, Dm->recvList("X"),0,recvCount_X,dvcRecvDist_X,dvcRecvLinks_X,Distance,Map);

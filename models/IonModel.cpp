@@ -623,12 +623,12 @@ void ScaLBL_IonModel::SetMembrane() {
         label_count_global[m] = Dm->Comm.sumReduce(label_count[m]);
 	}
     if (rank == 0) {
-        printf("Membrane labels: %lu \n", MembraneLabels.size());
+        printf("   Membrane labels: %lu \n", MembraneLabels.size());
     	for (size_t m=0; m<MembraneLabels.size(); m++){
     		LABEL = MembraneLabels[m];
             double volume_fraction =  double(label_count_global[m]) /
                 double((Nx - 2) * (Ny - 2) * (Nz - 2) * nprocs);
-            printf("   label=%d, volume fraction==%f\n", LABEL, volume_fraction);
+            printf("      label=%d, volume fraction==%f\n", LABEL, volume_fraction);
         }
     }
     /* signed distance to the membrane ( - inside / + outside) */
