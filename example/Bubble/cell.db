@@ -1,5 +1,5 @@
 MultiphysController {
-    timestepMax = 20
+    timestepMax = 40
     num_iter_Ion_List = 2
     analysis_interval  = 50
     tolerance = 1.0e-9
@@ -13,17 +13,13 @@ Stokes {
     nu_phys = 0.889e-6      //fluid kinematic viscosity; user-input unit: [m^2/sec]
 }
 Ions {
-    IonConcentrationFile = "cell_concentration_K_40x40x40.raw", "double", "cell_concentration_Na_40x40x40.raw", "double"
+    IonConcentrationFile = "cell_concentration_K_40x40x40.raw", "double", "cell_concentration_Na_40x40x40.raw", "double", "cell_concentration_Cl_40x40x40.raw", "double", "cell_concentration_HCO3_40x40x40.raw", "double", "cell_concentration_anion_40x40x40.raw", "double", "cell_concentration_cation_40x40x40.raw", "double"
     temperature = 293.15 //unit [K]
-    number_ion_species = 2  //number of ions
-    tauList = 1.0, 1.0
-    IonDiffusivityList = 1.0e-9, 1.0e-9 //user-input unit: [m^2/sec]
-    IonValenceList = 1, 1 //valence charge of ions; dimensionless; positive/negative integer
-    IonConcentrationList = 1.0e-6, 1.0e-6 //user-input unit: [mol/m^3]
-    BC_InletList  = 0, 0 //boundary condition for inlet; 0=periodic; 1=ion concentration; 2=ion flux
-    BC_OutletList = 0, 0 //boundary condition for outlet; 0=periodic; 1=ion concentration; 2=ion flux
-    InletValueList  = 0, 0 //if ion concentration unit=[mol/m^3]; if flux (inward) unit=[mol/m^2/sec]
-    OutletValueList = 0, 0 //if ion concentration unit=[mol/m^3]; if flux (inward) unit=[mol/m^2/sec]
+    number_ion_species = 6  //number of ions
+    tauList = 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+    IonDiffusivityList = 1.0e-9, 1.0e-9, 1.0e-9, 1.0e-9, 1.0e-9, 1.0e-9 //user-input unit: [m^2/sec]
+    IonValenceList = 1, 1, -1, -1, 1, -1 //valence charge of ions; dimensionless; positive/negative integer
+    IonConcentrationList = 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6 //user-input unit: [mol/m^3]
     BC_Solid = 0 //solid boundary condition; 0=non-flux BC; 1=surface ion concentration
     //SolidLabels = 0 //solid labels for assigning solid boundary condition; ONLY for BC_Solid=1
     //SolidValues = 1.0e-5 // user-input surface ion concentration unit: [mol/m^2]; ONLY for BC_Solid=1
