@@ -46,7 +46,7 @@ extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(
     /* second enforce custom rule for membrane links */
     for (link = nlinks; link < count; link++) {
     	// get the index for the recv list (deal with reordering of links)
-    	idx = d3q7_linkList[link]; 
+    	idx = d3q7_linkList[link]; // THINK start NEEDS TO BE HERE
         // get the distribution index
         n = d3q7_recvlist[start+idx];
         // get the index in strided layout
@@ -110,6 +110,7 @@ extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,
         	fp = recvbuf[start + idx];
             dist[q * N + n] = fp;
         }
+        printf(" site=%i, index=%i, value = %e \n",n,idx,fp);
     }
     /* second enforce custom rule for membrane links */
     for (link = nlinks; link < count; link++) {
@@ -126,7 +127,9 @@ extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,
         	fqq = (1-aq)*fq+ap*fp;
             dist[q * N + n] = fqq;
         }
-    }
+        printf(" LINK: site=%i, index=%i \n", n, idx);
+
+    } 
 }
 
 extern "C" void ScaLBL_D3Q7_Membrane_IonTransport(int *membrane, double *coef, 

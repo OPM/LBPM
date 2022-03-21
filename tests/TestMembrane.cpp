@@ -8,6 +8,7 @@
 #include <fstream>
 #include "common/MPI.h"
 #include "common/Membrane.h"
+#include "common/ScaLBL.h"
 
 using namespace std;
 
@@ -33,11 +34,6 @@ int main(int argc, char **argv)
 	{
 
 		int i,j,k,n;
-		
-		static int D3Q19[18][3]={{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
-				{1,1,0},{-1,-1,0},{1,-1,0},{-1,1,0},
-				{1,0,1},{-1,0,-1},{1,0,-1},{-1,0,1},
-				{0,1,1},{0,-1,-1},{0,1,-1},{0,-1,1}};
 
         int rank = comm.getRank();
 		if (rank == 0){
@@ -185,8 +181,8 @@ int main(int argc, char **argv)
 		ScaLBL_DeviceBarrier();
 		
 		// Create a dummy distribution data structure
-		double *fq;
-		fq = new double[19*Np];
+		double *fq_host;
+		fq_host = new double[19*Np];
 		if (rank==0)	printf ("Setting up distributions \n");
 		for (k=1; k<Nz-1; k++){
 			for (j=1; j<Ny-1; j++){
@@ -194,41 +190,58 @@ int main(int argc, char **argv)
 					int idx=Map(i,j,k);
 					if (!(idx<0)){
 					  for (int q=0; q<19; q++){
-					    fq[q*Np+idx]=k*100.f+j*10.f+i*1.f+0.01*q;
+					    fq_host[q*Np+idx]=(k*Nx*Ny+j*Nx+i)+0.01*q;
 					  }
 					}
 				}
 			}
 		}
 
-		// Loop over the distributions for interior lattice sites
-		if (rank==0)	printf ("Loop over distributions \n");
+		/* Run dummy communications */
+		double * gq, *fq;
+		ScaLBL_AllocateDeviceMemory((void **) &gq, sizeof(double)*7*Np);
+		ScaLBL_AllocateDeviceMemory((void **) &fq, sizeof(double)*7*Np);
+		/*initialize fq from host data */
+		ScaLBL_CopyToDevice(fq, fq_host, sizeof(double)*7*Np);
+		
+		M.SendD3Q7AA(&fq[0]);
+		M.RecvD3Q7AA(&gq[0]);
+		// this has only the communicated values
+		//ScaLBL_CopyToHost(fq_host, gq, sizeof(double)*7*Np);
+		if (rank==0)	printf ("Sum result \n");
+		
+		double *Ci;
+		Ci = new double [Np];
+		
+        ScaLBL_D3Q7_AAeven_IonConcentration(&gq[0 * Np * 7], &Ci[0 * Np],
+                                            0, ScaLBL_Comm->LastExterior(),
+                                            Np);
+        DoubleArray Result(Nx,Ny,Nz);
+\        
+        ScaLBL_Comm->RegularLayout(Map, Ci, Result);
 
-		for (int idx=ScaLBL_Comm->first_interior; idx<ScaLBL_Comm->last_interior; idx++){
-			n = TmpMap[idx];
-			k = n/(Nx*Ny);
-			j = (n-Nx*Ny*k)/Nx;
-			i = n-Nx*Ny*k-Nx*j;
-			for (int q=1; q<19; q++){
-				int nn = neighborList[(q-1)*Np+idx];
-				double value=fq[nn];
-				// 3D index of neighbor
-				int iq=i-D3Q19[q-1][0];
-				int jq=j-D3Q19[q-1][1];
-				int kq=k-D3Q19[q-1][2];
-				if (iq==0) iq=1;
-				if (jq==0) jq=1;
-				if (kq==0) kq=1;
-				if (iq==Nx-1) iq=Nx-2;
-				if (jq==Ny-1) jq=Ny-2;
-				if (kq==Nz-1) kq=Nz-2;
-				double check = kq*100.f+jq*10.f+iq*1.f+q*0.01;
-				if (value != check)
-				  printf("Neighbor q=%i, i=%i,j=%i,k=%i: %f \n",q,iq,jq,kq,value);
+/*		for (k=1; k<Nz-1; k++){
+			for (j=1; j<Ny-1; j++){
+				for (i=1; i<Nx-1; i++){
+					int idx=Map(i,j,k);
+					double sum = 0.0;
+					if (!(idx<0)){
+					  for (int q=1; q<3; q++){
+					    sum += fq_host[q*Np+idx];
+					  }
+					  Result[k*Nx*Ny+j*Nx+i] = sum;
+					}
+				}
 			}
 		}
+*/
+		FILE *OUTFILE;
+		OUTFILE = fopen("D3Q7.raw","wb");
+		fwrite(Result.data(),8,Nx*Ny*Nz,OUTFILE);
+		fclose(OUTFILE);
 
 		delete [] TmpMap;
+		delete [] fq_host;
 
 	}
     Utilities::shutdown();

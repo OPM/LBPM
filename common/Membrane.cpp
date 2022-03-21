@@ -433,46 +433,46 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 					
 					neighbor=Map(i-1,j,k);
 					dist=Distance(i-1,j,k);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						neighborList[idx]=idx + 2*Np;
 					}
 
 					neighbor=Map(i+1,j,k);
 					dist=Distance(i+1,j,k);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						neighborList[Np+idx] = idx + 1*Np;
 						mlink++;
 					}
 
 					neighbor=Map(i,j-1,k);
 					dist=Distance(i,j-1,k);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						neighborList[2*Np+idx]=idx + 4*Np;
 					}
 
 					neighbor=Map(i,j+1,k);
 					dist=Distance(i,j+1,k);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						neighborList[3*Np+idx]=idx + 3*Np;
 						mlink++;
 					}
 
 					neighbor=Map(i,j,k-1);
 					dist=Distance(i,j,k-1);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						neighborList[4*Np+idx]=idx + 6*Np;
 					}
 
 					neighbor=Map(i,j,k+1);
 					dist=Distance(i,j,k+1);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						neighborList[5*Np+idx]=idx + 5*Np;
 						mlink++;
 					}
 
 					neighbor=Map(i-1,j-1,k);
 					dist=Distance(i-1,j-1,k);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						neighborList[6*Np+idx]=idx + 8*Np;
 					}
 
@@ -485,65 +485,65 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 
 					neighbor=Map(i-1,j+1,k);
 					dist=Distance(i-1,j+1,k);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						neighborList[8*Np+idx]=idx + 10*Np;
 					}
 
 					neighbor=Map(i+1,j-1,k);
 					dist=Distance(i+1,j-1,k);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						neighborList[9*Np+idx]=idx + 9*Np;
 						mlink++;
 					}
 
 					neighbor=Map(i-1,j,k-1);
 					dist=Distance(i-1,j,k-1);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						neighborList[10*Np+idx]=idx + 12*Np;
 					}
 
 					neighbor=Map(i+1,j,k+1);
 					dist=Distance(i+1,j,k+1);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						neighborList[11*Np+idx]=idx + 11*Np;
 						mlink++;
 					}
 
 					neighbor=Map(i-1,j,k+1);
 					dist=Distance(i-1,j,k+1);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						neighborList[12*Np+idx]=idx + 14*Np;
 					}
 
 					neighbor=Map(i+1,j,k-1);
 					dist=Distance(i+1,j,k-1);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						neighborList[13*Np+idx]=idx + 13*Np;
 						mlink++;
 					}
 
 					neighbor=Map(i,j-1,k-1);
 					dist=Distance(i,j-1,k-1);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						neighborList[14*Np+idx]=idx + 16*Np;
 					}
 
 					neighbor=Map(i,j+1,k+1);
 					dist=Distance(i,j+1,k+1);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						neighborList[15*Np+idx]=idx + 15*Np;
 						mlink++;
 					}
 
 					neighbor=Map(i,j-1,k+1);
 					dist=Distance(i,j-1,k+1);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						neighborList[16*Np+idx]=idx + 18*Np;
 					}
 
 					neighbor=Map(i,j+1,k-1);
 					dist=Distance(i,j+1,k-1);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						neighborList[17*Np+idx]=idx + 17*Np;
 						mlink++;
 					}
@@ -579,7 +579,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 					neighbor=Map(i+1,j,k);
 					dist=Distance(i+1,j,k);
 					if (dist*locdist < 0.0){
-						if (locdist < 0.0){
+						if (locdist < 0.0 && !(neighbor<0)){
 							localSite = 2*mlink;
 							neighborSite = 2*mlink+1;
 						}
@@ -596,7 +596,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 
 					neighbor=Map(i,j+1,k);
 					dist=Distance(i,j+1,k);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						if (locdist < 0.0){
 							localSite = 2*mlink;
 							neighborSite = 2*mlink+1;
@@ -614,7 +614,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 
 					neighbor=Map(i,j,k+1);
 					dist=Distance(i,j,k+1);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						if (locdist < 0.0){
 							localSite = 2*mlink;
 							neighborSite = 2*mlink+1;
@@ -632,7 +632,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 
 					neighbor=Map(i+1,j+1,k);
 					dist=Distance(i+1,j+1,k);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						if (locdist < 0.0){
 							localSite = 2*mlink;
 							neighborSite = 2*mlink+1;
@@ -650,7 +650,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 
 					neighbor=Map(i+1,j-1,k);
 					dist=Distance(i+1,j-1,k);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						if (locdist < 0.0){
 							localSite = 2*mlink;
 							neighborSite = 2*mlink+1;
@@ -668,7 +668,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 
 					neighbor=Map(i+1,j,k+1);
 					dist=Distance(i+1,j,k+1);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						if (locdist < 0.0){
 							localSite = 2*mlink;
 							neighborSite = 2*mlink+1;
@@ -686,7 +686,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 
 					neighbor=Map(i+1,j,k-1);
 					dist=Distance(i+1,j,k-1);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						if (locdist < 0.0){
 							localSite = 2*mlink;
 							neighborSite = 2*mlink+1;
@@ -704,7 +704,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 
 					neighbor=Map(i,j+1,k+1);
 					dist=Distance(i,j+1,k+1);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						if (locdist < 0.0){
 							localSite = 2*mlink;
 							neighborSite = 2*mlink+1;
@@ -722,7 +722,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 
 					neighbor=Map(i,j+1,k-1);
 					dist=Distance(i,j+1,k-1);
-					if (dist*locdist < 0.0){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
 						if (locdist < 0.0){
 							localSite = 2*mlink;
 							neighborSite = 2*mlink+1;
@@ -736,7 +736,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 						membraneDist[localSite] = locdist;
 						membraneDist[neighborSite] = dist;
 						mlink++;
-					}
+					} 
 				}
 			}
 		}
@@ -824,6 +824,12 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 	//...Map recieve list for the YZ edge <<<15)................................
 	linkCount_yz = D3Q19_MapRecv(0,1,1,Dm->recvList("yz"),0,recvCount_yz,dvcRecvDist_yz,dvcRecvLinks_yz,Distance,Map);
 	//...................................................................................
+	if (rank == 0) printf("    x count = %i \n",linkCount_x[0]);
+	if (rank == 0) printf("    X count = %i \n",linkCount_X[0]);
+	if (rank == 0) printf("    y count = %i \n",linkCount_y[0]);
+	if (rank == 0) printf("    Y count = %i \n",linkCount_Y[0]);
+	if (rank == 0) printf("    z count = %i \n",linkCount_z[0]);
+	if (rank == 0) printf("    Z count = %i \n",linkCount_Z[0]);
 
 	//......................................................................................
 	MPI_COMM_SCALBL.barrier();
@@ -881,8 +887,14 @@ int Membrane::D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, const int *list, int star
 		nn = Map(i,j,k);
 		distanceNonLocal = Distance(i,j,k);
 		
+		
+		printf("CHECK:  idx=%i, n=%i, (%i, %i, %i) shift {%i, %i, %i}, stored nn=%i \n",idx,n,i,j,k,Cqx,Cqy,Cqz,nn);
+		
 		ReturnDist[idx] = nn;
-
+		//if (nn < 0){
+		//	printf("   Check map for site (%i, %i, %i) based on Cq=(%i, %i, %i) \n", i,j,k,Cqx,Cqy,Cqz);
+		//}
+		
 		/* tag the links to swap out later*/
 		if (distanceLocal*distanceNonLocal < 0.0){
 			memLinkList[memLinkCount++] = idx;
@@ -944,6 +956,7 @@ void Membrane::SendD3Q19AA(double *dist){
 	
 	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, 5*sendCount_X,rank_X,sendtag);
 	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, 5*recvCount_x,rank_x,recvtag);
+	
 	//...Packing for y face(4,8,9,16,18).................................
 	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,dist,N);
 	ScaLBL_D3Q19_Pack(8,dvcSendList_y,sendCount_y,sendCount_y,sendbuf_y,dist,N);
@@ -962,6 +975,7 @@ void Membrane::SendD3Q19AA(double *dist){
 	
 	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, 5*sendCount_Y,rank_Y,sendtag);
 	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, 5*recvCount_y,rank_y,recvtag);
+	
 	//...Packing for z face(6,12,13,16,17)................................
 	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,dist,N);
 	ScaLBL_D3Q19_Pack(12,dvcSendList_z,sendCount_z,sendCount_z,sendbuf_z,dist,N);
@@ -1129,29 +1143,32 @@ void Membrane::SendD3Q7AA(double *dist){
 	ScaLBL_DeviceBarrier();
 	// Pack the distributions
 	//...Packing for x face(q=2)................................
-	ScaLBL_D3Q19_Pack(2,dvcSendList_x,0,sendCount_x,sendbuf_x,dist,N);
+	ScaLBL_D3Q19_Pack(2,dvcSendList_x,0,sendCount_x,sendbuf_x,dist,Np);
 	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, sendCount_x,rank_x,sendtag);
 	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, recvCount_X,rank_X,recvtag);
 	//...Packing for X face(q=1)................................
-	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,dist,N);
+	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,dist,Np);
 	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, sendCount_X,rank_X,sendtag);
 	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, recvCount_x,rank_x,recvtag);
+	//for (int idx=0; idx<sendCount_X; idx++) printf(" SendX(%i)=%e \n",idx,sendbuf_X[idx]);
 	//...Packing for y face(q=4).................................
-	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,dist,N);	
+	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,dist,Np);	
 	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, sendCount_y,rank_y,sendtag);
 	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, recvCount_Y,rank_Y,recvtag);
 	//...Packing for Y face(q=3).................................
-	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,dist,N);
+	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,dist,Np);
 	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, sendCount_Y,rank_Y,sendtag);
 	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, recvCount_y,rank_y,recvtag);
+	//for (int idx=0; idx<sendCount_Y; idx++) printf(" SendY(%i)=%e \n",idx,sendbuf_Y[idx]);
 	//...Packing for z face(q=6)................................
-	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,dist,N);
+	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,dist,Np);
 	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, sendCount_z,rank_z,sendtag);
 	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, recvCount_Z,rank_Z,recvtag);
 	//...Packing for Z face(q=5)................................
-	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,dist,N);
+	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,dist,Np);
 	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, sendCount_Z,rank_Z,sendtag);
-	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, recvCount_z,rank_z,recvtag);
+	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, recvCount_z,rank_z,recvtag); 
+
 }
 
 void Membrane::RecvD3Q7AA(double *dist){
@@ -1166,21 +1183,21 @@ void Membrane::RecvD3Q7AA(double *dist){
 	// Unpack the distributions on the device
 	//...................................................................................
 	//...Unpacking for x face(q=2)................................
-	ScaLBL_D3Q7_Membrane_Unpack(2,dvcRecvDist_x, dvcRecvLinks_x,0,linkCount_x[0],recvCount_x,recvbuf_x,dist,N,coefficient_x);
+	ScaLBL_D3Q7_Membrane_Unpack(2,dvcRecvDist_x, dvcRecvLinks_x,0,linkCount_x[0],recvCount_x,recvbuf_x,dist,Np,coefficient_x);
 	//...................................................................................
 	//...Packing for X face(q=1)................................
-	ScaLBL_D3Q7_Membrane_Unpack(1,dvcRecvDist_X, dvcRecvLinks_X,0,linkCount_X[0],recvCount_X,recvbuf_X,dist,N,coefficient_X);
+	ScaLBL_D3Q7_Membrane_Unpack(1,dvcRecvDist_X, dvcRecvLinks_X,0,linkCount_X[0],recvCount_X,recvbuf_X,dist,Np,coefficient_X);
 	//...................................................................................
 	//...Packing for y face(q=4).................................
-	ScaLBL_D3Q7_Membrane_Unpack(4,dvcRecvDist_y, dvcRecvLinks_y,0,linkCount_y[0],recvCount_y,recvbuf_y,dist,N,coefficient_y);
+	ScaLBL_D3Q7_Membrane_Unpack(4,dvcRecvDist_y, dvcRecvLinks_y,0,linkCount_y[0],recvCount_y,recvbuf_y,dist,Np,coefficient_y);
 	//...................................................................................
 	//...Packing for Y face(q=3).................................
-	ScaLBL_D3Q7_Membrane_Unpack(3,dvcRecvDist_Y, dvcRecvLinks_Y,0,linkCount_Y[0],recvCount_Y,recvbuf_Y,dist,N,coefficient_Y);
+	ScaLBL_D3Q7_Membrane_Unpack(3,dvcRecvDist_Y, dvcRecvLinks_Y,0,linkCount_Y[0],recvCount_Y,recvbuf_Y,dist,Np,coefficient_Y);
 	//...................................................................................
 	//...Packing for z face(q=6)................................
-	ScaLBL_D3Q7_Membrane_Unpack(6,dvcRecvDist_z, dvcRecvLinks_z,0,linkCount_z[0],recvCount_z,recvbuf_z,dist,N,coefficient_z);
+	ScaLBL_D3Q7_Membrane_Unpack(6,dvcRecvDist_z, dvcRecvLinks_z,0,linkCount_z[0],recvCount_z,recvbuf_z,dist,Np,coefficient_z);
 	//...Packing for Z face(q=5)................................
-	ScaLBL_D3Q7_Membrane_Unpack(5,dvcRecvDist_Z, dvcRecvLinks_Z,0,linkCount_Z[0],recvCount_Z,recvbuf_Z,dist,N,coefficient_Z);
+	ScaLBL_D3Q7_Membrane_Unpack(5,dvcRecvDist_Z, dvcRecvLinks_Z,0,linkCount_Z[0],recvCount_Z,recvbuf_Z,dist,Np,coefficient_Z);
 	//..................................................................................
 
 	//...................................................................................
@@ -1208,7 +1225,6 @@ void Membrane::AssignCoefficients(int *Map, double *Psi, string method){
 		ThresholdMassFractionOut = 0.0;				
 		ThresholdMassFractionIn = 1.0;
 	}
-	
 	ScaLBL_D3Q7_Membrane_AssignLinkCoef(MembraneLinks, Map, MembraneDistance, Psi, MembraneCoef,
 			Threshold, MassFractionIn, MassFractionOut, ThresholdMassFractionIn, ThresholdMassFractionOut,
 			membraneLinkCount, Nx, Ny, Nz, Np);
