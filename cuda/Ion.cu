@@ -6,31 +6,6 @@
 #define NTHREADS 256
 
 
-extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef(int *membrane, int *Map, double *Distance, double *Psi, double *coef,
-		double Threshold, double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn, double ThresholdMassFractionOut,
-		int memLinks, int Nx, int Ny, int Nz, int Np){
-	
-}
-
-extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(
-		const int Cqx, const int Cqy, int const Cqz, 
-		int *Map, double *Distance, double *Psi, double Threshold, 
-		double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn, double ThresholdMassFractionOut,
-		int *d3q7_recvlist, int *d3q7_linkList, double *coef, int start, int nlinks, int count,
-		const int N, const int Nx, const int Ny, const int Nz) {
-}
-
-
-
-extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,  
-		int *d3q7_recvlist, int *d3q7_linkList, int start, int nlinks, int count,
-		double *recvbuf, double *dist, int N,  double *coef) {
-}
-
-extern "C" void ScaLBL_D3Q7_Membrane_IonTransport(int *membrane, double *coef, 
-		double *dist, double *Den, int memLinks, int Np){
-}
-
 __global__  void dvc_ScaLBL_D3Q7_Membrane_AssignLinkCoef(int *membrane, int *Map, double *Distance, double *Psi, double *coef,
 		double Threshold, double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn, double ThresholdMassFractionOut,
 		int memLinks, int Nx, int Ny, int Nz, int Np){
@@ -620,3 +595,61 @@ extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity
 	}
 	//cudaProfilerStop();
 }
+
+extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef(int *membrane, int *Map, double *Distance, double *Psi, double *coef,
+		double Threshold, double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn, double ThresholdMassFractionOut,
+		int memLinks, int Nx, int Ny, int Nz, int Np){
+	
+	dvc_ScaLBL_D3Q7_Membrane_AssignLinkCoef<<<NBLOCKS,NTHREADS >>>(membrane,  Map,  Distance,  Psi,  coef,
+			 Threshold,  MassFractionIn,  MassFractionOut,  ThresholdMassFractionIn,  ThresholdMassFractionOut,
+			 memLinks,  Nx,  Ny,  Nz,  Np);
+
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in dvc_ScaLBL_D3Q7_Membrane_AssignLinkCoef: %s \n",cudaGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(
+		const int Cqx, const int Cqy, int const Cqz, 
+		int *Map, double *Distance, double *Psi, double Threshold, 
+		double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn, double ThresholdMassFractionOut,
+		int *d3q7_recvlist, int *d3q7_linkList, double *coef, int start, int nlinks, int count,
+		const int N, const int Nx, const int Ny, const int Nz) {
+	
+	dvc_ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo<<<NBLOCKS,NTHREADS >>>(
+			 Cqx,  Cqy,  Cqz, Map, Distance, Psi,  Threshold, 
+			 MassFractionIn,  MassFractionOut,  ThresholdMassFractionIn,  ThresholdMassFractionOut,
+			d3q7_recvlist, d3q7_linkList, coef,  start,  nlinks,  count, N,  Nx,  Ny,  Nz);
+
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in dvc_ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo: %s \n",cudaGetErrorString(err));
+	}
+}
+
+
+extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,  
+		int *d3q7_recvlist, int *d3q7_linkList, int start, int nlinks, int count,
+		double *recvbuf, double *dist, int N,  double *coef) {
+	
+	dvc_ScaLBL_D3Q7_Membrane_Unpack<<<NBLOCKS,NTHREADS >>>(q, d3q7_recvlist, d3q7_linkList, start, nlinks, count,
+			recvbuf, dist, N,  coef) ;
+
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in dvc_ScaLBL_D3Q7_Membrane_Unpack: %s \n",cudaGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_D3Q7_Membrane_IonTransport(int *membrane, double *coef, 
+		double *dist, double *Den, int memLinks, int Np){
+	
+	dvc_ScaLBL_D3Q7_Membrane_IonTransport<<<NBLOCKS,NTHREADS >>>(membrane, coef, dist, Den, memLinks, Np);
+
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in dvc_ScaLBL_D3Q7_Membrane_IonTransport: %s \n",cudaGetErrorString(err));
+	}
+}
+
