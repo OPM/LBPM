@@ -5,6 +5,207 @@
 #define NBLOCKS 1024
 #define NTHREADS 256
 
+
+extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef(int *membrane, int *Map, double *Distance, double *Psi, double *coef,
+		double Threshold, double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn, double ThresholdMassFractionOut,
+		int memLinks, int Nx, int Ny, int Nz, int Np){
+	
+}
+
+extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(
+		const int Cqx, const int Cqy, int const Cqz, 
+		int *Map, double *Distance, double *Psi, double Threshold, 
+		double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn, double ThresholdMassFractionOut,
+		int *d3q7_recvlist, int *d3q7_linkList, double *coef, int start, int nlinks, int count,
+		const int N, const int Nx, const int Ny, const int Nz) {
+}
+
+
+
+extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,  
+		int *d3q7_recvlist, int *d3q7_linkList, int start, int nlinks, int count,
+		double *recvbuf, double *dist, int N,  double *coef) {
+}
+
+extern "C" void ScaLBL_D3Q7_Membrane_IonTransport(int *membrane, double *coef, 
+		double *dist, double *Den, int memLinks, int Np){
+}
+
+__global__  void dvc_ScaLBL_D3Q7_Membrane_AssignLinkCoef(int *membrane, int *Map, double *Distance, double *Psi, double *coef,
+		double Threshold, double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn, double ThresholdMassFractionOut,
+		int memLinks, int Nx, int Ny, int Nz, int Np){
+
+	int link,iq,ip,nq,np,nqm,npm;
+	double aq, ap, membranePotential;
+	/* Interior Links */
+
+	int S = memLinks/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		link =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
+		if (link < memLinks) {
+
+			// inside             	//outside
+			aq = MassFractionIn;	ap = MassFractionOut;  
+			iq = membrane[2*link]; 	ip = membrane[2*link+1];
+			nq = iq%Np;				np = ip%Np;
+			nqm = Map[nq];			npm = Map[np]; // strided layout
+
+			/* membrane potential for this link */
+			membranePotential = Psi[nqm] - Psi[npm];
+			if (membranePotential > Threshold){
+				aq = ThresholdMassFractionIn;	ap = ThresholdMassFractionOut;  
+			}
+
+			/* Save the mass transfer coefficients */
+			coef[2*link] = aq;		coef[2*link+1] = ap;
+		}
+	}
+}
+
+__global__  void dvc_ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(
+		const int Cqx, const int Cqy, int const Cqz, 
+		int *Map, double *Distance, double *Psi, double Threshold, 
+		double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn, double ThresholdMassFractionOut,
+		int *d3q7_recvlist, int *d3q7_linkList, double *coef, int start, int nlinks, int count,
+		const int N, const int Nx, const int Ny, const int Nz) {
+	//....................................................................................
+	// Unack distribution from the recv buffer
+	// Distribution q matche Cqx, Cqy, Cqz
+	// swap rule means that the distributions in recvbuf are OPPOSITE of q
+	// dist may be even or odd distributions stored by stream layout
+	//....................................................................................
+	int n, idx, link, nqm, npm, i, j, k;
+	double distanceLocal, distanceNonlocal;
+	double psiLocal, psiNonlocal, membranePotential;
+	double ap,aq; // coefficient
+
+	/* second enforce custom rule for membrane links */
+	int S = (count-nlinks)/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		link =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + nlinks;
+
+		if (link < count) {
+
+			// get the index for the recv list (deal with reordering of links)
+			idx = d3q7_linkList[link]; // THINK start NEEDS TO BE HERE
+			// get the distribution index
+			n = d3q7_recvlist[start+idx];
+			// get the index in strided layout
+			nqm = Map[n];
+			distanceLocal = Distance[nqm];  
+			psiLocal = Psi[nqm];
+
+			// Get the 3-D indices from the send process
+			k = nqm/(Nx*Ny); j = (nqm-Nx*Ny*k)/Nx; i = nqm-Nx*Ny*k-Nx*j;
+			// Streaming link the non-local distribution
+			i -= Cqx; j -= Cqy; k -= Cqz;
+			npm = k*Nx*Ny + j*Nx + i;
+			distanceNonlocal = Distance[npm];  
+			psiNonlocal = Psi[npm];
+
+			membranePotential = psiLocal - psiNonlocal;
+			aq = MassFractionIn;
+			ap = MassFractionOut;
+
+			/* link is inside membrane */
+			if (distanceLocal > 0.0){
+				if (membranePotential < Threshold*(-1.0)){
+					ap = MassFractionIn;
+					aq = MassFractionOut;
+				}
+				else {
+					ap = ThresholdMassFractionIn;
+					aq = ThresholdMassFractionOut;
+				}
+			}
+			else if (membranePotential > Threshold){
+				aq = ThresholdMassFractionIn;
+				ap = ThresholdMassFractionOut;
+			}
+
+			// update link based on mass transfer coefficients		
+			coef[2*(link-nlinks)] = aq;
+			coef[2*(link-nlinks)+1] = ap;
+		}
+	}
+}
+
+__global__  void dvc_ScaLBL_D3Q7_Membrane_Unpack(int q,  
+		int *d3q7_recvlist, int *d3q7_linkList, int start, int nlinks, int count,
+		double *recvbuf, double *dist, int N,  double *coef) {
+	//....................................................................................
+	// Unack distribution from the recv buffer
+	// Distribution q matche Cqx, Cqy, Cqz
+	// swap rule means that the distributions in recvbuf are OPPOSITE of q
+	// dist may be even or odd distributions stored by stream layout
+	//....................................................................................
+	int n, idx, link;
+	double fq,fp,fqq,ap,aq; // coefficient
+
+	/* second enforce custom rule for membrane links */
+	int S = count/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		link =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
+
+		/* First unpack the regular links */
+		if (link < nlinks) {
+			// get the index for the recv list (deal with reordering of links)
+			idx = d3q7_linkList[link]; 
+			// get the distribution index
+			n = d3q7_recvlist[start+idx];
+			if (!(n < 0)){
+				fp = recvbuf[start + idx];
+				dist[q * N + n] = fp;
+			}
+		}
+		else if (link < count){
+			/* second enforce custom rule for membrane links */
+			// get the index for the recv list (deal with reordering of links)
+			idx = d3q7_linkList[link]; 
+			// get the distribution index
+			n = d3q7_recvlist[start+idx];
+			// update link based on mass transfer coefficients
+			if (!(n < 0)){
+				aq = coef[2*(link-nlinks)];
+				ap = coef[2*(link-nlinks)+1];
+				fq = dist[q * N + n];
+				fp = recvbuf[start + idx];
+				fqq = (1-aq)*fq+ap*fp;
+				dist[q * N + n] = fqq;
+			}
+		} 
+	}
+}
+
+__global__  void dvc_ScaLBL_D3Q7_Membrane_IonTransport(int *membrane, double *coef, 
+		double *dist, double *Den, int memLinks, int Np){	
+	int link,iq,ip,nq,np;
+	double aq, ap, fq, fp, fqq, fpp, Cq, Cp;
+
+	int S = memLinks/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		link =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
+		if (link < memLinks){
+
+			// inside             	//outside
+			aq = coef[2*link];		ap = coef[2*link+1];
+			iq = membrane[2*link]; 	ip = membrane[2*link+1];
+			nq = iq%Np;				np = ip%Np;
+			fq  = dist[iq];			fp = dist[ip];
+			fqq = (1-aq)*fq+ap*fp;	fpp = (1-ap)*fp+ap*fq;
+			Cq = Den[nq];			Cp = Den[np];
+			Cq += fqq - fq;			Cp += fpp - fp;
+			Den[nq] = Cq;			Den[np] = Cp;
+			dist[iq] = fqq;			dist[ip] = fpp;
+		}
+	}
+}
+
+
 __global__  void dvc_ScaLBL_D3Q7_AAodd_IonConcentration(int *neighborList, double *dist, double *Den, int start, int finish, int Np){
     int n,nread;
     double fq,Ci;
