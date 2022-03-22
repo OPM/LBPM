@@ -827,8 +827,6 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 		idx=Map(n);
 		//if (rank == 0) printf("r: mapped n=%d\n",idx);
 		TempBuffer[i]=idx;
-
-
 	}
 	ScaLBL_CopyToDevice(dvcRecvDist_x,TempBuffer,5*recvCount_x*sizeof(int));
 

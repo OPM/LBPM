@@ -407,7 +407,7 @@ Membrane::~Membrane() {
 
 int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArray &Map){
 	int mlink = 0;
-	int i,j,k;
+	int i,j,k,n;
 	int idx, neighbor;
 	double dist, locdist;
 	
@@ -824,17 +824,11 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 	//...Map recieve list for the YZ edge <<<15)................................
 	linkCount_yz = D3Q19_MapRecv(0,1,1,Dm->recvList("yz"),0,recvCount_yz,dvcRecvDist_yz,dvcRecvLinks_yz,Distance,Map);
 	//...................................................................................
-	if (rank == 0) printf("    x count = %i \n",linkCount_x[0]);
-	if (rank == 0) printf("    X count = %i \n",linkCount_X[0]);
-	if (rank == 0) printf("    y count = %i \n",linkCount_y[0]);
-	if (rank == 0) printf("    Y count = %i \n",linkCount_Y[0]);
-	if (rank == 0) printf("    z count = %i \n",linkCount_z[0]);
-	if (rank == 0) printf("    Z count = %i \n",linkCount_Z[0]);
 
 	//......................................................................................
 	MPI_COMM_SCALBL.barrier();
 	ScaLBL_DeviceBarrier();
-	//......................................................................................
+	//.......................................................................
 	SendCount = sendCount_x+sendCount_X+sendCount_y+sendCount_Y+sendCount_z+sendCount_Z+
 			sendCount_xy+sendCount_Xy+sendCount_xY+sendCount_XY+
 			sendCount_xZ+sendCount_Xz+sendCount_xZ+sendCount_XZ+
@@ -847,6 +841,164 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 
 	CommunicationCount = SendCount+RecvCount;
 	//......................................................................................
+	int *TempBuffer;
+	TempBuffer = new int [5*RecvCount];
+	//.......................................................................
+	// Re-index the send lists
+	ScaLBL_CopyToHost(TempBuffer,dvcSendList_x,sendCount_x*sizeof(int));
+	for (i=0; i<sendCount_x; i++){
+		n = TempBuffer[i];
+		//if (rank==0) printf("s: n=%d ",n);
+		idx=Map(n);
+		//if (rank == 0) printf("s: mapped n=%d\n",idx);
+		TempBuffer[i]=idx;
+	}
+	ScaLBL_CopyToDevice(dvcSendList_x,TempBuffer,sendCount_x*sizeof(int));
+
+	ScaLBL_CopyToHost(TempBuffer,dvcSendList_y,sendCount_y*sizeof(int));
+	for (i=0; i<sendCount_y; i++){
+		n = TempBuffer[i];
+		idx=Map(n);
+		TempBuffer[i]=idx;
+	}
+	ScaLBL_CopyToDevice(dvcSendList_y,TempBuffer,sendCount_y*sizeof(int));
+
+	ScaLBL_CopyToHost(TempBuffer,dvcSendList_z,sendCount_z*sizeof(int));
+	for (i=0; i<sendCount_z; i++){
+		n = TempBuffer[i];
+		idx=Map(n);
+		TempBuffer[i]=idx;
+	}
+	ScaLBL_CopyToDevice(dvcSendList_z,TempBuffer,sendCount_z*sizeof(int));
+
+
+	ScaLBL_CopyToHost(TempBuffer,dvcSendList_X,sendCount_X*sizeof(int));
+	for (i=0; i<sendCount_X; i++){
+		n = TempBuffer[i];
+		//if (rank==0) printf("r: n=%d ",n);
+		idx=Map(n);
+		//if (rank == 0) printf("r: mapped n=%d\n",idx);
+		TempBuffer[i]=idx;
+	}
+	ScaLBL_CopyToDevice(dvcSendList_X,TempBuffer,sendCount_X*sizeof(int));
+
+
+	ScaLBL_CopyToHost(TempBuffer,dvcSendList_Y,sendCount_Y*sizeof(int));
+	for (i=0; i<sendCount_Y; i++){
+		n = TempBuffer[i];
+		idx=Map(n);
+		TempBuffer[i]=idx;
+	}
+	ScaLBL_CopyToDevice(dvcSendList_Y,TempBuffer,sendCount_Y*sizeof(int));
+
+	ScaLBL_CopyToHost(TempBuffer,dvcSendList_Z,sendCount_Z*sizeof(int));
+	for (i=0; i<sendCount_Z; i++){
+		n = TempBuffer[i];
+		idx=Map(n);
+		TempBuffer[i]=idx;
+	}
+	ScaLBL_CopyToDevice(dvcSendList_Z,TempBuffer,sendCount_Z*sizeof(int));
+
+	ScaLBL_CopyToHost(TempBuffer,dvcSendList_xy,sendCount_xy*sizeof(int));
+	for (i=0; i<sendCount_xy; i++){
+		n = TempBuffer[i];
+		idx=Map(n);
+		TempBuffer[i]=idx;
+	}
+	ScaLBL_CopyToDevice(dvcSendList_xy,TempBuffer,sendCount_xy*sizeof(int));
+
+	ScaLBL_CopyToHost(TempBuffer,dvcSendList_xY,sendCount_xY*sizeof(int));
+	for (i=0; i<sendCount_xY; i++){
+		n = TempBuffer[i];
+		idx=Map(n);
+		TempBuffer[i]=idx;
+	}
+	ScaLBL_CopyToDevice(dvcSendList_xY,TempBuffer,sendCount_xY*sizeof(int));
+
+	ScaLBL_CopyToHost(TempBuffer,dvcSendList_Xy,sendCount_Xy*sizeof(int));
+	for (i=0; i<sendCount_Xy; i++){
+		n = TempBuffer[i];
+		idx=Map(n);
+		TempBuffer[i]=idx;
+	}
+	ScaLBL_CopyToDevice(dvcSendList_Xy,TempBuffer,sendCount_Xy*sizeof(int));
+
+	ScaLBL_CopyToHost(TempBuffer,dvcSendList_XY,sendCount_XY*sizeof(int));
+	for (i=0; i<sendCount_XY; i++){
+		n = TempBuffer[i];
+		idx=Map(n);
+		TempBuffer[i]=idx;
+	}
+	ScaLBL_CopyToDevice(dvcSendList_XY,TempBuffer,sendCount_XY*sizeof(int));
+
+	ScaLBL_CopyToHost(TempBuffer,dvcSendList_xz,sendCount_xz*sizeof(int));
+	for (i=0; i<sendCount_xz; i++){
+		n = TempBuffer[i];
+		idx=Map(n);
+		TempBuffer[i]=idx;
+	}
+	ScaLBL_CopyToDevice(dvcSendList_xz,TempBuffer,sendCount_xz*sizeof(int));
+
+	ScaLBL_CopyToHost(TempBuffer,dvcSendList_xZ,sendCount_xZ*sizeof(int));
+	for (i=0; i<sendCount_xZ; i++){
+		n = TempBuffer[i];
+		idx=Map(n);
+		TempBuffer[i]=idx;
+	}
+	ScaLBL_CopyToDevice(dvcSendList_xZ,TempBuffer,sendCount_xZ*sizeof(int));
+
+	ScaLBL_CopyToHost(TempBuffer,dvcSendList_Xz,sendCount_Xz*sizeof(int));
+	for (i=0; i<sendCount_Xz; i++){
+		n = TempBuffer[i];
+		idx=Map(n);
+		TempBuffer[i]=idx;
+	}
+	ScaLBL_CopyToDevice(dvcSendList_Xz,TempBuffer,sendCount_Xz*sizeof(int));
+
+	ScaLBL_CopyToHost(TempBuffer,dvcSendList_XZ,sendCount_XZ*sizeof(int));
+	for (i=0; i<sendCount_XZ; i++){
+		n = TempBuffer[i];
+		idx=Map(n);
+		TempBuffer[i]=idx;
+	}
+	ScaLBL_CopyToDevice(dvcSendList_XZ,TempBuffer,sendCount_XZ*sizeof(int));
+
+	ScaLBL_CopyToHost(TempBuffer,dvcSendList_yz,sendCount_yz*sizeof(int));
+	for (i=0; i<sendCount_yz; i++){
+		n = TempBuffer[i];
+		idx=Map(n);
+		TempBuffer[i]=idx;
+	}
+	ScaLBL_CopyToDevice(dvcSendList_yz,TempBuffer,sendCount_yz*sizeof(int));
+
+	ScaLBL_CopyToHost(TempBuffer,dvcSendList_Yz,sendCount_Yz*sizeof(int));
+	for (i=0; i<sendCount_Yz; i++){
+		n = TempBuffer[i];
+		idx=Map(n);
+		TempBuffer[i]=idx;
+	}
+	ScaLBL_CopyToDevice(dvcSendList_Yz,TempBuffer,sendCount_Yz*sizeof(int));
+
+	ScaLBL_CopyToHost(TempBuffer,dvcSendList_yZ,sendCount_yZ*sizeof(int));
+	for (i=0; i<sendCount_yZ; i++){
+		n = TempBuffer[i];
+		idx=Map(n);
+		TempBuffer[i]=idx;
+	}
+	ScaLBL_CopyToDevice(dvcSendList_yZ,TempBuffer,sendCount_yZ*sizeof(int));
+
+	ScaLBL_CopyToHost(TempBuffer,dvcSendList_YZ,sendCount_YZ*sizeof(int));
+	for (i=0; i<sendCount_YZ; i++){
+		n = TempBuffer[i];
+		idx=Map(n);
+		TempBuffer[i]=idx;
+	}
+	ScaLBL_CopyToDevice(dvcSendList_YZ,TempBuffer,sendCount_YZ*sizeof(int));
+	//.......................................................................
+
+	ScaLBL_CopyToDevice(dvcRecvDist_YZ,TempBuffer,recvCount_YZ*sizeof(int));
+
+	//......................................................................................
 	// Allocate membrane coefficient buffers (for d3q7 recv)
 	ScaLBL_AllocateZeroCopy((void **) &coefficient_x, (recvCount_x - linkCount_x[0])*sizeof(double));
 	ScaLBL_AllocateZeroCopy((void **) &coefficient_X, (recvCount_X - linkCount_X[0])*sizeof(double));
@@ -856,6 +1008,7 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 	ScaLBL_AllocateZeroCopy((void **) &coefficient_Z, (recvCount_Z - linkCount_Z[0])*sizeof(double));
 	//......................................................................................
 	
+	delete [] TempBuffer;
 	return mlink;
 }
 
@@ -864,13 +1017,14 @@ int Membrane::D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, const int *list, int star
 	
 	int linkCount = 0;
 	int memLinkCount=0;
-	int i,j,k,n,nn,idx;
+	int i,j,k,n,nn,idx,link;
 	int * ReturnDist;
 	double distanceNonLocal,distanceLocal;
 	ReturnDist=new int [count];
 	int *LinkList=new int [count];
 	int *memLinkList=new int [count];
 	
+	//printf("MAP %i RECV VALUES: Nx=%i, Ny=%i, Nz=%i \n",count,Nx,Ny,Nz);
 	for (idx=0; idx<count; idx++){
 
 		// Get the value from the list -- note that n is the index is from the send (non-local) process
@@ -887,8 +1041,7 @@ int Membrane::D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, const int *list, int star
 		nn = Map(i,j,k);
 		distanceNonLocal = Distance(i,j,k);
 		
-		
-		printf("CHECK:  idx=%i, n=%i, (%i, %i, %i) shift {%i, %i, %i}, stored nn=%i \n",idx,n,i,j,k,Cqx,Cqy,Cqz,nn);
+		//printf("CHECK:  idx=%i, n=%i, (%i, %i, %i) shift {%i, %i, %i}, stored nn=%i \n",idx,n,i,j,k,Cqx,Cqy,Cqz,nn);
 		
 		ReturnDist[idx] = nn;
 		//if (nn < 0){
@@ -905,14 +1058,14 @@ int Membrane::D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, const int *list, int star
 	}
 	
 	/* add membrane links at the end */
-	for (int link=0; link<memLinkCount; link++){
+	for (link=0; link<memLinkCount; link++){
 		idx = memLinkList[link];
 		LinkList[linkCount+link] = idx;
 	}
 	
 	/* quick check */
-	if (idx != count){
-		printf("ERROR forming membrane communication links! \n");
+	if (linkCount+link != count){
+		printf("ERROR forming membrane communication links! %i is not equal to count (%i) \n",linkCount+link,count);
 	}
 	
 	// Return updated version to the device

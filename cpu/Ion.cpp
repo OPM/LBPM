@@ -110,7 +110,7 @@ extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,
         	fp = recvbuf[start + idx];
             dist[q * N + n] = fp;
         }
-        printf(" site=%i, index=%i, value = %e \n",n,idx,fp);
+        //printf(" site=%i, index=%i, value = %e \n",n,idx,fp);
     }
     /* second enforce custom rule for membrane links */
     for (link = nlinks; link < count; link++) {
@@ -127,7 +127,7 @@ extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,
         	fqq = (1-aq)*fq+ap*fp;
             dist[q * N + n] = fqq;
         }
-        printf(" LINK: site=%i, index=%i \n", n, idx);
+        //printf(" LINK: site=%i, index=%i \n", n, idx);
 
     } 
 }

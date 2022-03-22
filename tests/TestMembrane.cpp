@@ -183,7 +183,7 @@ int main(int argc, char **argv)
 		// Create a dummy distribution data structure
 		double *fq_host;
 		fq_host = new double[19*Np];
-		if (rank==0)	printf ("Setting up distributions \n");
+		if (rank==0)	printf ("Setting up Np=%i distributions \n",Np);
 		for (k=1; k<Nz-1; k++){
 			for (j=1; j<Ny-1; j++){
 				for (i=1; i<Nx-1; i++){
@@ -217,7 +217,7 @@ int main(int argc, char **argv)
                                             0, ScaLBL_Comm->LastExterior(),
                                             Np);
         DoubleArray Result(Nx,Ny,Nz);
-\        
+        
         ScaLBL_Comm->RegularLayout(Map, Ci, Result);
 
 /*		for (k=1; k<Nz-1; k++){
@@ -239,6 +239,11 @@ int main(int argc, char **argv)
 		OUTFILE = fopen("D3Q7.raw","wb");
 		fwrite(Result.data(),8,Nx*Ny*Nz,OUTFILE);
 		fclose(OUTFILE);
+		
+		FILE *MAPFILE;
+		MAPFILE = fopen("Map.raw","wb");
+		fwrite(Map.data(),4,Nx*Ny*Nz,MAPFILE);
+		fclose(MAPFILE);
 
 		delete [] TmpMap;
 		delete [] fq_host;
