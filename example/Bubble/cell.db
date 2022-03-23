@@ -1,5 +1,5 @@
 MultiphysController {
-    timestepMax = 40
+    timestepMax = 60
     num_iter_Ion_List = 2
     analysis_interval  = 50
     tolerance = 1.0e-9
