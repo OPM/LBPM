@@ -1387,7 +1387,7 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
             ScaLBL_Comm->Barrier();
             comm.barrier();
 
-            // *************EVEN TIMESTEP*************//
+            // *************EVEN TIMESTEP*************//            
             timestep++;
             //Update ion concentration and charge density
             IonMembrane->SendD3Q7AA(&fq[ic * Np * 7]); //READ FORM NORMAL
@@ -1405,7 +1405,7 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
                     break;
                 case 21:
                     ScaLBL_Comm->D3Q7_Ion_Flux_Diff_BC_z(
-                        IonMembrane->NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],
+                        IonMembrane->NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],q
                         &Velocity[2 * Np], timestep);
                     break;
                 case 22:

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 
 extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef(int *membrane, int *Map, double *Distance, double *Psi, double *coef,
 		double Threshold, double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn, double ThresholdMassFractionOut,
@@ -250,6 +251,7 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist,
     double Ex, Ey, Ez;       //electrical field
     double flux_diffusive_x, flux_diffusive_y, flux_diffusive_z;
     double f0, f1, f2, f3, f4, f5, f6;
+    double X,Y,Z,factor_x, factor_y, factor_z;
     int nr1, nr2, nr3, nr4, nr5, nr6;
 
     for (n = start; n < finish; n++) {
@@ -300,33 +302,48 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist,
         FluxElectrical[n + 0 * Np] = uEPx * Ci;
         FluxElectrical[n + 1 * Np] = uEPy * Ci;
         FluxElectrical[n + 2 * Np] = uEPz * Ci;
+        
+        /* use logistic function to prevent negative distributions*/
+        X = 4.0 * (ux + uEPx);
+        Y = 4.0 * (uy + uEPy);
+        Z = 4.0 * (uz + uEPz);
+        factor_x = X / sqrt(1 + X*X);
+        factor_y = Y / sqrt(1 + Y*Y);
+        factor_z = Z / sqrt(1 + Z*Z);
 
         // q=0
         dist[n] = f0 * (1.0 - rlx) + rlx * 0.25 * Ci;
 
         // q = 1
         dist[nr2] =
-            f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (ux + uEPx));
+            f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_x);
+        //f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (ux + uEPx));
+
 
         // q=2
         dist[nr1] =
-            f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (ux + uEPx));
+                f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_x);
+        //f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (ux + uEPx));
 
         // q = 3
         dist[nr4] =
-            f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uy + uEPy));
+                f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_y );
+        //f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uy + uEPy));
 
         // q = 4
         dist[nr3] =
-            f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uy + uEPy));
+                f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_y);
+        //f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uy + uEPy));
 
         // q = 5
         dist[nr6] =
-            f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uz + uEPz));
+                f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 +  factor_z);
+        //f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uz + uEPz));
 
         // q = 6
         dist[nr5] =
-            f6 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uz + uEPz));
+            f6 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_z);
+
     }
 }
 
@@ -341,6 +358,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_Ion(
     double Ex, Ey, Ez;       //electrical field
     double flux_diffusive_x, flux_diffusive_y, flux_diffusive_z;
     double f0, f1, f2, f3, f4, f5, f6;
+    double X,Y,Z, factor_x, factor_y, factor_z;
 
     for (n = start; n < finish; n++) {
 
@@ -377,33 +395,47 @@ extern "C" void ScaLBL_D3Q7_AAeven_Ion(
         FluxElectrical[n + 0 * Np] = uEPx * Ci;
         FluxElectrical[n + 1 * Np] = uEPy * Ci;
         FluxElectrical[n + 2 * Np] = uEPz * Ci;
+        
+        /* use logistic function to prevent negative distributions*/
+        X = 4.0 * (ux + uEPx);
+        Y = 4.0 * (uy + uEPy);
+        Z = 4.0 * (uz + uEPz);
+        factor_x = X / sqrt(1 + X*X);
+        factor_y = Y / sqrt(1 + Y*Y);
+        factor_z = Z / sqrt(1 + Z*Z);
 
         // q=0
         dist[n] = f0 * (1.0 - rlx) + rlx * 0.25 * Ci;
 
         // q = 1
         dist[1 * Np + n] =
-            f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (ux + uEPx));
+                f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_x);
+        //f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (ux + uEPx));
 
         // q=2
         dist[2 * Np + n] =
-            f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (ux + uEPx));
+                f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_x);
+        //f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (ux + uEPx));
 
         // q = 3
         dist[3 * Np + n] =
-            f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uy + uEPy));
+                f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_y);
+        //f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uy + uEPy));
 
         // q = 4
         dist[4 * Np + n] =
-            f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uy + uEPy));
+                f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_y);
+        //f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uy + uEPy));
 
         // q = 5
         dist[5 * Np + n] =
-            f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uz + uEPz));
+                f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_z);
+        //f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uz + uEPz));
 
         // q = 6
         dist[6 * Np + n] =
-            f6 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uz + uEPz));
+                f6 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_z);
+        //f6 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uz + uEPz));
     }
 }
 
