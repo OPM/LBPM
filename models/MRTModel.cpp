@@ -20,12 +20,17 @@
 #include "models/MRTModel.h"
 #include "analysis/distance.h"
 #include "common/ReadMicroCT.h"
+
+
 ScaLBL_MRTModel::ScaLBL_MRTModel(int RANK, int NP, const Utilities::MPI &COMM)
     : rank(RANK), nprocs(NP), Restart(0), timestep(0), timestepMax(0), tau(0),
       Fx(0), Fy(0), Fz(0), flux(0), din(0), dout(0), mu(0), Nx(0), Ny(0), Nz(0),
       N(0), Np(0), nprocx(0), nprocy(0), nprocz(0), BoundaryCondition(0), Lx(0),
       Ly(0), Lz(0), comm(COMM) {}
+
+
 ScaLBL_MRTModel::~ScaLBL_MRTModel() {}
+
 
 void ScaLBL_MRTModel::ReadParams(string filename) {
     // read the input database
@@ -386,6 +391,7 @@ void ScaLBL_MRTModel::Run() {
                 h * h * mu * Mask->Porosity() * flow_rate / force_mag;
             double absperm_adjusted =
                 h * h * mu * Mask->Porosity() * Mask->Porosity() * flow_rate / force_mag;
+	    absperm_adjusted *= 1013.0; // Convert to mDarcy
 
             if (rank == 0) {
                 printf("     %f\n", absperm);
@@ -401,8 +407,7 @@ void ScaLBL_MRTModel::Run() {
     }
     //************************************************************************/
     if (rank == 0)
-        printf("---------------------------------------------------------------"
-               "----\n");
+        printf("--------------------------------------------------------\n");
     // Compute the walltime per timestep
     auto t2 = std::chrono::system_clock::now();
     double cputime = std::chrono::duration<double>(t2 - t1).count() / timestep;

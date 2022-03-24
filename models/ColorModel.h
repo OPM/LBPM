@@ -117,6 +117,7 @@ public:
     double tauA, tauB, rhoA, rhoB, alpha, beta;
     double Fx, Fy, Fz, flux;
     double din, dout, inletA, inletB, outletA, outletB;
+    const double mDarcy_converter = 1013.0;
 
     int Nx, Ny, Nz, N, Np;
     int rank, nprocx, nprocy, nprocz, nprocs;
