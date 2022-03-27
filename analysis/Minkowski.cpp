@@ -67,6 +67,7 @@ Minkowski::~Minkowski() {
 
 void Minkowski::ComputeScalar(const DoubleArray &Field, const double isovalue) {
     PROFILE_START("ComputeScalar");
+
     Xi = Ji = Ai = 0.0;
     DCEL object;
     int e1, e2, e3;
@@ -160,6 +161,7 @@ void Minkowski::MeasureObject() {
 	 *    1 - labels the rest of the 
 	 */
     //DoubleArray smooth_distance(Nx,Ny,Nz);
+	
     for (int k = 0; k < Nz; k++) {
         for (int j = 0; j < Ny; j++) {
             for (int i = 0; i < Nx; i++) {
@@ -168,6 +170,8 @@ void Minkowski::MeasureObject() {
         }
     }
     CalcDist(distance, id, *Dm);
+    Dm->CommunicateMeshHalo(distance);
+
     //Mean3D(distance,smooth_distance);
     //Eikonal(distance, id, *Dm, 20, {true, true, true});
     ComputeScalar(distance, 0.0);
@@ -179,7 +183,7 @@ void Minkowski::MeasureObject(double factor, const DoubleArray &Phi) {
 	 * 
 	 * THIS ALGORITHM ASSUMES THAT id() is populated with phase id to distinguish objects
 	 *    0 - labels the object
-	 *    1 - labels the rest of the 
+	 *    1 - labels the rest 
 	 */
     for (int k = 0; k < Nz; k++) {
         for (int j = 0; j < Ny; j++) {

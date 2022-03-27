@@ -79,16 +79,28 @@ int main(int argc, char **argv)
 
         IonModel.timestepMax = Study.getIonNumIter_PNP_coupling(StokesModel.time_conv,IonModel.time_conv);
         IonModel.Initialize();   
+        
         // Get maximal time converting factor based on Sotkes and Ion solvers
-        Study.getTimeConvMax_PNP_coupling(StokesModel.time_conv,IonModel.time_conv);
+        //Study.getTimeConvMax_PNP_coupling(StokesModel.time_conv,IonModel.time_conv);
+        // Get time conversion factor for the main iteration loop in electrokinetic single fluid simulator
+        Study.time_conv_MainLoop = StokesModel.timestepMax*StokesModel.time_conv;
 
         // Initialize LB-Poisson model
         PoissonSolver.ReadParams(filename);
         PoissonSolver.SetDomain();    
         PoissonSolver.ReadInput();    
         PoissonSolver.Create();       
-        PoissonSolver.Initialize(Study.time_conv_max);   
+        PoissonSolver.Initialize(Study.time_conv_MainLoop);   
 
+
+        if (rank == 0){
+            printf("********************************************************\n");
+            printf("Key Summary of LBPM electrokinetic single-fluid solver \n");
+            printf("   1. Max LB Timestep: %i [lt]\n", Study.timestepMax);
+            printf("   2. Time conversion factor per LB Timestep: %.6g [sec/lt]\n",Study.time_conv_MainLoop);
+            printf("   3. Max Physical Time: %.6g [sec]\n",Study.timestepMax*Study.time_conv_MainLoop);
+            printf("********************************************************\n");
+        }
 
         int timestep=0;
         while (timestep < Study.timestepMax){
@@ -98,7 +110,6 @@ int main(int argc, char **argv)
             StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
             IonModel.Run(StokesModel.Velocity,PoissonSolver.ElectricField); //solve for ion transport and electric potential
             
-            timestep++;//AA operations
 
             if (timestep%Study.analysis_interval==0){
             	Analysis.Basic(IonModel,PoissonSolver,StokesModel,timestep);
@@ -116,7 +127,7 @@ int main(int argc, char **argv)
         if (rank==0) printf("Save simulation raw data at maximum timestep\n");
     	Analysis.WriteVis(IonModel,PoissonSolver,StokesModel,Study.db,timestep);
 
-        if (rank==0) printf("Maximum timestep is reached and the simulation is completed\n");
+        if (rank==0) printf("Maximum LB timestep = %i is reached and the simulation is completed\n",Study.timestepMax);
         if (rank==0) printf("*************************************************************\n");
 
         PROFILE_STOP("Main");
