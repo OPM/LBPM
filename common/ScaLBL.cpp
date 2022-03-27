@@ -1,5 +1,5 @@
 /*
-  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright 2013--2022 James E. McClure, Virginia Polytechnic & State University
   Copyright Equnior ASA
 
   This file is part of the Open Porous Media project (OPM).
@@ -15,9 +15,7 @@
   along with OPM.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "common/ScaLBL.h"
-
 #include <chrono>
-
 
 ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	//......................................................................................
@@ -365,7 +363,6 @@ ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_yz, recvCount_yz, rank_yz, 145 ) );
 
 }
-
 
 ScaLBL_Communicator::~ScaLBL_Communicator()
 {
@@ -888,8 +885,6 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 		idx=Map(n);
 		//if (rank == 0) printf("r: mapped n=%d\n",idx);
 		TempBuffer[i]=idx;
-
-
 	}
 	ScaLBL_CopyToDevice(dvcRecvDist_x,TempBuffer,5*recvCount_x*sizeof(int));
 
@@ -1045,7 +1040,6 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 	delete [] TempBuffer;
 	return(Np);
 }
-
 
 void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, int Np, bool SlippingVelBC)
 {
@@ -1448,7 +1442,6 @@ void ScaLBL_Communicator::SolidSlippingVelocityBCD3Q19(double *fq, double *zeta_
 
 void ScaLBL_Communicator::SendD3Q19AA(double *dist){
 
-	// NOTE: the center distribution f0 must NOT be at the start of feven, provide offset to start of f2
 	if (Lock==true){
 		ERROR("ScaLBL Error (SendD3Q19): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
 	}

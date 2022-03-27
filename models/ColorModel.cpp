@@ -387,6 +387,10 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase) {
                    AFFINITY, volume_fraction);
         }
     }
+    
+    // clean up
+    delete [] label_count;
+    delete [] label_count_global;
 }
 
 void ScaLBL_ColorModel::Create() {

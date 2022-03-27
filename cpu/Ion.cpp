@@ -1,4 +1,156 @@
 #include <stdio.h>
+#include <math.h>
+
+extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef(int *membrane, int *Map, double *Distance, double *Psi, double *coef,
+		double Threshold, double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn, double ThresholdMassFractionOut,
+		int memLinks, int Nx, int Ny, int Nz, int Np){
+	
+	int link,iq,ip,nq,np,nqm,npm;
+	double aq, ap, membranePotential;
+	/* Interior Links */
+	for (link=0; link<memLinks; link++){
+		
+		// inside             	//outside
+		aq = MassFractionIn;	ap = MassFractionOut;  
+		iq = membrane[2*link]; 	ip = membrane[2*link+1];
+		nq = iq%Np;				np = ip%Np;
+		nqm = Map[nq];			npm = Map[np]; // strided layout
+		
+		/* membrane potential for this link */
+		membranePotential = Psi[nqm] - Psi[npm];
+		if (membranePotential > Threshold){
+			aq = ThresholdMassFractionIn;	ap = ThresholdMassFractionOut;  
+		}
+		
+		/* Save the mass transfer coefficients */
+		coef[2*link] = aq;		coef[2*link+1] = ap;
+	}
+}
+
+extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(
+		const int Cqx, const int Cqy, int const Cqz, 
+		int *Map, double *Distance, double *Psi, double Threshold, 
+		double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn, double ThresholdMassFractionOut,
+		int *d3q7_recvlist, int *d3q7_linkList, double *coef, int start, int nlinks, int count,
+		const int N, const int Nx, const int Ny, const int Nz) {
+    //....................................................................................
+    // Unack distribution from the recv buffer
+    // Distribution q matche Cqx, Cqy, Cqz
+    // swap rule means that the distributions in recvbuf are OPPOSITE of q
+    // dist may be even or odd distributions stored by stream layout
+    //....................................................................................
+    int n, idx, link, nqm, npm, i, j, k;
+    double distanceLocal, distanceNonlocal;
+    double psiLocal, psiNonlocal, membranePotential;
+    double ap,aq; // coefficient
+
+    /* second enforce custom rule for membrane links */
+    for (link = nlinks; link < count; link++) {
+    	// get the index for the recv list (deal with reordering of links)
+    	idx = d3q7_linkList[link]; // THINK start NEEDS TO BE HERE
+        // get the distribution index
+        n = d3q7_recvlist[start+idx];
+        // get the index in strided layout
+        nqm = Map[n];
+        distanceLocal = Distance[nqm];  
+		psiLocal = Psi[nqm];
+		
+		// Get the 3-D indices from the send process
+		k = nqm/(Nx*Ny); j = (nqm-Nx*Ny*k)/Nx; i = nqm-Nx*Ny*k-Nx*j;
+		// Streaming link the non-local distribution
+		i -= Cqx; j -= Cqy; k -= Cqz;
+		npm = k*Nx*Ny + j*Nx + i;
+		distanceNonlocal = Distance[npm];  
+		psiNonlocal = Psi[npm];
+		
+		membranePotential = psiLocal - psiNonlocal;
+		aq = MassFractionIn;
+		ap = MassFractionOut;
+		
+		/* link is inside membrane */
+		if (distanceLocal > 0.0){
+			if (membranePotential < Threshold*(-1.0)){
+				ap = MassFractionIn;
+				aq = MassFractionOut;
+			}
+			else {
+				ap = ThresholdMassFractionIn;
+				aq = ThresholdMassFractionOut;
+			}
+		}
+		else if (membranePotential > Threshold){
+			aq = ThresholdMassFractionIn;
+			ap = ThresholdMassFractionOut;
+		}
+		
+		// update link based on mass transfer coefficients		
+    	coef[2*(link-nlinks)] = aq;
+    	coef[2*(link-nlinks)+1] = ap;
+    }
+}
+
+
+extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,  
+		int *d3q7_recvlist, int *d3q7_linkList, int start, int nlinks, int count,
+		double *recvbuf, double *dist, int N,  double *coef) {
+    //....................................................................................
+    // Unack distribution from the recv buffer
+    // Distribution q matche Cqx, Cqy, Cqz
+    // swap rule means that the distributions in recvbuf are OPPOSITE of q
+    // dist may be even or odd distributions stored by stream layout
+    //....................................................................................
+    int n, idx, link;
+    double fq,fp,fqq,ap,aq; // coefficient
+    /* First unpack the regular links */
+    for (link = 0; link < nlinks; link++) {
+    	// get the index for the recv list (deal with reordering of links)
+    	idx = d3q7_linkList[link]; 
+        // get the distribution index
+        n = d3q7_recvlist[start+idx];
+        if (!(n < 0)){
+        	fp = recvbuf[start + idx];
+            dist[q * N + n] = fp;
+        }
+        //printf(" site=%i, index=%i, value = %e \n",n,idx,fp);
+    }
+    /* second enforce custom rule for membrane links */
+    for (link = nlinks; link < count; link++) {
+    	// get the index for the recv list (deal with reordering of links)
+    	idx = d3q7_linkList[link]; 
+        // get the distribution index
+        n = d3q7_recvlist[start+idx];
+        // update link based on mass transfer coefficients
+        if (!(n < 0)){
+        	aq = coef[2*(link-nlinks)];
+        	ap = coef[2*(link-nlinks)+1];
+        	fq = dist[q * N + n];
+        	fp = recvbuf[start + idx];
+        	fqq = (1-aq)*fq+ap*fp;
+            dist[q * N + n] = fqq;
+        }
+        //printf(" LINK: site=%i, index=%i \n", n, idx);
+
+    } 
+}
+
+extern "C" void ScaLBL_D3Q7_Membrane_IonTransport(int *membrane, double *coef, 
+		double *dist, double *Den, int memLinks, int Np){
+	
+	int link,iq,ip,nq,np;
+	double aq, ap, fq, fp, fqq, fpp, Cq, Cp;
+	for (link=0; link<memLinks; link++){
+		// inside             	//outside
+		aq = coef[2*link];		ap = coef[2*link+1];
+		iq = membrane[2*link]; 	ip = membrane[2*link+1];
+		nq = iq%Np;				np = ip%Np;
+		fq  = dist[iq];			fp = dist[ip];
+		fqq = (1-aq)*fq+ap*fp;	fpp = (1-ap)*fp+ap*fq;
+		Cq = Den[nq];			Cp = Den[np];
+		Cq += fqq - fq;			Cp += fpp - fp;
+		Den[nq] = Cq;			Den[np] = Cp;
+		dist[iq] = fqq;			dist[ip] = fpp;
+	}
+}
 
 extern "C" void ScaLBL_D3Q7_AAodd_IonConcentration(int *neighborList,
                                                    double *dist, double *Den,
@@ -99,6 +251,7 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist,
     double Ex, Ey, Ez;       //electrical field
     double flux_diffusive_x, flux_diffusive_y, flux_diffusive_z;
     double f0, f1, f2, f3, f4, f5, f6;
+    double X,Y,Z,factor_x, factor_y, factor_z;
     int nr1, nr2, nr3, nr4, nr5, nr6;
 
     for (n = start; n < finish; n++) {
@@ -149,33 +302,48 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist,
         FluxElectrical[n + 0 * Np] = uEPx * Ci;
         FluxElectrical[n + 1 * Np] = uEPy * Ci;
         FluxElectrical[n + 2 * Np] = uEPz * Ci;
+        
+        /* use logistic function to prevent negative distributions*/
+        X = 4.0 * (ux + uEPx);
+        Y = 4.0 * (uy + uEPy);
+        Z = 4.0 * (uz + uEPz);
+        factor_x = X / sqrt(1 + X*X);
+        factor_y = Y / sqrt(1 + Y*Y);
+        factor_z = Z / sqrt(1 + Z*Z);
 
         // q=0
         dist[n] = f0 * (1.0 - rlx) + rlx * 0.25 * Ci;
 
         // q = 1
         dist[nr2] =
-            f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (ux + uEPx));
+            f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_x);
+        //f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (ux + uEPx));
+
 
         // q=2
         dist[nr1] =
-            f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (ux + uEPx));
+                f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_x);
+        //f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (ux + uEPx));
 
         // q = 3
         dist[nr4] =
-            f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uy + uEPy));
+                f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_y );
+        //f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uy + uEPy));
 
         // q = 4
         dist[nr3] =
-            f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uy + uEPy));
+                f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_y);
+        //f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uy + uEPy));
 
         // q = 5
         dist[nr6] =
-            f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uz + uEPz));
+                f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 +  factor_z);
+        //f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uz + uEPz));
 
         // q = 6
         dist[nr5] =
-            f6 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uz + uEPz));
+            f6 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_z);
+
     }
 }
 
@@ -190,6 +358,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_Ion(
     double Ex, Ey, Ez;       //electrical field
     double flux_diffusive_x, flux_diffusive_y, flux_diffusive_z;
     double f0, f1, f2, f3, f4, f5, f6;
+    double X,Y,Z, factor_x, factor_y, factor_z;
 
     for (n = start; n < finish; n++) {
 
@@ -226,33 +395,47 @@ extern "C" void ScaLBL_D3Q7_AAeven_Ion(
         FluxElectrical[n + 0 * Np] = uEPx * Ci;
         FluxElectrical[n + 1 * Np] = uEPy * Ci;
         FluxElectrical[n + 2 * Np] = uEPz * Ci;
+        
+        /* use logistic function to prevent negative distributions*/
+        X = 4.0 * (ux + uEPx);
+        Y = 4.0 * (uy + uEPy);
+        Z = 4.0 * (uz + uEPz);
+        factor_x = X / sqrt(1 + X*X);
+        factor_y = Y / sqrt(1 + Y*Y);
+        factor_z = Z / sqrt(1 + Z*Z);
 
         // q=0
         dist[n] = f0 * (1.0 - rlx) + rlx * 0.25 * Ci;
 
         // q = 1
         dist[1 * Np + n] =
-            f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (ux + uEPx));
+                f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_x);
+        //f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (ux + uEPx));
 
         // q=2
         dist[2 * Np + n] =
-            f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (ux + uEPx));
+                f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_x);
+        //f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (ux + uEPx));
 
         // q = 3
         dist[3 * Np + n] =
-            f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uy + uEPy));
+                f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_y);
+        //f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uy + uEPy));
 
         // q = 4
         dist[4 * Np + n] =
-            f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uy + uEPy));
+                f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_y);
+        //f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uy + uEPy));
 
         // q = 5
         dist[5 * Np + n] =
-            f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uz + uEPz));
+                f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_z);
+        //f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uz + uEPz));
 
         // q = 6
         dist[6 * Np + n] =
-            f6 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uz + uEPz));
+                f6 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_z);
+        //f6 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uz + uEPz));
     }
 }
 

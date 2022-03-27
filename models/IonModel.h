@@ -1,7 +1,6 @@
 /*
  * Ion transporte LB Model
  */
-
 #ifndef ScaLBL_IonModel_INC
 #define ScaLBL_IonModel_INC
 
@@ -16,6 +15,7 @@
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
+#include "common/Membrane.h"
 #include "common/MPI.h"
 #include "analysis/Minkowski.h"
 #include "ProfilerApp.h"
@@ -30,10 +30,12 @@ public:
     void ReadParams(string filename);
     void ReadParams(std::shared_ptr<Database> db0);
     void SetDomain();
+    void SetMembrane();
     void ReadInput();
     void Create();
     void Initialize();
     void Run(double *Velocity, double *ElectricField);
+    void RunMembrane(double *Velocity, double *ElectricField, double *Psi);
     void getIonConcentration(DoubleArray &IonConcentration, const size_t ic);
     void getIonConcentration_debug(int timestep);
     void getIonFluxDiffusive(DoubleArray &IonFlux_x, DoubleArray &IonFlux_y,
@@ -88,6 +90,7 @@ public:
     IntArray Map;
     DoubleArray Distance;
     int *NeighborList;
+    int *dvcMap;
     double *fq;
     double *Ci;
     double *ChargeDensity;
@@ -97,6 +100,12 @@ public:
     double *FluxDiffusive;
     double *FluxAdvective;
     double *FluxElectrical;
+    
+    /* these support membrane capabilities      */
+    std::shared_ptr<Database> membrane_db;
+    std::shared_ptr<Membrane> IonMembrane;
+    DoubleArray MembraneDistance;
+    int MembraneCount; // number of links the cross the membrane
 
 private:
     Utilities::MPI comm;

@@ -1543,7 +1543,7 @@ void Domain::ReadFromFile(const std::string &Filename,
     } else {
         // Recieve the subdomain from rank = 0
         //printf("Ready to recieve data %i at process %i \n", N,rank);
-        Comm.recv(id.data(), N, 0, 15);
+        Comm.recv(UserData, N, 0, 15);
     }
     Comm.barrier();
 }
