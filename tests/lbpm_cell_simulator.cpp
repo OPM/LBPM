@@ -53,7 +53,9 @@ int main(int argc, char **argv)
         ScaLBL_IonModel IonModel(rank,nprocs,comm);
         ScaLBL_Poisson PoissonSolver(rank,nprocs,comm); 
         ScaLBL_Multiphys_Controller Study(rank,nprocs,comm);//multiphysics controller coordinating multi-model coupling
-        
+
+	bool SlipBC = false;
+	
         // Load controller information
         Study.ReadParams(filename);
 
@@ -94,7 +96,7 @@ int main(int argc, char **argv)
         while (timestep < Study.timestepMax){
             
             timestep++;
-            PoissonSolver.Run(IonModel.ChargeDensity,timestep);//solve Poisson equtaion to get steady-state electrical potental
+            PoissonSolver.Run(IonModel.ChargeDensity,SlipBC,timestep);//solve Poisson equtaion to get steady-state electrical potental
             StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
             IonModel.RunMembrane(StokesModel.Velocity,PoissonSolver.ElectricField,PoissonSolver.Psi); //solve for ion transport with membrane
             
