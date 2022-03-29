@@ -29,7 +29,7 @@ jobs:
         sudo apt-get update -y
              
         wget https://bitbucket.org/AdvancedMultiPhysics/tpl-builder/downloads/silo-4.10.2.tar.gz
-        wget https://www.zlib.net/zlib-1.2.11.tar.gz
+        wget https://www.zlib.net/fossils/zlib-1.2.11.tar.gz
         wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/hdf5-1.8.12/src/hdf5-1.8.12.tar.gz
         #wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/hdf5-1.8.10/src/hdf5-1.8.10.tar.gz 
        
