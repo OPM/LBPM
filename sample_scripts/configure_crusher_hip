@@ -4,7 +4,7 @@ module load PrgEnv-amd
 module load rocm/4.5.0
 module load cray-mpich
 module load cray-hdf5-parallel
-#module load craype-accel-amd-gfx908
+module load craype-accel-amd-gfx908
 
 ## These must be set before compiling so the executable picks up GTL
 export PE_MPICH_GTL_DIR_amd_gfx90a="-L${CRAY_MPICH_ROOTDIR}/gtl/lib"
