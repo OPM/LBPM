@@ -1295,10 +1295,11 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
     //double starttime,stoptime,cputime;
     //ScaLBL_Comm->Barrier(); comm.barrier();
     //auto t1 = std::chrono::system_clock::now();
-    /* set the mass transfer coefficients for the membrane */
-    IonMembrane->AssignCoefficients(dvcMap, Psi, "default");
+
     
     for (size_t ic = 0; ic < number_ion_species; ic++) {
+        /* set the mass transfer coefficients for the membrane */
+        IonMembrane->AssignCoefficients(dvcMap, Psi, "default");
         timestep = 0;
         while (timestep < timestepMax[ic]) {
             //************************************************************************/
