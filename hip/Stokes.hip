@@ -6,7 +6,7 @@
 #define NTHREADS 256
 
 
-__global__  void dvc_ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, double Gx, double Gy, double Gz, double rho0, double den_scale, double h, double time_conv,int start, int finish, int Np){
+__global__  void dvc_ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, double Gx, double Gy, double Gz, double rho0, double den_scale, double h, double time_conv,bool UseSlippingVelBC,int start, int finish, int Np){
 
     int n;
     double fq;
@@ -47,9 +47,12 @@ __global__  void dvc_ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dis
             Ey = ElectricField[n+1*Np];
             Ez = ElectricField[n+2*Np];
             //compute total body force, including input body force (Gx,Gy,Gz)
-            Fx = Gx + rhoE*Ex*(time_conv*time_conv)/(h*h*1.0e-12)/den_scale;
-            Fy = Gy + rhoE*Ey*(time_conv*time_conv)/(h*h*1.0e-12)/den_scale;
-            Fz = Gz + rhoE*Ez*(time_conv*time_conv)/(h*h*1.0e-12)/den_scale;
+            Fx = (UseSlippingVelBC==1) ? Gx : Gx + rhoE * Ex * (time_conv * time_conv) / (h * h * 1.0e-12) /
+                          den_scale; //the extra factors at the end necessarily convert unit from phys to LB
+            Fy = (UseSlippingVelBC==1) ? Gy : Gy + rhoE * Ey * (time_conv * time_conv) / (h * h * 1.0e-12) /
+                          den_scale;
+            Fz = (UseSlippingVelBC==1) ? Gz : Gz + rhoE * Ez * (time_conv * time_conv) / (h * h * 1.0e-12) /
+                          den_scale;
 
             // q=0
             fq = dist[n];
@@ -511,7 +514,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dis
 	}
 }
 
-__global__  void dvc_ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, double Gx, double Gy, double Gz,double rho0, double den_scale, double h, double time_conv, int start, int finish, int Np){
+__global__  void dvc_ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, double Gx, double Gy, double Gz,double rho0, double den_scale, double h, double time_conv, bool UseSlippingVelBC,int start, int finish, int Np){
 
     int n;
     double fq;
@@ -551,9 +554,12 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocit
             Ey = ElectricField[n+1*Np];
             Ez = ElectricField[n+2*Np];
             //compute total body force, including input body force (Gx,Gy,Gz)
-            Fx = Gx + rhoE*Ex*(time_conv*time_conv)/(h*h*1.0e-12)/den_scale;//the extra factors at the end necessarily convert unit from phys to LB
-            Fy = Gy + rhoE*Ey*(time_conv*time_conv)/(h*h*1.0e-12)/den_scale;
-            Fz = Gz + rhoE*Ez*(time_conv*time_conv)/(h*h*1.0e-12)/den_scale;
+            Fx = (UseSlippingVelBC==1) ? Gx : Gx + rhoE * Ex * (time_conv * time_conv) / (h * h * 1.0e-12) /
+                          den_scale; //the extra factors at the end necessarily convert unit from phys to LB
+            Fy = (UseSlippingVelBC==1) ? Gy : Gy + rhoE * Ey * (time_conv * time_conv) / (h * h * 1.0e-12) /
+                          den_scale;
+            Fz = (UseSlippingVelBC==1) ? Gz : Gz + rhoE * Ez * (time_conv * time_conv) / (h * h * 1.0e-12) /
+                          den_scale;
 
             // q=0
             fq = dist[n];
@@ -970,10 +976,10 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocit
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, double Gx, double Gy, double Gz,double rho0, double den_scale, double h, double time_conv, int start, int finish, int Np){
+extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, double Gx, double Gy, double Gz,double rho0, double den_scale, double h, double time_conv, bool UseSlippingVelBC, int start, int finish, int Np){
                 
 	//cudaProfilerStart();
-	dvc_ScaLBL_D3Q19_AAodd_StokesMRT<<<NBLOCKS,NTHREADS >>>(neighborList,dist,Velocity,ChargeDensity,ElectricField,rlx_setA,rlx_setB,Gx,Gy,Gz,rho0,den_scale,h,time_conv,start,finish,Np);
+	dvc_ScaLBL_D3Q19_AAodd_StokesMRT<<<NBLOCKS,NTHREADS >>>(neighborList,dist,Velocity,ChargeDensity,ElectricField,rlx_setA,rlx_setB,Gx,Gy,Gz,rho0,den_scale,h,time_conv,UseSlippingVelBC, start,finish,Np);
 
 	hipError_t err = hipGetLastError();
 	if (hipSuccess != err){
@@ -982,10 +988,10 @@ extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, do
 	//cudaProfilerStop();
 }
 
-extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, double Gx, double Gy, double Gz,double rho0, double den_scale, double h, double time_conv, int start, int finish, int Np){
+extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, double Gx, double Gy, double Gz,double rho0, double den_scale, double h, double time_conv, bool UseSlippingVelBC, int start, int finish, int Np){
                 
 	//cudaProfilerStart();
-	dvc_ScaLBL_D3Q19_AAeven_StokesMRT<<<NBLOCKS,NTHREADS >>>(dist,Velocity,ChargeDensity,ElectricField,rlx_setA,rlx_setB,Gx,Gy,Gz,rho0,den_scale,h,time_conv,start,finish,Np);
+	dvc_ScaLBL_D3Q19_AAeven_StokesMRT<<<NBLOCKS,NTHREADS >>>(dist,Velocity,ChargeDensity,ElectricField,rlx_setA,rlx_setB,Gx,Gy,Gz,rho0,den_scale,h,time_conv,UseSlippingVelBC, start,finish,Np);
 
 	hipError_t err = hipGetLastError();
 	if (hipSuccess != err){

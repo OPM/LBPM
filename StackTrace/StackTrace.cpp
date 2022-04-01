@@ -1263,7 +1263,7 @@ static int backtrace_thread(
     if ( tid == pthread_self() ) {
         count = ::backtrace( buffer, size );
     } else {
-        // Note: this will get the backtrace, but terminates the thread in the process!!!
+        // Send a signal to the desired thread to get the call stack
         StackTrace_mutex.lock();
         struct sigaction sa;
         sigfillset( &sa.sa_mask );

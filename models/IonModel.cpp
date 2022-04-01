@@ -170,7 +170,7 @@ void ScaLBL_IonModel::ReadParams(string filename, vector<int> &num_iter) {
         BoundaryConditionSolid = ion_db->getScalar<int>("BC_Solid");
     }
     // Read boundary condition for ion transport
-    // BC = 0: normal periodic BC
+    // BC = 0: zero-flux bounce-back BC
     // BC = 1: fixed ion concentration; unit=[mol/m^3]
     // BC = 2: fixed ion flux (inward flux); unit=[mol/m^2/sec]
     BoundaryConditionInlet.push_back(0);
@@ -428,7 +428,7 @@ void ScaLBL_IonModel::ReadParams(string filename) {
         BoundaryConditionSolid = ion_db->getScalar<int>("BC_Solid");
     }
     // Read boundary condition for ion transport
-    // BC = 0: normal periodic BC
+    // BC = 0: zero-flux bounce-back BC
     // BC = 1: fixed ion concentration; unit=[mol/m^3]
     // BC = 2: fixed ion flux (inward flux); unit=[mol/m^2/sec]
     BoundaryConditionInlet.push_back(0);

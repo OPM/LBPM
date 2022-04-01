@@ -168,6 +168,7 @@ int main(int argc, char **argv)
    // Averages->Reduce();
     
     Object->MeasureObject();
+    //Object->MeasureConnectedPathway();
     double Vi = Object->V();
     double Ai = Object->A();
     double Hi = Object->H();

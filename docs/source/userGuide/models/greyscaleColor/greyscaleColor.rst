@@ -120,7 +120,7 @@ two fluids are permitted to freely mix between the endpoints. Beyond the endpoin
 term is used to drive spontaneous imbibition into the grey voxels
 
 
-..math::
+.. math::
    :nowrap:
 
       $$

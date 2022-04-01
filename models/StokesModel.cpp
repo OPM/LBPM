@@ -593,7 +593,7 @@ void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity,
         ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
         ScaLBL_D3Q19_AAodd_StokesMRT(
             NeighborList, fq, Velocity, ChargeDensity, ElectricField, rlx_setA,
-            rlx_setB, Fx, Fy, Fz, rho0, den_scale, h, time_conv,
+            rlx_setB, Fx, Fy, Fz, rho0, den_scale, h, time_conv, UseSlippingVelBC,
             ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
         // Set boundary conditions
@@ -610,8 +610,8 @@ void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity,
         }
         ScaLBL_D3Q19_AAodd_StokesMRT(NeighborList, fq, Velocity, ChargeDensity,
                                      ElectricField, rlx_setA, rlx_setB, Fx, Fy,
-                                     Fz, rho0, den_scale, h, time_conv, 0,
-                                     ScaLBL_Comm->LastExterior(), Np);
+                                     Fz, rho0, den_scale, h, time_conv, UseSlippingVelBC, 
+                                     0, ScaLBL_Comm->LastExterior(), Np);
 
         if (UseSlippingVelBC == true) {
             ScaLBL_Comm->SolidSlippingVelocityBCD3Q19(
@@ -626,8 +626,8 @@ void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity,
         ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
         ScaLBL_D3Q19_AAeven_StokesMRT(
             fq, Velocity, ChargeDensity, ElectricField, rlx_setA, rlx_setB, Fx,
-            Fy, Fz, rho0, den_scale, h, time_conv, ScaLBL_Comm->FirstInterior(),
-            ScaLBL_Comm->LastInterior(), Np);
+            Fy, Fz, rho0, den_scale, h, time_conv, UseSlippingVelBC, 
+            ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
         // Set boundary conditions
         if (BoundaryCondition == 3) {
@@ -643,8 +643,8 @@ void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity,
         }
         ScaLBL_D3Q19_AAeven_StokesMRT(fq, Velocity, ChargeDensity,
                                       ElectricField, rlx_setA, rlx_setB, Fx, Fy,
-                                      Fz, rho0, den_scale, h, time_conv, 0,
-                                      ScaLBL_Comm->LastExterior(), Np);
+                                      Fz, rho0, den_scale, h, time_conv, UseSlippingVelBC, 
+                                      0, ScaLBL_Comm->LastExterior(), Np);
         if (UseSlippingVelBC == true) {
             ScaLBL_Comm->SolidSlippingVelocityBCD3Q19(
                 fq, ZetaPotentialSolid, ElectricField, SolidGrad, epsilon_LB,

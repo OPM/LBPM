@@ -24,7 +24,7 @@ using namespace std;
 int main(int argc, char **argv)
 {
 	// Initialize MPI
-    Utilities::startup( argc, argv );
+    Utilities::startup( argc, argv, false );
     Utilities::MPI comm( MPI_COMM_WORLD );
     int rank = comm.getRank();
     int nprocs = comm.getSize();
@@ -49,6 +49,7 @@ int main(int argc, char **argv)
 		MRT.Initialize();   // initializing the model will set initial conditions for variables
 		MRT.Run();	 
 		MRT.VelocityField();
+		cout << flush;
 	}
     Utilities::shutdown();
 }

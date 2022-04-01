@@ -137,8 +137,7 @@ void Morphology::Initialize(std::shared_ptr<Domain> Dm, DoubleArray &Distance) {
     morphRadius.resize(recvLoc);
     //..............................
     /* send the morphological radius */
-    Dm->Comm.Irecv(&morphRadius[recvOffset_x], recvCount, Dm->rank_x(),
-                   recvtag + 0);
+    Dm->Comm.Irecv(&morphRadius[recvOffset_x], recvCount, Dm->rank_x(), recvtag + 0);
     Dm->Comm.send(&tmpDistance[0], sendCount, Dm->rank_X(), sendtag + 0);
     /* send the shift values */
     Dm->Comm.Irecv(&xShift[recvOffset_x], recvCount, Dm->rank_x(), recvtag + 1);
@@ -502,7 +501,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id,
     if (rank == 0)
         printf("Maximum pore size: %f \n", maxdistGlobal);
     final_void_fraction = volume_fraction; //initialize
-
+    
     int ii, jj, kk;
     int imin, jmin, kmin, imax, jmax, kmax;
     int Nx = nx;
@@ -524,27 +523,28 @@ double MorphOpen(DoubleArray &SignDist, signed char *id,
 
     int numTry = 0;
     int maxTry = 100;
-    while (void_fraction_new > VoidFraction && numTry < maxTry) {
+    while ( !(void_fraction_new < VoidFraction) && numTry < maxTry) {
         numTry++;
         void_fraction_diff_old = void_fraction_diff_new;
         void_fraction_old = void_fraction_new;
         Rcrit_old = Rcrit_new;
         Rcrit_new -= deltaR * Rcrit_old;
+        if (rank==0) printf("Try %i with radius %f \n", numTry, Rcrit_new);
         if (Rcrit_new < 0.5) {
             numTry = maxTry;
         }
         int Window = round(Rcrit_new);
         if (Window == 0)
-            Window =
-                1; // If Window = 0 at the begining, after the following process will have sw=1.0
+            Window =  1; // If Window = 0 at the begining, after the following process will have sw=1.0
         // and sw<Sw will be immediately broken
         double LocalNumber = 0.f;
-        for (int k = 0; k < Nz; k++) {
-            for (int j = 0; j < Ny; j++) {
-                for (int i = 0; i < Nx; i++) {
+        for (int k = 1; k < Nz-1; k++) {
+            for (int j = 1; j < Ny-1; j++) {
+                for (int i = 1; i < Nx-1; i++) {
                     n = k * nx * ny + j * nx + i;
                     if (SignDist(i, j, k) > Rcrit_new) {
                         // loop over the window and update
+                    	//printf("Distance(%i %i %i) = %f \n",i,j,k, SignDist(i,j,k));
                         imin = max(1, i - Window);
                         jmin = max(1, j - Window);
                         kmin = max(1, k - Window);
@@ -571,7 +571,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id,
                 }
             }
         }
-        LocalNumber += Structure.GetOverlaps(Dm, id, ErodeLabel, NewLabel);
+        //LocalNumber += Structure.GetOverlaps(Dm, id, ErodeLabel, NewLabel);
 
         count = 0.f;
         for (int k = 1; k < Nz - 1; k++) {
@@ -611,7 +611,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id,
 
 //***************************************************************************************
 double MorphDrain(DoubleArray &SignDist, signed char *id,
-                  std::shared_ptr<Domain> Dm, double VoidFraction) {
+                  std::shared_ptr<Domain> Dm, double VoidFraction, double InitialRadius) {
     // SignDist is the distance to the object that you want to constaing the morphological opening
     // VoidFraction is the the empty space where the object inst
     // id is a labeled map
@@ -688,6 +688,11 @@ double MorphDrain(DoubleArray &SignDist, signed char *id,
     double deltaR = 0.05; // amount to change the radius in voxel units
     double Rcrit_old = maxdistGlobal;
     double Rcrit_new = maxdistGlobal;
+    
+    if (InitialRadius < maxdistGlobal){
+    	Rcrit_old = InitialRadius;
+    	Rcrit_new = InitialRadius;
+    }
     //if (argc>2){
     //	Rcrit_new = strtod(argv[2],NULL);
     //	if (rank==0) printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);

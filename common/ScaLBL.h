@@ -315,7 +315,7 @@ extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity
 * @param finish - lattice node to finish loop
 * @param Np - size of local sub-domain (derived from Domain structure)
 */
-extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList,int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,
+extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList,int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB, bool UseSlippingVelBC,
         int start, int finish, int Np);
 
 /**
@@ -326,19 +326,22 @@ extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList,int *Map, double *di
 * @param Psi - 
 * @param ElectricField - electric field
 * @param tau - relaxation time
-* @param epsilon_LB - 
+* @param epsilon_LB - dielectric constant of medium
+* @param UseSlippingVelBC - flag indicating the use of Helmholtz-Smoluchowski slipping velocity equation when EDL is too small to resolve 
 * @param start - lattice node to start loop
 * @param finish - lattice node to finish loop
 * @param Np - size of local sub-domain (derived from Domain structure)
 */
 extern "C" void ScaLBL_D3Q7_AAeven_Poisson(int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau,
-					   double epsilon_LB, int start, int finish, int Np);
+					   double epsilon_LB, bool UseSlippingVelBC, int start, int finish, int Np);
 /**
 * \brief Poisson-Boltzmann solver / solve electric potential based on AA odd access pattern for D3Q7 
 * @param neighborList - neighbors based on D3Q19 lattice structure
 * @param Map - mapping between sparse and dense representations
 * @param dist - D3Q7 distributions
 * @param Psi - 
+* @param epsilon_LB - dielectric constant of medium
+* @param UseSlippingVelBC - flag indicating the use of Helmholtz-Smoluchowski slipping velocity equation when EDL is too small to resolve 
 * @param start - lattice node to start loop
 * @param finish - lattice node to finish loop
 * @param Np - size of local sub-domain (derived from Domain structure)
@@ -369,10 +372,10 @@ extern "C" void ScaLBL_D3Q7_Poisson_Init(int *Map, double *dist, double *Psi, in
 
 // LBM Stokes Model (adapted from MRT model)
 extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, 
-                double Gx, double Gy, double Gz,double rho0, double den_scale, double h, double time_conv, int start, int finish, int Np);
+                double Gx, double Gy, double Gz,double rho0, double den_scale, double h, double time_conv, bool UseSlippingVelBC, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, 
-                double Gx, double Gy, double Gz, double rho0, double den_scale, double h, double time_conv,int start, int finish, int Np);
+                double Gx, double Gy, double Gz, double rho0, double den_scale, double h, double time_conv, bool UseSlippingVelBC, int start, int finish, int Np);
 
 extern "C" void ScaLBL_PhaseField_InitFromRestart(double *Den, double *Aq, double *Bq, int start, int finish, int Np);
 
@@ -822,6 +825,12 @@ private:
 	int *dvcRecvDist_x, *dvcRecvDist_y, *dvcRecvDist_z, *dvcRecvDist_X, *dvcRecvDist_Y, *dvcRecvDist_Z;
 	int *dvcRecvDist_xy, *dvcRecvDist_yz, *dvcRecvDist_xz, *dvcRecvDist_Xy, *dvcRecvDist_Yz, *dvcRecvDist_xZ;
 	int *dvcRecvDist_xY, *dvcRecvDist_yZ, *dvcRecvDist_Xz, *dvcRecvDist_XY, *dvcRecvDist_YZ, *dvcRecvDist_XZ;
+    // MPI requests for persistent communications
+    std::vector<std::shared_ptr<MPI_Request>> req_D3Q19AA;
+    std::vector<std::shared_ptr<MPI_Request>> req_BiD3Q19AA;
+    std::vector<std::shared_ptr<MPI_Request>> req_TriD3Q19AA;
+    void start( std::vector<std::shared_ptr<MPI_Request>>& requests );
+    void wait( std::vector<std::shared_ptr<MPI_Request>>& requests );
 	//......................................................................................
 	int *bb_dist;
 	int *bb_interactions;

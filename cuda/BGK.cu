@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #define NBLOCKS 1024
-#define NTHREADS 256
+#define NTHREADS 512
 
 __global__ void dvc_ScaLBL_D3Q19_AAeven_BGK(double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz){
 	int n;

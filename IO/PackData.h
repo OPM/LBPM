@@ -5,7 +5,7 @@
 #include <map>
 #include <set>
 #include <vector>
-
+#include <cstddef>
 
 //! Template function to return the buffer size required to pack a class
 template<class TYPE>

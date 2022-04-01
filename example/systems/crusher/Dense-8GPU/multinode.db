@@ -1,0 +1,69 @@
+MRT {
+    timestepMax = 100
+    analysis_interval = 20000
+    tau = 0.7
+    F = 0, 0, 5.0e-5
+    Restart = false
+    din = 1.0
+    dout = 1.0
+    flux = 0.0
+}
+
+Color {
+    tauA = 0.7;  
+    tauB = 0.7;  
+    rhoA   = 1.0;  
+    rhoB   = 1.0;  
+    alpha = 1e-2;
+    beta  = 0.95;
+    F = 0, 0, 0.0
+    Restart = false
+    flux = 0.0  // voxels per timestep
+    timestepMax = 10
+    // rescale_force_after_timestep = 100000
+    ComponentLabels = 0, -1, -2
+    ComponentAffinity = -1.0, -1.0, -0.9
+    // protocol = "image sequence"
+    // capillary_number = 1e-5
+}
+
+Domain {
+    Filename = "dense_1024x1024x1024.raw"
+    nproc = 2, 2, 2     // Number of processors (Npx,Npy,Npz)
+    offset = 0, 0, 0
+    n = 222, 222, 222     // Size of local domain (Nx,Ny,Nz)
+    N = 1024, 1024, 1024      // size of the input image
+
+    voxel_length = 1.0       // Length of domain (x,y,z)
+    BC = 0              // Boundary condition type
+    //Sw = 0.2
+    ReadType = "8bit"
+    ReadValues = 0, 1, 2, -1, -2
+    WriteValues = 0, 1, 2, -1, -2
+    ComponentLabels = 0, -1, -2
+    InletLayers = 0, 0, 5
+    OutletLayers = 0, 0, 5
+}
+
+Analysis {
+    visualization_interval = 1000000 
+   //morph_interval = 100000
+    //morph_delta = -0.08
+    analysis_interval = 20000    // Frequency to perform analysis
+    min_steady_timesteps = 15000000
+    max_steady_timesteps = 15000000
+    restart_interval = 500000    // Frequency to write restart data
+    
+    restart_file = "Restart"    // Filename to use for restart file (will append rank)
+    N_threads    = 0           // Number of threads to use
+    load_balance = "default"  // Load balance method to use: "none", "default", "independent"
+}
+
+Visualization {
+    save_8bit_raw = true
+    write_silo = true
+
+}
+
+FlowAdaptor {
+}
