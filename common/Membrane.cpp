@@ -1356,7 +1356,11 @@ void Membrane::RecvD3Q7AA(double *dist){
 	//...................................................................................
 	Lock=false; // unlock the communicator after communications complete
 	//...................................................................................
+}
 
+void Membrane::IonTransport(double *dist, double *den){
+	
+	ScaLBL_D3Q7_Membrane_IonTransport(MembraneLinks,MembraneCoef, dist, den,  membraneLinkCount, Np);
 }
 
 //	std::shared_ptr<Database> db){
@@ -1372,12 +1376,22 @@ void Membrane::AssignCoefficients(int *Map, double *Psi, string method){
 	ThresholdMassFractionOut = 0.0;				
 	ThresholdMassFractionIn = 0.0;
 	
+	if (method == "ones"){
+		/* Initializing  */
+		printf(".... initialize permeable membrane \n");
+		MassFractionIn = 1.0;
+		MassFractionOut = 1.0;
+		ThresholdMassFractionOut = 1.0;				
+		ThresholdMassFractionIn = 1.0;
+	}
+	
 	if (method == "Voltage Gated Potassium"){
 		MassFractionIn = 0.0;
 		MassFractionOut = 0.0;
 		ThresholdMassFractionOut = 0.0;				
 		ThresholdMassFractionIn = 1.0;
 	}
+	
 	ScaLBL_D3Q7_Membrane_AssignLinkCoef(MembraneLinks, Map, MembraneDistance, Psi, MembraneCoef,
 			Threshold, MassFractionIn, MassFractionOut, ThresholdMassFractionIn, ThresholdMassFractionOut,
 			membraneLinkCount, Nx, Ny, Nz, Np);

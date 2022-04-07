@@ -96,6 +96,7 @@ public:
 	void SendD3Q7AA(double *dist);
 	void RecvD3Q7AA(double *dist);
 	void AssignCoefficients(int *Map, double *Psi, std::string method);
+	void IonTransport(double *dist, double *den);
 	//......................................................................................
 	// Buffers to store data sent and recieved by this MPI process
 	double *sendbuf_x, *sendbuf_y, *sendbuf_z, *sendbuf_X, *sendbuf_Y, *sendbuf_Z;

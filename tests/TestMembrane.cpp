@@ -98,10 +98,10 @@ int main(int argc, char **argv)
 		//...........................................................................
 		ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
 		ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Npad);
-	    ScaLBL_CopyToDevice(NeighborList, neighborList, 18*Np*sizeof(int));
 
 		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id.data(),Np,1);
 		comm.barrier();
+	    ScaLBL_CopyToDevice(NeighborList, neighborList, 18*Np*sizeof(int));
 		
 		double *dist;
 		dist = new double [19*Np];
@@ -162,7 +162,64 @@ int main(int argc, char **argv)
 		}
 		if (argc > 1)
 			Dm->AggregateLabels("membrane.raw");
-				 
+		
+		
+		/* create a pair of distributions to test membrane mass transport routine */
+		double *fq, *gq, *Ci, *Cj, *Psi, *Ci_host;
+		Ci_host = new double [Np];
+		
+	    ScaLBL_AllocateDeviceMemory((void **)&fq,  19 * sizeof(double) * Np);
+	    ScaLBL_AllocateDeviceMemory((void **)&gq,  19 * sizeof(double) * Np);
+	    ScaLBL_AllocateDeviceMemory((void **)&Ci, sizeof(double) * Np);
+	    ScaLBL_AllocateDeviceMemory((void **)&Cj, sizeof(double) * Np);
+	    ScaLBL_AllocateDeviceMemory((void **)&Psi, sizeof(double) * Np);
+		
+		/* initialize concentration inside membrane */
+		for (k=1;k<Nz-1;k++){
+			for (j=1;j<Ny-1;j++){
+				for (i=1;i<Nx-1;i++){
+					n = k*Nx*Ny+j*Nx+i;
+					int idx = Map(i,j,k);
+					if (Distance(i,j,k) > 0.0)
+						Ci_host[idx] = 1.0;
+					else 
+						Ci_host[idx] = 0.0;
+				}
+			}
+		}
+        ScaLBL_CopyToDevice(Ci, Ci_host,  sizeof(double) * Np);
+        
+        /* initialize the distributions */
+        ScaLBL_D3Q7_Ion_Init_FromFile(fq, Ci, Np);
+        ScaLBL_D3Q7_Ion_Init_FromFile(gq, Ci, Np);
+        
+        /*  Streaming with the usual neighborlist */
+        ScaLBL_D3Q19_AAodd_Compact(NeighborList, fq, Np);
+        
+        /* Streaming with the membrane neighborlist*/
+        ScaLBL_D3Q19_AAodd_Compact(M.NeighborList, gq, Np);
+
+        /* explicit mass transfer step with the membrane*/
+        M.AssignCoefficients(dvcMap, Psi, "ones");
+        M.IonTransport(gq, Cj);
+        ScaLBL_CopyToHost(Ci_host, Cj, sizeof(double) * Np);
+        
+        double ionError = 0.0;
+        for (int n=0; n<Np; n++){
+        	ionError += Ci_host[n];
+        }
+        if (ionError > 1e-12) {
+        	printf(" Failed error tolerance in membrane ion transport routine! \n");
+        	check = 2;
+        }
+        
+        DoubleArray Ions(Nx,Ny,Nz);
+        ScaLBL_Comm->RegularLayout(Map, Cj, Ions);
+        
+		Dm->AggregateLabels("membrane2.raw",Ions);
+
+        /* now check that the two values agree*/
+        
 		//...........................................................................
 		// Update GPU data structures
 		if (rank==0)	printf ("Setting up device map and neighbor list \n");
@@ -198,9 +255,6 @@ int main(int argc, char **argv)
 		}
 
 		/* Run dummy communications */
-		double * gq, *fq;
-		ScaLBL_AllocateDeviceMemory((void **) &gq, sizeof(double)*7*Np);
-		ScaLBL_AllocateDeviceMemory((void **) &fq, sizeof(double)*7*Np);
 		/*initialize fq from host data */
 		ScaLBL_CopyToDevice(fq, fq_host, sizeof(double)*7*Np);
 		
@@ -209,9 +263,6 @@ int main(int argc, char **argv)
 		// this has only the communicated values
 		//ScaLBL_CopyToHost(fq_host, gq, sizeof(double)*7*Np);
 		if (rank==0)	printf ("Sum result \n");
-		
-		double *Ci;
-		Ci = new double [Np];
 		
         ScaLBL_D3Q7_AAeven_IonConcentration(&gq[0 * Np * 7], &Ci[0 * Np],
                                             0, ScaLBL_Comm->LastExterior(),
