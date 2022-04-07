@@ -281,6 +281,10 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *d_neighborList, int *M
 //extern "C" void ScaLBL_Update_GreyscalePotential(int *Map, double *Phi, double *Psi, double *Poro, double *Perm, double alpha, double W, 
 //		int start, int finish, int Np);
 
+extern "C" void ScaLBL_D3Q19_AAeven_Compact( double *d_dist,  int Np);
+
+extern "C" void ScaLBL_D3Q19_AAodd_Compact( int *d_neighborList, double *d_dist, int Np);
+
 // ION TRANSPORT MODEL
 
 extern "C" void ScaLBL_D3Q7_AAodd_IonConcentration(int *neighborList, double *dist, double *Den, int start, int finish, int Np);

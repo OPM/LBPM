@@ -2425,7 +2425,6 @@ extern "C" void ScaLBL_D3Q19_Swap_Compact(int *neighborList, double *disteven, d
 		printf("CUDA error in ScaLBL_D3Q19_Swap: %s \n",hipGetErrorString(err));
 	}
 }
-
 extern "C" void ScaLBL_D3Q19_AAeven_Compact( double *d_dist,  int Np) {
         hipFuncSetCacheConfig( (void*) dvc_ScaLBL_AAeven_Compact, hipFuncCachePreferL1);
 	dvc_ScaLBL_AAeven_Compact<<<NBLOCKS,NTHREADS>>>( d_dist, Np);
@@ -2434,7 +2433,6 @@ extern "C" void ScaLBL_D3Q19_AAeven_Compact( double *d_dist,  int Np) {
 		printf("CUDA error in ScaLBL_D3Q19_Init: %s \n",hipGetErrorString(err));
 	}
 }
-
 extern "C" void ScaLBL_D3Q19_AAodd_Compact( int *d_neighborList, double *d_dist, int Np) {
         hipFuncSetCacheConfig( (void*) dvc_ScaLBL_AAodd_Compact, hipFuncCachePreferL1);
 	dvc_ScaLBL_AAodd_Compact<<<NBLOCKS,NTHREADS>>>(d_neighborList, d_dist,Np);
