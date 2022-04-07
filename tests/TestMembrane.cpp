@@ -208,17 +208,58 @@ int main(int argc, char **argv)
         for (int n=0; n<Np; n++){
         	ionError += Ci_host[n];
         }
-        if (ionError > 1e-12) {
+        if (fabs(ionError) > 1e-12) {
         	printf(" Failed error tolerance in membrane ion transport routine! \n");
         	check = 2;
         }
         
         DoubleArray Ions(Nx,Ny,Nz);
         ScaLBL_Comm->RegularLayout(Map, Cj, Ions);
+		if (argc > 1)
+			Dm->AggregateLabels("membrane2.raw",Ions);
+		
+        /* now compare streaming */
+        ScaLBL_D3Q7_Ion_Init_FromFile(gq, Ci, Np);
+        M.IonTransport(gq, Cj);
+        ScaLBL_D3Q19_AAodd_Compact(M.NeighborList, gq, Np);
+        M.IonTransport(gq, Cj);
         
-		Dm->AggregateLabels("membrane2.raw",Ions);
+        /* now check that the two results agree*/
+        double *fq_h, *gq_h;
+        fq_h = new double [7*Np];
+        gq_h = new double [7*Np];
+        ScaLBL_CopyToHost(fq_h, fq, 7*sizeof(double) * Np);
+        ScaLBL_CopyToHost(gq_h, gq, 7*sizeof(double) * Np);
+        for (int n = 0; n<Np; n++){
+        	for (int q=0; q<7; q++){
+        		double gval = gq_h[q*Np + n];
+        		double fval = fq_h[q*Np + n];
+        		if (gval != fval ){
+        			printf("  Membrane streaming mismatch at q=%i, n=%i \n",q,n);
+        			printf("  .... gq = %f, fq = %f \n",gval, fval);
+        			printf(" (unit test will fail) \n");
+        			check = 3;
+        		}
+        	}
+        }
 
-        /* now check that the two values agree*/
+        DoubleArray MembraneErrors(Nx,Ny,Nz);
+        for (k=1;k<Nz-1;k++){
+        	for (j=1;j<Ny-1;j++){
+        		for (i=1;i<Nx-1;i++){
+        			n = k*Nx*Ny+j*Nx+i;
+        			int idx = Map(i,j,k);
+        			MembraneErrors(i,j,k) = 0.0;
+        			for (int q=0; q<7; q++){
+        				double gval = gq_h[q*Np + idx];
+        				double fval = fq_h[q*Np + idx];			
+        				MembraneErrors(i,j,k) += gval - fval;
+        			}
+        		}
+        	}
+        }
+		Dm->AggregateLabels("membrane3.raw",MembraneErrors);
+
         
 		//...........................................................................
 		// Update GPU data structures
