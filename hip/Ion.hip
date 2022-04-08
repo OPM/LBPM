@@ -212,7 +212,7 @@ __global__  void dvc_ScaLBL_D3Q7_Membrane_IonTransport(int *membrane, double *co
 			iq = membrane[2*link]; 	ip = membrane[2*link+1];
 			nq = iq%Np;				np = ip%Np;
 			fq  = dist[iq];			fp = dist[ip];
-			fqq = (1-aq)*fq+ap*fp;	fpp = (1-ap)*fp+ap*fq;
+			fqq = (1-aq)*fq+ap*fp;	fpp = (1-ap)*fp+aq*fq;
 			Cq = Den[nq];			Cp = Den[np];
 			Cq += fqq - fq;			Cp += fpp - fp;
 			Den[nq] = Cq;			Den[np] = Cp;
@@ -331,93 +331,96 @@ __global__  void dvc_ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, doub
 		n =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
 		if (n<finish) {
 
-            //Load data
-            Ci=Den[n];
-            Ex=ElectricField[n+0*Np];
-            Ey=ElectricField[n+1*Np];
-            Ez=ElectricField[n+2*Np];
-            ux=Velocity[n+0*Np];
-            uy=Velocity[n+1*Np];
-            uz=Velocity[n+2*Np];
-            uEPx=zi*Di/Vt*Ex;
-            uEPy=zi*Di/Vt*Ey;
-            uEPz=zi*Di/Vt*Ez;
+           //Load data
+        Ex = ElectricField[n + 0 * Np];
+        Ey = ElectricField[n + 1 * Np];
+        Ez = ElectricField[n + 2 * Np];
+        ux = Velocity[n + 0 * Np];
+        uy = Velocity[n + 1 * Np];
+        uz = Velocity[n + 2 * Np];
+        uEPx = zi * Di / Vt * Ex;
+        uEPy = zi * Di / Vt * Ey;
+        uEPz = zi * Di / Vt * Ez;
 
-            // q=0
-            f0 = dist[n];
-            // q=1
-            nr1 = neighborList[n]; // neighbor 2 ( > 10Np => odd part of dist)
-            f1 = dist[nr1]; // reading the f1 data into register fq
-            // q=2
-            nr2 = neighborList[n+Np]; // neighbor 1 ( < 10Np => even part of dist)
-            f2 = dist[nr2];  // reading the f2 data into register fq
-            // q=3
-            nr3 = neighborList[n+2*Np]; // neighbor 4
-            f3 = dist[nr3];
-            // q=4
-            nr4 = neighborList[n+3*Np]; // neighbor 3
-            f4 = dist[nr4];
-            // q=5
-            nr5 = neighborList[n+4*Np];
-            f5 = dist[nr5];
-            // q=6
-            nr6 = neighborList[n+5*Np];
-            f6 = dist[nr6];
-            
-            // compute diffusive flux
-            flux_diffusive_x = (1.0-0.5*rlx)*((f1-f2)-ux*Ci);
-            flux_diffusive_y = (1.0-0.5*rlx)*((f3-f4)-uy*Ci);
-            flux_diffusive_z = (1.0-0.5*rlx)*((f5-f6)-uz*Ci);
-            FluxDiffusive[n+0*Np] = flux_diffusive_x;
-            FluxDiffusive[n+1*Np] = flux_diffusive_y;
-            FluxDiffusive[n+2*Np] = flux_diffusive_z;
-            FluxAdvective[n+0*Np] = ux*Ci;
-            FluxAdvective[n+1*Np] = uy*Ci;
-            FluxAdvective[n+2*Np] = uz*Ci;
-            FluxElectrical[n+0*Np] = uEPx*Ci;
-            FluxElectrical[n+1*Np] = uEPy*Ci;
-            FluxElectrical[n+2*Np] = uEPz*Ci;
-            
-            /* use logistic function to prevent negative distributions*/
-            X = 4.0 * (ux + uEPx);
-            Y = 4.0 * (uy + uEPy);
-            Z = 4.0 * (uz + uEPz);
-            factor_x = X / sqrt(1 + X*X);
-            factor_y = Y / sqrt(1 + Y*Y);
-            factor_z = Z / sqrt(1 + Z*Z);
+        // q=0
+        f0 = dist[n];
+        // q=1
+        nr1 = neighborList[n]; // neighbor 2 ( > 10Np => odd part of dist)
+        f1 = dist[nr1];        // reading the f1 data into register fq
+        // q=2
+        nr2 = neighborList[n + Np]; // neighbor 1 ( < 10Np => even part of dist)
+        f2 = dist[nr2];             // reading the f2 data into register fq
+        // q=3
+        nr3 = neighborList[n + 2 * Np]; // neighbor 4
+        f3 = dist[nr3];
+        // q=4
+        nr4 = neighborList[n + 3 * Np]; // neighbor 3
+        f4 = dist[nr4];
+        // q=5
+        nr5 = neighborList[n + 4 * Np];
+        f5 = dist[nr5];
+        // q=6
+        nr6 = neighborList[n + 5 * Np];
+        f6 = dist[nr6];
 
-            // q=0
-            dist[n] = f0 * (1.0 - rlx) + rlx * 0.25 * Ci;
+        // compute diffusive flux
+        Ci = f0 + f1 + f2 + f3 + f4 + f5 + f6;
+        flux_diffusive_x = (1.0 - 0.5 * rlx) * ((f1 - f2) - ux * Ci);
+        flux_diffusive_y = (1.0 - 0.5 * rlx) * ((f3 - f4) - uy * Ci);
+        flux_diffusive_z = (1.0 - 0.5 * rlx) * ((f5 - f6) - uz * Ci);
+        FluxDiffusive[n + 0 * Np] = flux_diffusive_x;
+        FluxDiffusive[n + 1 * Np] = flux_diffusive_y;
+        FluxDiffusive[n + 2 * Np] = flux_diffusive_z;
+        FluxAdvective[n + 0 * Np] = ux * Ci;
+        FluxAdvective[n + 1 * Np] = uy * Ci;
+        FluxAdvective[n + 2 * Np] = uz * Ci;
+        FluxElectrical[n + 0 * Np] = uEPx * Ci;
+        FluxElectrical[n + 1 * Np] = uEPy * Ci;
+        FluxElectrical[n + 2 * Np] = uEPz * Ci;
+        
+        Den[n] = Ci;
 
-            // q = 1
-            dist[nr2] =
-                f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_x);
-            //f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (ux + uEPx));
+        /* use logistic function to prevent negative distributions*/
+        X = 4.0 * (ux + uEPx);
+        Y = 4.0 * (uy + uEPy);
+        Z = 4.0 * (uz + uEPz);
+        factor_x = X / sqrt(1 + X*X);
+        factor_y = Y / sqrt(1 + Y*Y);
+        factor_z = Z / sqrt(1 + Z*Z);
+
+        // q=0
+        dist[n] = f0 * (1.0 - rlx) + rlx * 0.25 * Ci;
+
+        // q = 1
+        dist[nr2] =
+            f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_x);
+        //f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (ux + uEPx));
 
 
-            // q=2
-            dist[nr1] =
-                    f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_x);
-            //f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (ux + uEPx));
+        // q=2
+        dist[nr1] =
+                f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_x);
+        //f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (ux + uEPx));
 
-            // q = 3
-            dist[nr4] =
-                    f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_y );
-            //f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uy + uEPy));
+        // q = 3
+        dist[nr4] =
+                f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_y );
+        //f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uy + uEPy));
 
-            // q = 4
-            dist[nr3] =
-                    f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_y);
-            //f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uy + uEPy));
+        // q = 4
+        dist[nr3] =
+                f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_y);
+        //f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uy + uEPy));
 
-            // q = 5
-            dist[nr6] =
-                    f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 +  factor_z);
-            //f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uz + uEPz));
+        // q = 5
+        dist[nr6] =
+                f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 +  factor_z);
+        //f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uz + uEPz));
 
-            // q = 6
-            dist[nr5] =
-                f6 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_z);
+        // q = 6
+        dist[nr5] =
+            f6 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_z);
+   
 		}
 	}
 }
@@ -440,79 +443,82 @@ __global__  void dvc_ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *F
 		if (n<finish) {
 
             //Load data
-            Ci=Den[n];
-            Ex=ElectricField[n+0*Np];
-            Ey=ElectricField[n+1*Np];
-            Ez=ElectricField[n+2*Np];
-            ux=Velocity[n+0*Np];
-            uy=Velocity[n+1*Np];
-            uz=Velocity[n+2*Np];
-            uEPx=zi*Di/Vt*Ex;
-            uEPy=zi*Di/Vt*Ey;
-            uEPz=zi*Di/Vt*Ez;
+        //Ci = Den[n];
+        Ex = ElectricField[n + 0 * Np];
+        Ey = ElectricField[n + 1 * Np];
+        Ez = ElectricField[n + 2 * Np];
+        ux = Velocity[n + 0 * Np];
+        uy = Velocity[n + 1 * Np];
+        uz = Velocity[n + 2 * Np];
+        uEPx = zi * Di / Vt * Ex;
+        uEPy = zi * Di / Vt * Ey;
+        uEPz = zi * Di / Vt * Ez;
 
-            f0 = dist[n];
-            f1 = dist[2*Np+n];
-            f2 = dist[1*Np+n];
-            f3 = dist[4*Np+n];
-            f4 = dist[3*Np+n];
-            f5 = dist[6*Np+n];
-            f6 = dist[5*Np+n];
-            
-            // compute diffusive flux
-            flux_diffusive_x = (1.0-0.5*rlx)*((f1-f2)-ux*Ci);
-            flux_diffusive_y = (1.0-0.5*rlx)*((f3-f4)-uy*Ci);
-            flux_diffusive_z = (1.0-0.5*rlx)*((f5-f6)-uz*Ci);
-            FluxDiffusive[n+0*Np] = flux_diffusive_x;
-            FluxDiffusive[n+1*Np] = flux_diffusive_y;
-            FluxDiffusive[n+2*Np] = flux_diffusive_z;
-            FluxAdvective[n+0*Np] = ux*Ci;
-            FluxAdvective[n+1*Np] = uy*Ci;
-            FluxAdvective[n+2*Np] = uz*Ci;
-            FluxElectrical[n+0*Np] = uEPx*Ci;
-            FluxElectrical[n+1*Np] = uEPy*Ci;
-            FluxElectrical[n+2*Np] = uEPz*Ci;
+        f0 = dist[n];
+        f1 = dist[2 * Np + n];
+        f2 = dist[1 * Np + n];
+        f3 = dist[4 * Np + n];
+        f4 = dist[3 * Np + n];
+        f5 = dist[6 * Np + n];
+        f6 = dist[5 * Np + n];
 
-            /* use logistic function to prevent negative distributions*/
-            X = 4.0 * (ux + uEPx);
-            Y = 4.0 * (uy + uEPy);
-            Z = 4.0 * (uz + uEPz);
-            factor_x = X / sqrt(1 + X*X);
-            factor_y = Y / sqrt(1 + Y*Y);
-            factor_z = Z / sqrt(1 + Z*Z);
+        // compute diffusive flux
+        Ci = f0 + f1 + f2 + f3 + f4 + f5 + f6;
+        flux_diffusive_x = (1.0 - 0.5 * rlx) * ((f1 - f2) - ux * Ci);
+        flux_diffusive_y = (1.0 - 0.5 * rlx) * ((f3 - f4) - uy * Ci);
+        flux_diffusive_z = (1.0 - 0.5 * rlx) * ((f5 - f6) - uz * Ci);
+        FluxDiffusive[n + 0 * Np] = flux_diffusive_x;
+        FluxDiffusive[n + 1 * Np] = flux_diffusive_y;
+        FluxDiffusive[n + 2 * Np] = flux_diffusive_z;
+        FluxAdvective[n + 0 * Np] = ux * Ci;
+        FluxAdvective[n + 1 * Np] = uy * Ci;
+        FluxAdvective[n + 2 * Np] = uz * Ci;
+        FluxElectrical[n + 0 * Np] = uEPx * Ci;
+        FluxElectrical[n + 1 * Np] = uEPy * Ci;
+        FluxElectrical[n + 2 * Np] = uEPz * Ci;
+        
+        Den[n] = Ci;
+        
+        /* use logistic function to prevent negative distributions*/
+        X = 4.0 * (ux + uEPx);
+        Y = 4.0 * (uy + uEPy);
+        Z = 4.0 * (uz + uEPz);
+        factor_x = X / sqrt(1 + X*X);
+        factor_y = Y / sqrt(1 + Y*Y);
+        factor_z = Z / sqrt(1 + Z*Z);
 
-            // q=0
-            dist[n] = f0 * (1.0 - rlx) + rlx * 0.25 * Ci;
+        // q=0
+        dist[n] = f0 * (1.0 - rlx) + rlx * 0.25 * Ci;
 
-            // q = 1
-            dist[1 * Np + n] =
-                    f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_x);
-            //f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (ux + uEPx));
+        // q = 1
+        dist[1 * Np + n] =
+                f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_x);
+        //f1 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (ux + uEPx));
 
-            // q=2
-            dist[2 * Np + n] =
-                    f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_x);
-            //f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (ux + uEPx));
+        // q=2
+        dist[2 * Np + n] =
+                f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_x);
+        //f2 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (ux + uEPx));
 
-            // q = 3
-            dist[3 * Np + n] =
-                    f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_y);
-            //f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uy + uEPy));
+        // q = 3
+        dist[3 * Np + n] =
+                f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_y);
+        //f3 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uy + uEPy));
 
-            // q = 4
-            dist[4 * Np + n] =
-                    f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_y);
-            //f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uy + uEPy));
+        // q = 4
+        dist[4 * Np + n] =
+                f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_y);
+        //f4 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uy + uEPy));
 
-            // q = 5
-            dist[5 * Np + n] =
-                    f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_z);
-            //f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uz + uEPz));
+        // q = 5
+        dist[5 * Np + n] =
+                f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + factor_z);
+        //f5 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 + 4.0 * (uz + uEPz));
 
-            // q = 6
-            dist[6 * Np + n] =
-                    f6 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_z);
-            //f6 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uz + uEPz));
+        // q = 6
+        dist[6 * Np + n] =
+                f6 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - factor_z);
+        //f6 * (1.0 - rlx) + rlx * 0.125 * Ci * (1.0 - 4.0 * (uz + uEPz));
 		}
 	}
 }

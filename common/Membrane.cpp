@@ -420,6 +420,8 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 		}
 	}
 	
+	int Q = 7; // for D3Q7 model
+	
 	/* go through the neighborlist structure */
 	/* count & cut the links */
 	if (rank == 0) printf("   Cut membrane links... \n");
@@ -470,82 +472,84 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 						mlink++;
 					}
 
-					neighbor=Map(i-1,j-1,k);
-					dist=Distance(i-1,j-1,k);
-					if (dist*locdist < 0.0 && !(neighbor<0)){
-						neighborList[6*Np+idx]=idx + 8*Np;
-					}
+					if (Q > 7){
+						neighbor=Map(i-1,j-1,k);
+						dist=Distance(i-1,j-1,k);
+						if (dist*locdist < 0.0 && !(neighbor<0)){
+							neighborList[6*Np+idx]=idx + 8*Np;
+						}
 
-					neighbor=Map(i+1,j+1,k);
-					dist=Distance(i+1,j+1,k);
-					if (dist*locdist < 0.0){
-						neighborList[7*Np+idx]=idx + 7*Np;
-						mlink++;
-					}
+						neighbor=Map(i+1,j+1,k);
+						dist=Distance(i+1,j+1,k);
+						if (dist*locdist < 0.0){
+							neighborList[7*Np+idx]=idx + 7*Np;
+							mlink++;
+						}
 
-					neighbor=Map(i-1,j+1,k);
-					dist=Distance(i-1,j+1,k);
-					if (dist*locdist < 0.0 && !(neighbor<0)){
-						neighborList[8*Np+idx]=idx + 10*Np;
-					}
+						neighbor=Map(i-1,j+1,k);
+						dist=Distance(i-1,j+1,k);
+						if (dist*locdist < 0.0 && !(neighbor<0)){
+							neighborList[8*Np+idx]=idx + 10*Np;
+						}
 
-					neighbor=Map(i+1,j-1,k);
-					dist=Distance(i+1,j-1,k);
-					if (dist*locdist < 0.0 && !(neighbor<0)){
-						neighborList[9*Np+idx]=idx + 9*Np;
-						mlink++;
-					}
+						neighbor=Map(i+1,j-1,k);
+						dist=Distance(i+1,j-1,k);
+						if (dist*locdist < 0.0 && !(neighbor<0)){
+							neighborList[9*Np+idx]=idx + 9*Np;
+							mlink++;
+						}
 
-					neighbor=Map(i-1,j,k-1);
-					dist=Distance(i-1,j,k-1);
-					if (dist*locdist < 0.0 && !(neighbor<0)){
-						neighborList[10*Np+idx]=idx + 12*Np;
-					}
+						neighbor=Map(i-1,j,k-1);
+						dist=Distance(i-1,j,k-1);
+						if (dist*locdist < 0.0 && !(neighbor<0)){
+							neighborList[10*Np+idx]=idx + 12*Np;
+						}
 
-					neighbor=Map(i+1,j,k+1);
-					dist=Distance(i+1,j,k+1);
-					if (dist*locdist < 0.0 && !(neighbor<0)){
-						neighborList[11*Np+idx]=idx + 11*Np;
-						mlink++;
-					}
+						neighbor=Map(i+1,j,k+1);
+						dist=Distance(i+1,j,k+1);
+						if (dist*locdist < 0.0 && !(neighbor<0)){
+							neighborList[11*Np+idx]=idx + 11*Np;
+							mlink++;
+						}
 
-					neighbor=Map(i-1,j,k+1);
-					dist=Distance(i-1,j,k+1);
-					if (dist*locdist < 0.0 && !(neighbor<0)){
-						neighborList[12*Np+idx]=idx + 14*Np;
-					}
+						neighbor=Map(i-1,j,k+1);
+						dist=Distance(i-1,j,k+1);
+						if (dist*locdist < 0.0 && !(neighbor<0)){
+							neighborList[12*Np+idx]=idx + 14*Np;
+						}
 
-					neighbor=Map(i+1,j,k-1);
-					dist=Distance(i+1,j,k-1);
-					if (dist*locdist < 0.0 && !(neighbor<0)){
-						neighborList[13*Np+idx]=idx + 13*Np;
-						mlink++;
-					}
+						neighbor=Map(i+1,j,k-1);
+						dist=Distance(i+1,j,k-1);
+						if (dist*locdist < 0.0 && !(neighbor<0)){
+							neighborList[13*Np+idx]=idx + 13*Np;
+							mlink++;
+						}
 
-					neighbor=Map(i,j-1,k-1);
-					dist=Distance(i,j-1,k-1);
-					if (dist*locdist < 0.0 && !(neighbor<0)){
-						neighborList[14*Np+idx]=idx + 16*Np;
-					}
+						neighbor=Map(i,j-1,k-1);
+						dist=Distance(i,j-1,k-1);
+						if (dist*locdist < 0.0 && !(neighbor<0)){
+							neighborList[14*Np+idx]=idx + 16*Np;
+						}
 
-					neighbor=Map(i,j+1,k+1);
-					dist=Distance(i,j+1,k+1);
-					if (dist*locdist < 0.0 && !(neighbor<0)){
-						neighborList[15*Np+idx]=idx + 15*Np;
-						mlink++;
-					}
+						neighbor=Map(i,j+1,k+1);
+						dist=Distance(i,j+1,k+1);
+						if (dist*locdist < 0.0 && !(neighbor<0)){
+							neighborList[15*Np+idx]=idx + 15*Np;
+							mlink++;
+						}
 
-					neighbor=Map(i,j-1,k+1);
-					dist=Distance(i,j-1,k+1);
-					if (dist*locdist < 0.0 && !(neighbor<0)){
-						neighborList[16*Np+idx]=idx + 18*Np;
-					}
+						neighbor=Map(i,j-1,k+1);
+						dist=Distance(i,j-1,k+1);
+						if (dist*locdist < 0.0 && !(neighbor<0)){
+							neighborList[16*Np+idx]=idx + 18*Np;
+						}
 
-					neighbor=Map(i,j+1,k-1);
-					dist=Distance(i,j+1,k-1);
-					if (dist*locdist < 0.0 && !(neighbor<0)){
-						neighborList[17*Np+idx]=idx + 17*Np;
-						mlink++;
+						neighbor=Map(i,j+1,k-1);
+						dist=Distance(i,j+1,k-1);
+						if (dist*locdist < 0.0 && !(neighbor<0)){
+							neighborList[17*Np+idx]=idx + 17*Np;
+							mlink++;
+						}
 					}
 				}
 			}
@@ -578,8 +582,8 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 
 					neighbor=Map(i+1,j,k);
 					dist=Distance(i+1,j,k);
-					if (dist*locdist < 0.0){
-						if (locdist < 0.0 && !(neighbor<0)){
+					if (dist*locdist < 0.0 && !(neighbor<0)){
+						if (locdist < 0.0 ){
 							localSite = 2*mlink;
 							neighborSite = 2*mlink+1;
 						}
@@ -630,113 +634,116 @@ int Membrane::Create(std::shared_ptr <Domain> Dm, DoubleArray &Distance, IntArra
 						mlink++;
 					}
 
-					neighbor=Map(i+1,j+1,k);
-					dist=Distance(i+1,j+1,k);
-					if (dist*locdist < 0.0 && !(neighbor<0)){
-						if (locdist < 0.0){
-							localSite = 2*mlink;
-							neighborSite = 2*mlink+1;
-						}
-						else{
-							localSite = 2*mlink+1;
-							neighborSite = 2*mlink;
-						}
-						membraneLinks[localSite] = idx + 7*Np;
-						membraneLinks[neighborSite] = neighbor+8*Np;
-						membraneDist[localSite] = locdist;
-						membraneDist[neighborSite] = dist;
-						mlink++;
-					}
+					if (Q > 7){
 
-					neighbor=Map(i+1,j-1,k);
-					dist=Distance(i+1,j-1,k);
-					if (dist*locdist < 0.0 && !(neighbor<0)){
-						if (locdist < 0.0){
-							localSite = 2*mlink;
-							neighborSite = 2*mlink+1;
+						neighbor=Map(i+1,j+1,k);
+						dist=Distance(i+1,j+1,k);
+						if (dist*locdist < 0.0 && !(neighbor<0)){
+							if (locdist < 0.0){
+								localSite = 2*mlink;
+								neighborSite = 2*mlink+1;
+							}
+							else{
+								localSite = 2*mlink+1;
+								neighborSite = 2*mlink;
+							}
+							membraneLinks[localSite] = idx + 7*Np;
+							membraneLinks[neighborSite] = neighbor+8*Np;
+							membraneDist[localSite] = locdist;
+							membraneDist[neighborSite] = dist;
+							mlink++;
 						}
-						else{
-							localSite = 2*mlink+1;
-							neighborSite = 2*mlink;
-						}
-						membraneLinks[localSite] = idx + 9*Np;
-						membraneLinks[neighborSite] = neighbor + 10*Np;
-						membraneDist[localSite] = locdist;
-						membraneDist[neighborSite] = dist;
-						mlink++;
-					}
 
-					neighbor=Map(i+1,j,k+1);
-					dist=Distance(i+1,j,k+1);
-					if (dist*locdist < 0.0 && !(neighbor<0)){
-						if (locdist < 0.0){
-							localSite = 2*mlink;
-							neighborSite = 2*mlink+1;
+						neighbor=Map(i+1,j-1,k);
+						dist=Distance(i+1,j-1,k);
+						if (dist*locdist < 0.0 && !(neighbor<0)){
+							if (locdist < 0.0){
+								localSite = 2*mlink;
+								neighborSite = 2*mlink+1;
+							}
+							else{
+								localSite = 2*mlink+1;
+								neighborSite = 2*mlink;
+							}
+							membraneLinks[localSite] = idx + 9*Np;
+							membraneLinks[neighborSite] = neighbor + 10*Np;
+							membraneDist[localSite] = locdist;
+							membraneDist[neighborSite] = dist;
+							mlink++;
 						}
-						else{
-							localSite = 2*mlink+1;
-							neighborSite = 2*mlink;
-						}
-						membraneLinks[localSite] = idx + 11*Np;
-						membraneLinks[neighborSite] = neighbor + 12*Np;
-						membraneDist[localSite] = locdist;
-						membraneDist[neighborSite] = dist;
-						mlink++;
-					}
 
-					neighbor=Map(i+1,j,k-1);
-					dist=Distance(i+1,j,k-1);
-					if (dist*locdist < 0.0 && !(neighbor<0)){
-						if (locdist < 0.0){
-							localSite = 2*mlink;
-							neighborSite = 2*mlink+1;
+						neighbor=Map(i+1,j,k+1);
+						dist=Distance(i+1,j,k+1);
+						if (dist*locdist < 0.0 && !(neighbor<0)){
+							if (locdist < 0.0){
+								localSite = 2*mlink;
+								neighborSite = 2*mlink+1;
+							}
+							else{
+								localSite = 2*mlink+1;
+								neighborSite = 2*mlink;
+							}
+							membraneLinks[localSite] = idx + 11*Np;
+							membraneLinks[neighborSite] = neighbor + 12*Np;
+							membraneDist[localSite] = locdist;
+							membraneDist[neighborSite] = dist;
+							mlink++;
 						}
-						else{
-							localSite = 2*mlink+1;
-							neighborSite = 2*mlink;
-						}
-						membraneLinks[localSite] = idx + 13*Np;
-						membraneLinks[neighborSite] = neighbor + 14*Np;
-						membraneDist[localSite] = locdist;
-						membraneDist[neighborSite] = dist;
-						mlink++;
-					}
 
-					neighbor=Map(i,j+1,k+1);
-					dist=Distance(i,j+1,k+1);
-					if (dist*locdist < 0.0 && !(neighbor<0)){
-						if (locdist < 0.0){
-							localSite = 2*mlink;
-							neighborSite = 2*mlink+1;
+						neighbor=Map(i+1,j,k-1);
+						dist=Distance(i+1,j,k-1);
+						if (dist*locdist < 0.0 && !(neighbor<0)){
+							if (locdist < 0.0){
+								localSite = 2*mlink;
+								neighborSite = 2*mlink+1;
+							}
+							else{
+								localSite = 2*mlink+1;
+								neighborSite = 2*mlink;
+							}
+							membraneLinks[localSite] = idx + 13*Np;
+							membraneLinks[neighborSite] = neighbor + 14*Np;
+							membraneDist[localSite] = locdist;
+							membraneDist[neighborSite] = dist;
+							mlink++;
 						}
-						else{
-							localSite = 2*mlink+1;
-							neighborSite = 2*mlink;
-						}
-						membraneLinks[localSite] = idx + 15*Np;
-						membraneLinks[neighborSite] = neighbor + 16*Np;
-						membraneDist[localSite] = locdist;
-						membraneDist[neighborSite] = dist;
-						mlink++;
-					}
 
-					neighbor=Map(i,j+1,k-1);
-					dist=Distance(i,j+1,k-1);
-					if (dist*locdist < 0.0 && !(neighbor<0)){
-						if (locdist < 0.0){
-							localSite = 2*mlink;
-							neighborSite = 2*mlink+1;
+						neighbor=Map(i,j+1,k+1);
+						dist=Distance(i,j+1,k+1);
+						if (dist*locdist < 0.0 && !(neighbor<0)){
+							if (locdist < 0.0){
+								localSite = 2*mlink;
+								neighborSite = 2*mlink+1;
+							}
+							else{
+								localSite = 2*mlink+1;
+								neighborSite = 2*mlink;
+							}
+							membraneLinks[localSite] = idx + 15*Np;
+							membraneLinks[neighborSite] = neighbor + 16*Np;
+							membraneDist[localSite] = locdist;
+							membraneDist[neighborSite] = dist;
+							mlink++;
 						}
-						else{
-							localSite = 2*mlink+1;
-							neighborSite = 2*mlink;
-						}
-						membraneLinks[localSite] = idx + 17*Np;
-						membraneLinks[neighborSite] = neighbor + 18*Np;
-						membraneDist[localSite] = locdist;
-						membraneDist[neighborSite] = dist;
-						mlink++;
-					} 
+
+						neighbor=Map(i,j+1,k-1);
+						dist=Distance(i,j+1,k-1);
+						if (dist*locdist < 0.0 && !(neighbor<0)){
+							if (locdist < 0.0){
+								localSite = 2*mlink;
+								neighborSite = 2*mlink+1;
+							}
+							else{
+								localSite = 2*mlink+1;
+								neighborSite = 2*mlink;
+							}
+							membraneLinks[localSite] = idx + 17*Np;
+							membraneLinks[neighborSite] = neighbor + 18*Np;
+							membraneDist[localSite] = locdist;
+							membraneDist[neighborSite] = dist;
+							mlink++;
+						} 
+					}
 				}
 			}
 		}
@@ -1384,12 +1391,25 @@ void Membrane::AssignCoefficients(int *Map, double *Psi, string method){
 		ThresholdMassFractionOut = 1.0;				
 		ThresholdMassFractionIn = 1.0;
 	}
-	
 	if (method == "Voltage Gated Potassium"){
 		MassFractionIn = 0.0;
 		MassFractionOut = 0.0;
 		ThresholdMassFractionOut = 0.0;				
 		ThresholdMassFractionIn = 1.0;
+	}
+	if (method == "impermeable"){
+		printf(".... impermeable membrane \n");
+		MassFractionIn = 0.0;
+		MassFractionOut = 0.0;
+		ThresholdMassFractionOut = 0.0;				
+		ThresholdMassFractionIn = 0.0;
+	}
+	if (method == "Na+"){
+		printf(".... Na+ permeable membrane \n");
+		MassFractionIn = 0.5;
+		MassFractionOut = 0.5;
+		ThresholdMassFractionOut = 0.5;				
+		ThresholdMassFractionIn = 0.5;
 	}
 	
 	ScaLBL_D3Q7_Membrane_AssignLinkCoef(MembraneLinks, Map, MembraneDistance, Psi, MembraneCoef,

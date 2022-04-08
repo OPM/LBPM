@@ -144,7 +144,7 @@ extern "C" void ScaLBL_D3Q7_Membrane_IonTransport(int *membrane, double *coef,
 		iq = membrane[2*link]; 	ip = membrane[2*link+1];
 		nq = iq%Np;				np = ip%Np;
 		fq  = dist[iq];			fp = dist[ip];
-		fqq = (1-aq)*fq+ap*fp;	fpp = (1-ap)*fp+ap*fq;
+		fqq = (1-aq)*fq+ap*fp;	fpp = (1-ap)*fp+aq*fq;
 		Cq = Den[nq];			Cp = Den[np];
 		Cq += fqq - fq;			Cp += fpp - fp;
 		Den[nq] = Cq;			Den[np] = Cp;
@@ -257,7 +257,6 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist,
     for (n = start; n < finish; n++) {
 
         //Load data
-        Ci = Den[n];
         Ex = ElectricField[n + 0 * Np];
         Ey = ElectricField[n + 1 * Np];
         Ez = ElectricField[n + 2 * Np];
@@ -290,6 +289,7 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist,
         f6 = dist[nr6];
 
         // compute diffusive flux
+        Ci = f0 + f1 + f2 + f3 + f4 + f5 + f6;
         flux_diffusive_x = (1.0 - 0.5 * rlx) * ((f1 - f2) - ux * Ci);
         flux_diffusive_y = (1.0 - 0.5 * rlx) * ((f3 - f4) - uy * Ci);
         flux_diffusive_z = (1.0 - 0.5 * rlx) * ((f5 - f6) - uz * Ci);
@@ -303,6 +303,8 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist,
         FluxElectrical[n + 1 * Np] = uEPy * Ci;
         FluxElectrical[n + 2 * Np] = uEPz * Ci;
         
+        Den[n] = Ci;
+
         /* use logistic function to prevent negative distributions*/
         X = 4.0 * (ux + uEPx);
         Y = 4.0 * (uy + uEPy);
@@ -363,7 +365,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_Ion(
     for (n = start; n < finish; n++) {
 
         //Load data
-        Ci = Den[n];
+        //Ci = Den[n];
         Ex = ElectricField[n + 0 * Np];
         Ey = ElectricField[n + 1 * Np];
         Ez = ElectricField[n + 2 * Np];
@@ -383,6 +385,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_Ion(
         f6 = dist[5 * Np + n];
 
         // compute diffusive flux
+        Ci = f0 + f1 + f2 + f3 + f4 + f5 + f6;
         flux_diffusive_x = (1.0 - 0.5 * rlx) * ((f1 - f2) - ux * Ci);
         flux_diffusive_y = (1.0 - 0.5 * rlx) * ((f3 - f4) - uy * Ci);
         flux_diffusive_z = (1.0 - 0.5 * rlx) * ((f5 - f6) - uz * Ci);
@@ -395,6 +398,8 @@ extern "C" void ScaLBL_D3Q7_AAeven_Ion(
         FluxElectrical[n + 0 * Np] = uEPx * Ci;
         FluxElectrical[n + 1 * Np] = uEPy * Ci;
         FluxElectrical[n + 2 * Np] = uEPz * Ci;
+        
+        Den[n] = Ci;
         
         /* use logistic function to prevent negative distributions*/
         X = 4.0 * (ux + uEPx);

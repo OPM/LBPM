@@ -1296,90 +1296,39 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
     //ScaLBL_Comm->Barrier(); comm.barrier();
     //auto t1 = std::chrono::system_clock::now();
 
-    
     for (size_t ic = 0; ic < number_ion_species; ic++) {
         /* set the mass transfer coefficients for the membrane */
-        IonMembrane->AssignCoefficients(dvcMap, Psi, "default");
+    	if (ic == 0)
+    		IonMembrane->AssignCoefficients(dvcMap, Psi, "Na+");
+    	else {
+    		IonMembrane->AssignCoefficients(dvcMap, Psi, "impermeable");
+    	}
         timestep = 0;
         while (timestep < timestepMax[ic]) {
             //************************************************************************/
             // *************ODD TIMESTEP*************//
             timestep++;
-            //Update ion concentration and charge density
-            IonMembrane->SendD3Q7AA(&fq[ic * Np * 7]); //READ FORM NORMAL
-            ScaLBL_D3Q7_AAodd_IonConcentration(
-                IonMembrane->NeighborList, &fq[ic * Np * 7], &Ci[ic * Np],
-                ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-            IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
-            /* ScaLBL_Comm->Barrier();
-            //--------------------------------------- Set boundary conditions -------------------------------------//
-            if (BoundaryConditionInlet[ic] > 0) {
-                switch (BoundaryConditionInlet[ic]) {
-                case 1:
-                    ScaLBL_Comm->D3Q7_Ion_Concentration_BC_z(
-                        IonMembrane->NeighborList, &fq[ic * Np * 7], Cin[ic], timestep);
-                    break;
-                case 21:
-                    ScaLBL_Comm->D3Q7_Ion_Flux_Diff_BC_z(
-                        IonMembrane->NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],
-                        &Velocity[2 * Np], timestep);
-                    break;
-                case 22:
-                    ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvc_BC_z(
-                        IonMembrane->NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],
-                        &Velocity[2 * Np], timestep);
-                    break;
-                case 23:
-                    ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvcElec_BC_z(
-                        IonMembrane->NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],
-                        &Velocity[2 * Np], &ElectricField[2 * Np],
-                        IonDiffusivity[ic], IonValence[ic], Vt, timestep);
-                    break;
-                }
-            }
-            if (BoundaryConditionOutlet[ic] > 0) {
-                switch (BoundaryConditionOutlet[ic]) {
-                case 1:
-                    ScaLBL_Comm->D3Q7_Ion_Concentration_BC_Z(
-                        IonMembrane->NeighborList, &fq[ic * Np * 7], Cout[ic], timestep);
-                    break;
-                case 21:
-                    ScaLBL_Comm->D3Q7_Ion_Flux_Diff_BC_Z(
-                        IonMembrane->NeighborList, &fq[ic * Np * 7], Cout[ic], tau[ic],
-                        &Velocity[2 * Np], timestep);
-                    break;
-                case 22:
-                    ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvc_BC_Z(
-                        IonMembrane->NeighborList, &fq[ic * Np * 7], Cout[ic], tau[ic],
-                        &Velocity[2 * Np], timestep);
-                    break;
-                case 23:
-                    ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvcElec_BC_Z(
-                        IonMembrane->NeighborList, &fq[ic * Np * 7], Cout[ic], tau[ic],
-                        &Velocity[2 * Np], &ElectricField[2 * Np],
-                        IonDiffusivity[ic], IonValence[ic], Vt, timestep);
-                    break;
-                }
-            }
-            */
-            //----------------------------------------------------------------------------------------------------//
-            ScaLBL_D3Q7_AAodd_IonConcentration(IonMembrane->NeighborList, &fq[ic * Np * 7],
-                                               &Ci[ic * Np], 0,
-                                               ScaLBL_Comm->LastExterior(), Np);
 
             //LB-Ion collison
+            IonMembrane->SendD3Q7AA(&fq[ic * Np * 7]); //READ FORM NORMAL
             ScaLBL_D3Q7_AAodd_Ion(
                 IonMembrane->NeighborList, &fq[ic * Np * 7], &Ci[ic * Np],
                 &FluxDiffusive[3 * ic * Np], &FluxAdvective[3 * ic * Np],
                 &FluxElectrical[3 * ic * Np], Velocity, ElectricField,
                 IonDiffusivity[ic], IonValence[ic], rlx[ic], Vt,
                 ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+            
+            IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
+
             ScaLBL_D3Q7_AAodd_Ion(
                 IonMembrane->NeighborList, &fq[ic * Np * 7], &Ci[ic * Np],
                 &FluxDiffusive[3 * ic * Np], &FluxAdvective[3 * ic * Np],
                 &FluxElectrical[3 * ic * Np], Velocity, ElectricField,
                 IonDiffusivity[ic], IonValence[ic], rlx[ic], Vt, 0,
                 ScaLBL_Comm->LastExterior(), Np);
+            
+           IonMembrane->IonTransport(&fq[ic * Np * 7],&Ci[ic * Np]);
+
 
             if (BoundaryConditionSolid == 1) {
                 //TODO IonSolid may also be species-dependent
@@ -1390,80 +1339,26 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
 
             // *************EVEN TIMESTEP*************//            
             timestep++;
-            //Update ion concentration and charge density
-            IonMembrane->SendD3Q7AA(&fq[ic * Np * 7]); //READ FORM NORMAL
-            ScaLBL_D3Q7_AAeven_IonConcentration(
-                &fq[ic * Np * 7], &Ci[ic * Np], ScaLBL_Comm->FirstInterior(),
-                ScaLBL_Comm->LastInterior(), Np);
-            IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
-            ScaLBL_Comm->Barrier();
-            //--------------------------------------- Set boundary conditions -------------------------------------//
-            /*if (BoundaryConditionInlet[ic] > 0) {
-                switch (BoundaryConditionInlet[ic]) {
-                case 1:
-                    ScaLBL_Comm->D3Q7_Ion_Concentration_BC_z(
-                        IonMembrane->NeighborList, &fq[ic * Np * 7], Cin[ic], timestep);
-                    break;
-                case 21:
-                    ScaLBL_Comm->D3Q7_Ion_Flux_Diff_BC_z(
-                        IonMembrane->NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],q
-                        &Velocity[2 * Np], timestep);
-                    break;
-                case 22:
-                    ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvc_BC_z(
-                        IonMembrane->NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],
-                        &Velocity[2 * Np], timestep);
-                    break;
-                case 23:
-                    ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvcElec_BC_z(
-                        IonMembrane->NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],
-                        &Velocity[2 * Np], &ElectricField[2 * Np],
-                        IonDiffusivity[ic], IonValence[ic], Vt, timestep);
-                    break;
-                }
-            }
-            if (BoundaryConditionOutlet[ic] > 0) {
-                switch (BoundaryConditionOutlet[ic]) {
-                case 1:
-                    ScaLBL_Comm->D3Q7_Ion_Concentration_BC_Z(
-                        IonMembrane->NeighborList, &fq[ic * Np * 7], Cout[ic], timestep);
-                    break;
-                case 21:
-                    ScaLBL_Comm->D3Q7_Ion_Flux_Diff_BC_Z(
-                        IonMembrane->NeighborList, &fq[ic * Np * 7], Cout[ic], tau[ic],
-                        &Velocity[2 * Np], timestep);
-                    break;
-                case 22:
-                    ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvc_BC_Z(
-                        IonMembrane->NeighborList, &fq[ic * Np * 7], Cout[ic], tau[ic],
-                        &Velocity[2 * Np], timestep);
-                    break;
-                case 23:
-                    ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvcElec_BC_Z(
-                        IonMembrane->NeighborList, &fq[ic * Np * 7], Cout[ic], tau[ic],
-                        &Velocity[2 * Np], &ElectricField[2 * Np],
-                        IonDiffusivity[ic], IonValence[ic], Vt, timestep);
-                    break;
-                }
-            } 
-            */
-            //----------------------------------------------------------------------------------------------------//
-            ScaLBL_D3Q7_AAeven_IonConcentration(&fq[ic * Np * 7], &Ci[ic * Np],
-                                                0, ScaLBL_Comm->LastExterior(),
-                                                Np);
 
             //LB-Ion collison
+            IonMembrane->SendD3Q7AA(&fq[ic * Np * 7]); //READ FORM NORMAL
             ScaLBL_D3Q7_AAeven_Ion(
                 &fq[ic * Np * 7], &Ci[ic * Np], &FluxDiffusive[3 * ic * Np],
                 &FluxAdvective[3 * ic * Np], &FluxElectrical[3 * ic * Np],
                 Velocity, ElectricField, IonDiffusivity[ic], IonValence[ic],
                 rlx[ic], Vt, ScaLBL_Comm->FirstInterior(),
                 ScaLBL_Comm->LastInterior(), Np);
+
+            IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
+
             ScaLBL_D3Q7_AAeven_Ion(
                 &fq[ic * Np * 7], &Ci[ic * Np], &FluxDiffusive[3 * ic * Np],
                 &FluxAdvective[3 * ic * Np], &FluxElectrical[3 * ic * Np],
                 Velocity, ElectricField, IonDiffusivity[ic], IonValence[ic],
                 rlx[ic], Vt, 0, ScaLBL_Comm->LastExterior(), Np);
+            
+            IonMembrane->IonTransport(&fq[ic * Np * 7],&Ci[ic * Np]);
+
 
             if (BoundaryConditionSolid == 1) {
                 //TODO IonSolid may also be species-dependent
