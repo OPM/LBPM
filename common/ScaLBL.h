@@ -303,6 +303,7 @@ extern "C" void ScaLBL_D3Q7_Ion_Init_FromFile(double *dist, double *Den, int Np)
 
 extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity, int IonValence, int ion_component, int start, int finish, int Np);
 
+
 // LBM Poisson solver
 
 /**
@@ -372,7 +373,30 @@ extern "C" void ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(int *Map, double *d
 * @param finish - lattice node to finish loop
 * @param Np - size of local sub-domain (derived from Domain structure)
 */
-extern "C" void ScaLBL_D3Q7_Poisson_Init(int *Map, double *dist, double *Psi, int start, int finish, int Np);
+extern "C" void ScaLBL_D3Q19_Poisson_Init(int *Map, double *dist, double *Psi, int start, int finish, int Np);
+
+
+extern "C" void ScaLBL_D3Q19_AAodd_Poisson_ElectricPotential(int *neighborList, int *Map,
+                                            double *dist, double *Den_charge, double *Psi,
+                                            double epsilon_LB, bool UseSlippingVelBC,
+                                            int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q19_AAeven_Poisson_ElectricPotential(int *Map, double *dist, double *Den_charge, 
+		double *Psi, double epsilon_LB, bool UseSlippingVelBC, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
+                                          double *dist, double *Den_charge,
+                                          double *Psi, double *ElectricField,
+                                          double tau, double epsilon_LB, bool UseSlippingVelBC,
+                                          int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
+                                           double *Den_charge, double *Psi,
+                                           double *ElectricField, double tau,
+                                           double epsilon_LB, bool UseSlippingVelBC,
+                                           int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q19_Poisson_getElectricField(double *dist, double *ElectricField, double tau, int Np);
 
 // LBM Stokes Model (adapted from MRT model)
 extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, 

@@ -7,6 +7,7 @@ extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef(int *membrane, int *Map, dou
 	
 	int link,iq,ip,nq,np,nqm,npm;
 	double aq, ap, membranePotential;
+	//double dq, dp, dist, orientation;
 	/* Interior Links */
 	for (link=0; link<memLinks; link++){
 		
@@ -15,6 +16,9 @@ extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef(int *membrane, int *Map, dou
 		iq = membrane[2*link]; 	ip = membrane[2*link+1];
 		nq = iq%Np;				np = ip%Np;
 		nqm = Map[nq];			npm = Map[np]; // strided layout
+		//dq = Distance[nqm];     dp = Distance[npm];
+		/* orientation for link to distance gradient*/
+		//orientation = 1.0/fabs(dq - dp);
 		
 		/* membrane potential for this link */
 		membranePotential = Psi[nqm] - Psi[npm];
@@ -23,6 +27,7 @@ extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef(int *membrane, int *Map, dou
 		}
 		
 		/* Save the mass transfer coefficients */
+		//coef[2*link] = aq*orientation;		coef[2*link+1] = ap*orientation;
 		coef[2*link] = aq;		coef[2*link+1] = ap;
 	}
 }

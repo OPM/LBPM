@@ -62,6 +62,7 @@ public:
     int *membraneLinks;    // D3Q19 links that cross membrane
     int *membraneTag;      // label each link in the membrane
     double *membraneDist;  // distance to membrane for each linked site
+    double *membraneOrientation;  // distance to membrane for each linked site
 
     /* 
      * Device data structures
@@ -69,6 +70,7 @@ public:
     int *MembraneLinks;
     double *MembraneCoef;  // mass transport coefficient for the membrane 
     double *MembraneDistance;
+    double *MembraneOrientation;
     
     /**
     * \brief Create a flow adaptor to operate on the LB model
