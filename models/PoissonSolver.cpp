@@ -44,7 +44,6 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	
     k2_inv = 3.0;//speed of sound for D3Q19 lattice 
 	tau = 0.5+k2_inv;
-	tau = 1.0; // moran wang D3Q19
 	timestepMax = 100000;
 	tolerance = 1.0e-6;//stopping criterion for obtaining steady-state electricla potential
     h = 1.0;//resolution; unit: um/lu
@@ -63,6 +62,9 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	// LB-Poisson Model parameters
 	if (electric_db->keyExists( "timestepMax" )){
 		timestepMax = electric_db->getScalar<int>( "timestepMax" );
+	}
+	if (electric_db->keyExists( "tau" )){
+		tau = electric_db->getScalar<double>( "tau" );
 	}
 	if (electric_db->keyExists( "analysis_interval" )){
 		analysis_interval = electric_db->getScalar<int>( "analysis_interval" );
@@ -538,13 +540,13 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, bool UseSlippingVelBC, int times
 		//************************************************************************/
 		// *************ODD TIMESTEP*************//
         timestep++;
-        SolveElectricPotentialAAodd(timestep_from_Study,ChargeDensity, UseSlippingVelBC);//update electric potential
+        //SolveElectricPotentialAAodd(timestep_from_Study,ChargeDensity, UseSlippingVelBC);//update electric potential
         SolvePoissonAAodd(ChargeDensity, UseSlippingVelBC);//perform collision
 		ScaLBL_Comm->Barrier(); comm.barrier();
 
 		// *************EVEN TIMESTEP*************//
 		timestep++;
-		SolveElectricPotentialAAeven(timestep_from_Study,ChargeDensity, UseSlippingVelBC);//update electric potential
+		//SolveElectricPotentialAAeven(timestep_from_Study,ChargeDensity, UseSlippingVelBC);//update electric potential
         SolvePoissonAAeven(ChargeDensity, UseSlippingVelBC);//perform collision
 		ScaLBL_Comm->Barrier(); comm.barrier();
 		//************************************************************************/
@@ -705,7 +707,10 @@ void ScaLBL_Poisson::SolveElectricPotentialAAeven(int timestep_from_Study, doubl
 }
 
 void ScaLBL_Poisson::SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVelBC){
+	
+	ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
 	ScaLBL_D3Q19_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, UseSlippingVelBC, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 	ScaLBL_D3Q19_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, UseSlippingVelBC, 0, ScaLBL_Comm->LastExterior(), Np);
     //TODO: perhaps add another ScaLBL_Comm routine to update Psi values on solid boundary nodes.
     //something like:
@@ -714,7 +719,9 @@ void ScaLBL_Poisson::SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVe
 }
 
 void ScaLBL_Poisson::SolvePoissonAAeven(double *ChargeDensity, bool UseSlippingVelBC){
+	ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
 	ScaLBL_D3Q7_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, UseSlippingVelBC, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 	ScaLBL_D3Q7_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, UseSlippingVelBC, 0, ScaLBL_Comm->LastExterior(), Np);
 	//ScaLBL_Comm->SolidDirichletAndNeumannD3Q7(fq, Psi, Psi_BCLabel);
 }

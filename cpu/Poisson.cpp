@@ -644,7 +644,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
         f16, f17, f18;
     int nr1, nr2, nr3, nr4, nr5, nr6, nr7, nr8, nr9, nr10, nr11, nr12, nr13,
         nr14, nr15, nr16, nr17, nr18;
-    double Gs;
+	double error,sum_q;
     double rlx = 1.0 / tau;
     int idx;
 
@@ -735,200 +735,209 @@ extern "C" void ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
          nr18 = neighborList[n + 17 * Np];
          f18 = dist[nr18];
 
+         sum_q = f1+f2+f3+f4+f5+f6+f7+f8+f9+f10+f11+f12+f13+f14+f15+f16+f17+f18;
+         error = 8.0*(sum_q - f0) - rho_e; 
 
-         Ex = (f1 - f2 + f7 - f8 + f9 - f10 + f11 - f12 + f13 - f14)*rlx*3.0;//NOTE the unit of electric field here is V/lu
-         Ey = (f3 - f4 + f7 - f8 - f9 + f10 + f15 - f16 + f17 - f18)*rlx*3.0;
-         Ez = (f5 - f6 + f11 - f12 - f13 + f14 + f15 - f16 - f17 + f18)*rlx*3.0;
+         psi = 2.0*(f0*(1.0 - rlx) + rlx*(sum_q - 0.125*rho_e));
+
+         Ex = (f1 - f2 + 0.5*(f7 - f8 + f9 - f10 + f11 - f12 + f13 - f14))*4.0; //NOTE the unit of electric field here is V/lu
+         Ey = (f3 - f4 + 0.5*(f7 - f8 - f9 + f10 + f15 - f16 + f17 - f18))*4.0;
+         Ez = (f5 - f6 + 0.5*(f11 - f12 - f13 + f14 + f15 - f16 - f17 + f18))*4.0;
          ElectricField[n + 0 * Np] = Ex;
          ElectricField[n + 1 * Np] = Ey;
          ElectricField[n + 2 * Np] = Ez;
 
-        // q = 0
-        dist[n] = f0 * (1.0 - rlx) -  (1.0-0.5*rlx)*W0*rho_e;
+         // q = 0
+         dist[n] = W0*psi; //f0 * (1.0 - rlx) -  (1.0-0.5*rlx)*W0*rho_e;
 
-        // q = 1
-        dist[nr2] = f1 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
+         // q = 1
+         dist[nr2] = W1*psi; //f1 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
 
-        // q = 2
-        dist[nr1] = f2 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
+         // q = 2
+         dist[nr1] = W1*psi; //f2 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
 
-        // q = 3
-        dist[nr4] = f3 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
+         // q = 3
+         dist[nr4] = W1*psi; //f3 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
 
-        // q = 4
-        dist[nr3] = f4 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
+         // q = 4
+         dist[nr3] = W1*psi; //f4 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
 
-        // q = 5
-        dist[nr6] = f5 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
+         // q = 5
+         dist[nr6] = W1*psi; //f5 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
 
-        // q = 6
-        dist[nr5] = f6 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
-        //........................................................................
+         // q = 6
+         dist[nr5] = W1*psi; //f6 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
+         //........................................................................
 
-        // q = 7
-        dist[nr8] = f7 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+         // q = 7
+         dist[nr8] = W2*psi; //f7 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 
-        // q = 8
-        dist[nr7] = f8 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+         // q = 8
+         dist[nr7] = W2*psi; //f8 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 
-        // q = 9
-        dist[nr10] = f9 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+         // q = 9
+         dist[nr10] = W2*psi; //f9 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 
-        // q = 10
-        dist[nr9] = f10 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
-  
-        // q = 11
-        dist[nr12] = f11 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+         // q = 10
+         dist[nr9] = W2*psi; //f10 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 
-        // q = 12
-        dist[nr11] = f12 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+         // q = 11
+         dist[nr12] = W2*psi; //f11 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 
-        // q = 13
-        dist[nr14] = f13 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+         // q = 12
+         dist[nr11] = W2*psi; //f12 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 
-        // q= 14
-        dist[nr13] = f14 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+         // q = 13
+         dist[nr14] = W2*psi; //f13 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 
-        // q = 15
-        dist[nr16] = f15 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
-        
-        // q = 16
-        dist[nr15] = f16 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+         // q= 14
+         dist[nr13] = W2*psi; //f14 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 
-        // q = 17
-        dist[nr18] = f17 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+         // q = 15
+         dist[nr16] = W2*psi; //f15 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 
-        // q = 18
-        dist[nr17] = f18 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+         // q = 16
+         dist[nr15] = W2*psi; //f16 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+
+         // q = 17
+         dist[nr18] = W2*psi; //f17 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+
+         // q = 18
+         dist[nr17] = W2*psi; //f18 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
     }
 }
 
 extern "C" void ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
-                                           double *Den_charge, double *Psi,
-                                           double *ElectricField, double tau,
-                                           double epsilon_LB, bool UseSlippingVelBC,
-                                           int start, int finish, int Np) {
-    int n;
-    double psi;        //electric potential
-    double Ex, Ey, Ez; //electric field
-    double rho_e;      //local charge density
-    double f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15,
-        f16, f17, f18;
-    double Gs;
-    double rlx = 1.0 / tau;
-    int idx;
-    double W0 = 0.5;
-    double W1 = 1.0/24.0;
-    double W2 = 1.0/48.0;
-    
-    for (n = start; n < finish; n++) {
-        
-        //Load data
-        //When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
-        //and thus the net space charge density is zero. 
-        rho_e = (UseSlippingVelBC==1) ? 0.0 : Den_charge[n] / epsilon_LB;
-        idx = Map[n];
-        psi = Psi[idx];
-        
-        f0 = dist[n];
-        f1 = dist[2 * Np + n];
-        f2 = dist[1 * Np + n];
-        f3 = dist[4 * Np + n];
-        f4 = dist[3 * Np + n];
-        f5 = dist[6 * Np + n];
-        f6 = dist[5 * Np + n];
-        
-        f7 = dist[8 * Np + n];
-        f8 = dist[7 * Np + n];
-        f9 = dist[10 * Np + n];
-        f10 = dist[9 * Np + n];
-        f11 = dist[12 * Np + n];
-        f12 = dist[11 * Np + n];
-        f13 = dist[14 * Np + n];
-        f14 = dist[13 * Np + n];
-        f15 = dist[16 * Np + n];
-        f16 = dist[15 * Np + n];
-        f17 = dist[18 * Np + n];
-        f18 = dist[17 * Np + n];
+		double *Den_charge, double *Psi,
+		double *ElectricField, double tau,
+		double epsilon_LB, bool UseSlippingVelBC,
+		int start, int finish, int Np) {
+	int n;
+	double psi;        //electric potential
+	double Ex, Ey, Ez; //electric field
+	double rho_e;      //local charge density
+	double f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15,
+	f16, f17, f18;
+	double error,sum_q;
+	double rlx = 1.0 / tau;
+	int idx;
+	double W0 = 0.5;
+	double W1 = 1.0/24.0;
+	double W2 = 1.0/48.0;
 
-       /* Ex = (f1 - f2) * rlx *
+	for (n = start; n < finish; n++) {
+
+		//Load data
+		//When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
+		//and thus the net space charge density is zero. 
+		rho_e = (UseSlippingVelBC==1) ? 0.0 : Den_charge[n] / epsilon_LB;
+		idx = Map[n];
+		psi = Psi[idx];
+
+		f0 = dist[n];
+		f1 = dist[2 * Np + n];
+		f2 = dist[1 * Np + n];
+		f3 = dist[4 * Np + n];
+		f4 = dist[3 * Np + n];
+		f5 = dist[6 * Np + n];
+		f6 = dist[5 * Np + n];
+
+		f7 = dist[8 * Np + n];
+		f8 = dist[7 * Np + n];
+		f9 = dist[10 * Np + n];
+		f10 = dist[9 * Np + n];
+		f11 = dist[12 * Np + n];
+		f12 = dist[11 * Np + n];
+		f13 = dist[14 * Np + n];
+		f14 = dist[13 * Np + n];
+		f15 = dist[16 * Np + n];
+		f16 = dist[15 * Np + n];
+		f17 = dist[18 * Np + n];
+		f18 = dist[17 * Np + n];
+
+		/* Ex = (f1 - f2) * rlx *
              4.0; //NOTE the unit of electric field here is V/lu
         Ey = (f3 - f4) * rlx *
              4.0; //factor 4.0 is D3Q7 lattice squared speed of sound
         Ez = (f5 - f6) * rlx * 4.0;
-        */
-		Ex = (f1 - f2 + f7 - f8 + f9 - f10 + f11 - f12 + f13 - f14)*rlx*3.0;//NOTE the unit of electric field here is V/lu
-		Ey = (f3 - f4 + f7 - f8 - f9 + f10 + f15 - f16 + f17 - f18)*rlx*3.0;
-		Ez = (f5 - f6 + f11 - f12 - f13 + f14 + f15 - f16 - f17 + f18)*rlx*3.0;
-        ElectricField[n + 0 * Np] = Ex;
-        ElectricField[n + 1 * Np] = Ey;
-        ElectricField[n + 2 * Np] = Ez;
+		 */
+		Ex = (f1 - f2 + 0.5*(f7 - f8 + f9 - f10 + f11 - f12 + f13 - f14))*4.0; //NOTE the unit of electric field here is V/lu
+		Ey = (f3 - f4 + 0.5*(f7 - f8 - f9 + f10 + f15 - f16 + f17 - f18))*4.0;
+		Ez = (f5 - f6 + 0.5*(f11 - f12 - f13 + f14 + f15 - f16 - f17 + f18))*4.0;
+		ElectricField[n + 0 * Np] = Ex;
+		ElectricField[n + 1 * Np] = Ey;
+		ElectricField[n + 2 * Np] = Ez;
 
-        // q = 0
-        dist[n] =  f0 * (1.0 - rlx) -  (1.0-0.5*rlx)*0.333333333333333*rho_e; //f0 * (1.0 - rlx) + 0.3333333333333333 * (rlx * psi) - rho_e;
+		sum_q = f1+f2+f3+f4+f5+f6+f7+f8+f9+f10+f11+f12+f13+f14+f15+f16+f17+f18;
+		error = 8.0*(sum_q - f0) - rho_e; 
 
-        // q = 1
-        dist[1 * Np + n] = f1 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
+		psi = 2.0*(f0*(1.0 - rlx) + rlx*(sum_q - 0.125*rho_e));
 
-        // q = 2
-        dist[2 * Np + n] = f2 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
+		// q = 0
+		dist[n] =  W0*psi;//
 
-        // q = 3
-        dist[3 * Np + n] = f3 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
+		// q = 1
+		dist[1 * Np + n] =  W1*psi;//f1 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
 
-        // q = 4
-        dist[4 * Np + n] = f4 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
+		// q = 2
+		dist[2 * Np + n] =  W1*psi;//f2 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
 
-        // q = 5
-        dist[5 * Np + n] = f5 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
+		// q = 3
+		dist[3 * Np + n] =  W1*psi;//f3 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
 
-        // q = 6
-        dist[6 * Np + n] = f6 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
-        
-        dist[7 * Np + n] = f7 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
-        dist[8 * Np + n] = f8* (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
-        dist[9 * Np + n] = f9 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
-        dist[10 * Np + n] = f10 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
-        dist[11 * Np + n] = f11 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
-        dist[12 * Np + n] = f12 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
-        dist[13 * Np + n] = f13 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
-        dist[14 * Np + n] = f14 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
-        dist[15 * Np + n] = f15 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
-        dist[16 * Np + n] = f16 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
-        dist[17 * Np + n] = f17 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
-        dist[18 * Np + n] = f18 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+		// q = 4
+		dist[4 * Np + n] =  W1*psi;//f4 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
 
-        //........................................................................
-    }
+		// q = 5
+		dist[5 * Np + n] =  W1*psi;//f5 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
+
+		// q = 6
+		dist[6 * Np + n] =  W1*psi;//f6 * (1.0 - rlx) +W1* (rlx * psi) - (1.0-0.5*rlx)*0.05555555555555555*rho_e;
+
+		dist[7 * Np + n] =  W2*psi;//f7 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+		dist[8 * Np + n] =  W2*psi;//f8* (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+		dist[9 * Np + n] =  W2*psi;//f9 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+		dist[10 * Np + n] = W2*psi;//f10 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+		dist[11 * Np + n] = W2*psi;//f11 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+		dist[12 * Np + n] = W2*psi;//f12 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+		dist[13 * Np + n] = W2*psi;//f13 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+		dist[14 * Np + n] = W2*psi;//f14 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+		dist[15 * Np + n] = W2*psi;//f15 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+		dist[16 * Np + n] = W2*psi;//f16 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+		dist[17 * Np + n] = W2*psi;//f17 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+		dist[18 * Np + n] = W2*psi;//f18 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+
+		//........................................................................
+	}
 }
 
 extern "C" void ScaLBL_D3Q19_Poisson_Init(int *Map, double *dist, double *Psi,
-                                         int start, int finish, int Np) {
-    int n;
-    int ijk;
-    double W0 = 0.5;
-    double W1 = 1.0/24.0;
-    double W2 = 1.0/48.0;
-    for (n = start; n < finish; n++) {
-        ijk = Map[n];
-        dist[0 * Np + n] = W0 * Psi[ijk];//3333333333333333* Psi[ijk];
-        dist[1 * Np + n] = W1 * Psi[ijk];
-        dist[2 * Np + n] = W1 * Psi[ijk];
-        dist[3 * Np + n] = W1 * Psi[ijk];
-        dist[4 * Np + n] = W1 * Psi[ijk];
-        dist[5 * Np + n] = W1 * Psi[ijk];
-        dist[6 * Np + n] = W1 * Psi[ijk];
-        dist[7 * Np + n] = W2* Psi[ijk];
-        dist[8 * Np + n] = W2* Psi[ijk];
-        dist[9 * Np + n] = W2* Psi[ijk];
-        dist[10 * Np + n] = W2* Psi[ijk];
-        dist[11 * Np + n] = W2* Psi[ijk];
-        dist[12 * Np + n] = W2* Psi[ijk];
-        dist[13 * Np + n] = W2* Psi[ijk];
-        dist[14 * Np + n] = W2* Psi[ijk];
-        dist[15 * Np + n] = W2* Psi[ijk];
-        dist[16 * Np + n] = W2* Psi[ijk];
-        dist[17 * Np + n] = W2* Psi[ijk];
-        dist[18 * Np + n] = W2* Psi[ijk];
-    }
+		int start, int finish, int Np) {
+	int n;
+	int ijk;
+	double W0 = 0.5;
+	double W1 = 1.0/24.0;
+	double W2 = 1.0/48.0;
+	for (n = start; n < finish; n++) {
+		ijk = Map[n];
+		dist[0 * Np + n] = W0 * Psi[ijk];//3333333333333333* Psi[ijk];
+		dist[1 * Np + n] = W1 * Psi[ijk];
+		dist[2 * Np + n] = W1 * Psi[ijk];
+		dist[3 * Np + n] = W1 * Psi[ijk];
+		dist[4 * Np + n] = W1 * Psi[ijk];
+		dist[5 * Np + n] = W1 * Psi[ijk];
+		dist[6 * Np + n] = W1 * Psi[ijk];
+		dist[7 * Np + n] = W2* Psi[ijk];
+		dist[8 * Np + n] = W2* Psi[ijk];
+		dist[9 * Np + n] = W2* Psi[ijk];
+		dist[10 * Np + n] = W2* Psi[ijk];
+		dist[11 * Np + n] = W2* Psi[ijk];
+		dist[12 * Np + n] = W2* Psi[ijk];
+		dist[13 * Np + n] = W2* Psi[ijk];
+		dist[14 * Np + n] = W2* Psi[ijk];
+		dist[15 * Np + n] = W2* Psi[ijk];
+		dist[16 * Np + n] = W2* Psi[ijk];
+		dist[17 * Np + n] = W2* Psi[ijk];
+		dist[18 * Np + n] = W2* Psi[ijk];
+	}
 }
