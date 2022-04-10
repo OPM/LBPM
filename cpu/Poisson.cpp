@@ -1,3 +1,4 @@
+#include <math.h>
 
 extern "C" void
 ScaLBL_D3Q7_AAodd_Poisson_ElectricPotential(int *neighborList, int *Map,
@@ -444,34 +445,478 @@ extern "C" void ScaLBL_D3Q7_PoissonResidualError(
 //	}
 //}
 
-//extern "C" void ScaLBL_D3Q7_Poisson_getElectricField(double *dist, double *ElectricField, double tau, int Np){
-//	int n;
-//	// distributions
-//	double f1,f2,f3,f4,f5,f6;
-//	double Ex,Ey,Ez;
-//    double rlx=1.0/tau;
-//
-//	for (n=0; n<Np; n++){
-//		//........................................................................
-//		// Registers to store the distributions
-//		//........................................................................
-//		f1 = dist[Np+n];
-//		f2 = dist[2*Np+n];
-//		f3 = dist[3*Np+n];
-//		f4 = dist[4*Np+n];
-//		f5 = dist[5*Np+n];
-//		f6 = dist[6*Np+n];
-//		//.................Compute the Electric Field...................................
-//		//Ex = (f1-f2)*rlx*4.5;//NOTE the unit of electric field here is V/lu
-//		//Ey = (f3-f4)*rlx*4.5;
-//		//Ez = (f5-f6)*rlx*4.5;
-//		Ex = (f1-f2)*rlx*4.0;//NOTE the unit of electric field here is V/lu
-//		Ey = (f3-f4)*rlx*4.0;
-//		Ez = (f5-f6)*rlx*4.0;
-//		//..................Write the Electric Field.....................................
-//		ElectricField[0*Np+n] = Ex;
-//		ElectricField[1*Np+n] = Ey;
-//		ElectricField[2*Np+n] = Ez;
-//		//........................................................................
-//	}
-//}
+extern "C" void ScaLBL_D3Q19_Poisson_getElectricField(double *dist, double *ElectricField, double tau, int Np){
+	int n;
+	double f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15,
+	f16, f17, f18;
+	double Ex,Ey,Ez;
+	double rlx=1.0/tau;
+
+	for (n=0; n<Np; n++){
+		//........................................................................
+		// Registers to store the distributions
+		//........................................................................
+        f1 = dist[2 * Np + n];
+        f2 = dist[1 * Np + n];
+        f3 = dist[4 * Np + n];
+        f4 = dist[3 * Np + n];
+        f5 = dist[6 * Np + n];
+        f6 = dist[5 * Np + n];
+        f7 = dist[8 * Np + n];
+        f8 = dist[7 * Np + n];
+        f9 = dist[10 * Np + n];
+        f10 = dist[9 * Np + n];
+        f11 = dist[12 * Np + n];
+        f12 = dist[11 * Np + n];
+        f13 = dist[14 * Np + n];
+        f14 = dist[13 * Np + n];
+        f15 = dist[16 * Np + n];
+        f16 = dist[15 * Np + n];
+        f17 = dist[18 * Np + n];
+        f18 = dist[17 * Np + n];
+		//.................Compute the Electric Field...................................
+		Ex = (f1 - f2 + f7 - f8 + f9 - f10 + f11 - f12 + f13 - f14)*rlx*3.0;//NOTE the unit of electric field here is V/lu
+		Ey = (f3 - f4 + f7 - f8 - f9 + f10 + f15 - f16 + f17 - f18)*rlx*3.0;
+		Ez = (f5 - f6 + f11 - f12 - f13 + f14 + f15 - f16 - f17 + f18)*rlx*3.0;
+		//..................Write the Electric Field.....................................
+		ElectricField[0*Np+n] = Ex;
+		ElectricField[1*Np+n] = Ey;
+		ElectricField[2*Np+n] = Ez;
+		//........................................................................
+	}
+}
+
+extern "C" void
+ScaLBL_D3Q19_AAodd_Poisson_ElectricPotential(int *neighborList, int *Map,
+                                            double *dist, double *Den_charge, double *Psi,
+                                            double epsilon_LB, bool UseSlippingVelBC,
+                                            int start, int finish, int Np) {
+    int n;
+    double psi,sum;        //electric potential
+    double rho_e;      //local charge density
+    double Gs;
+    double f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15,
+        f16, f17, f18;
+    int nr1, nr2, nr3, nr4, nr5, nr6, nr7, nr8, nr9, nr10, nr11, nr12, nr13,
+        nr14, nr15, nr16, nr17, nr18;
+    int idx;
+
+    for (n = start; n < finish; n++) {
+        
+        // q=0
+        f0 = dist[n];
+        // q=1
+        nr1 = neighborList[n]; // neighbor 2 ( > 10Np => odd part of dist)
+        f1 = dist[nr1];        // reading the f1 data into register fq
+
+        nr2 = neighborList[n + Np]; // neighbor 1 ( < 10Np => even part of dist)
+        f2 = dist[nr2];             // reading the f2 data into register fq
+
+        // q=3
+        nr3 = neighborList[n + 2 * Np]; // neighbor 4
+        f3 = dist[nr3];
+
+        // q = 4
+        nr4 = neighborList[n + 3 * Np]; // neighbor 3
+        f4 = dist[nr4];
+
+        // q=5
+        nr5 = neighborList[n + 4 * Np];
+        f5 = dist[nr5];
+
+        // q = 6
+        nr6 = neighborList[n + 5 * Np];
+        f6 = dist[nr6];
+
+        // q=7
+        nr7 = neighborList[n + 6 * Np];
+        f7 = dist[nr7];
+
+        // q = 8
+        nr8 = neighborList[n + 7 * Np];
+        f8 = dist[nr8];
+
+        // q=9
+        nr9 = neighborList[n + 8 * Np];
+        f9 = dist[nr9];
+
+        // q = 10
+        nr10 = neighborList[n + 9 * Np];
+        f10 = dist[nr10];
+
+        // q=11
+        nr11 = neighborList[n + 10 * Np];
+        f11 = dist[nr11];
+
+        // q=12
+        nr12 = neighborList[n + 11 * Np];
+        f12 = dist[nr12];
+
+        // q=13
+        nr13 = neighborList[n + 12 * Np];
+        f13 = dist[nr13];
+
+        // q=14
+        nr14 = neighborList[n + 13 * Np];
+        f14 = dist[nr14];
+
+        // q=15
+        nr15 = neighborList[n + 14 * Np];
+        f15 = dist[nr15];
+
+        // q=16
+        nr16 = neighborList[n + 15 * Np];
+        f16 = dist[nr16];
+
+        // q=17
+        //fq = dist[18*Np+n];
+        nr17 = neighborList[n + 16 * Np];
+        f17 = dist[nr17];
+        
+        // q=18
+        nr18 = neighborList[n + 17 * Np];
+        f18 = dist[nr18];
+        
+        psi = f0 + f2 + f1 + f4 + f3 + f6 + f5 + f8 + f7 + f10 + f9 + f12 +
+                f11 + f14 + f13 + f16 + f15 + f18 + f17;
+
+        idx = Map[n];
+
+        Psi[idx] = psi;
+    }
+}
+
+extern "C" void ScaLBL_D3Q19_AAeven_Poisson_ElectricPotential(
+    int *Map, double *dist, double *Den_charge, double *Psi, double epsilon_LB, bool UseSlippingVelBC, int start, int finish, int Np) {
+    int n;
+    double psi,sum;        //electric potential
+    double rho_e;      //local charge density
+    double f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15,
+        f16, f17, f18;
+    double Gs;
+    int idx;
+
+    for (n = start; n < finish; n++) {
+
+        //........................................................................
+        // q=0
+        f0 = dist[n];
+        f1 = dist[2 * Np + n];
+        f2 = dist[1 * Np + n];
+        f3 = dist[4 * Np + n];
+        f4 = dist[3 * Np + n];
+        f5 = dist[6 * Np + n];
+        f6 = dist[5 * Np + n];
+        f7 = dist[8 * Np + n];
+        f8 = dist[7 * Np + n];
+        f9 = dist[10 * Np + n];
+        f10 = dist[9 * Np + n];
+        f11 = dist[12 * Np + n];
+        f12 = dist[11 * Np + n];
+        f13 = dist[14 * Np + n];
+        f14 = dist[13 * Np + n];
+        f15 = dist[16 * Np + n];
+        f16 = dist[15 * Np + n];
+        f17 = dist[18 * Np + n];
+        f18 = dist[17 * Np + n];
+
+        psi = f0 + f2 + f1 + f4 + f3 + f6 + f5 + f8 + f7 + f10 + f9 + f12 +
+                f11 + f14 + f13 + f16 + f15 + f18 + f17;
+
+        idx = Map[n];
+
+        Psi[idx] = psi;
+    }
+}
+
+extern "C" void ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
+                                          double *dist, double *Den_charge,
+                                          double *Psi, double *ElectricField,
+                                          double tau, double epsilon_LB, bool UseSlippingVelBC,
+                                          int start, int finish, int Np) {
+    int n;
+    double psi;        //electric potential
+    double Ex, Ey, Ez; //electric field
+    double rho_e;      //local charge density
+    double f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15,
+        f16, f17, f18;
+    int nr1, nr2, nr3, nr4, nr5, nr6, nr7, nr8, nr9, nr10, nr11, nr12, nr13,
+        nr14, nr15, nr16, nr17, nr18;
+    double Gs;
+    double rlx = 1.0 / tau;
+    int idx;
+
+    for (n = start; n < finish; n++) {
+
+        //Load data
+        //When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
+        //and thus the net space charge density is zero. 
+        rho_e = (UseSlippingVelBC==1) ? 0.0 : Den_charge[n] / epsilon_LB;
+        idx = Map[n];
+        psi = Psi[idx];
+
+        // q=0
+        f0 = dist[n];
+        // q=1
+        nr1 = neighborList[n]; // neighbor 2 ( > 10Np => odd part of dist)
+        f1 = dist[nr1];        // reading the f1 data into register fq
+
+        nr2 = neighborList[n + Np]; // neighbor 1 ( < 10Np => even part of dist)
+        f2 = dist[nr2];             // reading the f2 data into register fq
+
+        // q=3
+        nr3 = neighborList[n + 2 * Np]; // neighbor 4
+        f3 = dist[nr3];
+
+        // q = 4
+        nr4 = neighborList[n + 3 * Np]; // neighbor 3
+        f4 = dist[nr4];
+
+        // q=5
+        nr5 = neighborList[n + 4 * Np];
+        f5 = dist[nr5];
+
+        // q = 6
+        nr6 = neighborList[n + 5 * Np];
+        f6 = dist[nr6];
+        
+        // q=7
+         nr7 = neighborList[n + 6 * Np];
+         f7 = dist[nr7];
+
+         // q = 8
+         nr8 = neighborList[n + 7 * Np];
+         f8 = dist[nr8];
+
+         // q=9
+         nr9 = neighborList[n + 8 * Np];
+         f9 = dist[nr9];
+
+         // q = 10
+         nr10 = neighborList[n + 9 * Np];
+         f10 = dist[nr10];
+
+         // q=11
+         nr11 = neighborList[n + 10 * Np];
+         f11 = dist[nr11];
+
+         // q=12
+         nr12 = neighborList[n + 11 * Np];
+         f12 = dist[nr12];
+
+         // q=13
+         nr13 = neighborList[n + 12 * Np];
+         f13 = dist[nr13];
+
+         // q=14
+         nr14 = neighborList[n + 13 * Np];
+         f14 = dist[nr14];
+
+         // q=15
+         nr15 = neighborList[n + 14 * Np];
+         f15 = dist[nr15];
+
+         // q=16
+         nr16 = neighborList[n + 15 * Np];
+         f16 = dist[nr16];
+
+         // q=17
+         //fq = dist[18*Np+n];
+         nr17 = neighborList[n + 16 * Np];
+         f17 = dist[nr17];
+
+         // q=18
+         nr18 = neighborList[n + 17 * Np];
+         f18 = dist[nr18];
+
+
+         Ex = (f1 - f2 + f7 - f8 + f9 - f10 + f11 - f12 + f13 - f14)*rlx*3.0;//NOTE the unit of electric field here is V/lu
+         Ey = (f3 - f4 + f7 - f8 - f9 + f10 + f15 - f16 + f17 - f18)*rlx*3.0;
+         Ez = (f5 - f6 + f11 - f12 - f13 + f14 + f15 - f16 - f17 + f18)*rlx*3.0;
+         ElectricField[n + 0 * Np] = Ex;
+         ElectricField[n + 1 * Np] = Ey;
+         ElectricField[n + 2 * Np] = Ez;
+
+        // q = 0
+        dist[n] = f0 * (1.0 - rlx) + 0.3333333333333333 * (rlx * psi + rho_e);
+
+        // q = 1
+        dist[nr2] = f1 * (1.0 - rlx) + 0.05555555555555555 * (rlx * psi + rho_e);
+
+        // q = 2
+        dist[nr1] = f2 * (1.0 - rlx) + 0.05555555555555555 * (rlx * psi + rho_e);
+
+        // q = 3
+        dist[nr4] = f3 * (1.0 - rlx) + 0.05555555555555555 * (rlx * psi + rho_e);
+
+        // q = 4
+        dist[nr3] = f4 * (1.0 - rlx) + 0.05555555555555555 * (rlx * psi + rho_e);
+
+        // q = 5
+        dist[nr6] = f5 * (1.0 - rlx) + 0.05555555555555555 * (rlx * psi + rho_e);
+
+        // q = 6
+        dist[nr5] = f6 * (1.0 - rlx) + 0.05555555555555555 * (rlx * psi + rho_e);
+        //........................................................................
+
+        // q = 7
+        dist[nr8] = f7 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+
+        // q = 8
+        dist[nr7] = f8 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+
+        // q = 9
+        dist[nr10] = f9 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+
+        // q = 10
+        dist[nr9] = f10 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+  
+        // q = 11
+        dist[nr12] = f11 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+
+        // q = 12
+        dist[nr11] = f12 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+
+        // q = 13
+        dist[nr14] = f13 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+
+        // q= 14
+        dist[nr13] = f14 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+
+        // q = 15
+        dist[nr16] = f15 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+        
+        // q = 16
+        dist[nr15] = f16 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+
+        // q = 17
+        dist[nr18] = f17 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+
+        // q = 18
+        dist[nr17] = f18 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+    }
+}
+
+extern "C" void ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
+                                           double *Den_charge, double *Psi,
+                                           double *ElectricField, double tau,
+                                           double epsilon_LB, bool UseSlippingVelBC,
+                                           int start, int finish, int Np) {
+    int n;
+    double psi;        //electric potential
+    double Ex, Ey, Ez; //electric field
+    double rho_e;      //local charge density
+    double f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15,
+        f16, f17, f18;
+    double Gs;
+    double rlx = 1.0 / tau;
+    int idx;
+
+    for (n = start; n < finish; n++) {
+        
+        //Load data
+        //When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
+        //and thus the net space charge density is zero. 
+        rho_e = (UseSlippingVelBC==1) ? 0.0 : Den_charge[n] / epsilon_LB;
+        idx = Map[n];
+        psi = Psi[idx];
+
+        f0 = dist[n];
+        f1 = dist[2 * Np + n];
+        f2 = dist[1 * Np + n];
+        f3 = dist[4 * Np + n];
+        f4 = dist[3 * Np + n];
+        f5 = dist[6 * Np + n];
+        f6 = dist[5 * Np + n];
+        
+        f7 = dist[8 * Np + n];
+        f8 = dist[7 * Np + n];
+        f9 = dist[10 * Np + n];
+        f10 = dist[9 * Np + n];
+        f11 = dist[12 * Np + n];
+        f12 = dist[11 * Np + n];
+        f13 = dist[14 * Np + n];
+        f14 = dist[13 * Np + n];
+        f15 = dist[16 * Np + n];
+        f16 = dist[15 * Np + n];
+        f17 = dist[18 * Np + n];
+        f18 = dist[17 * Np + n];
+
+       /* Ex = (f1 - f2) * rlx *
+             4.0; //NOTE the unit of electric field here is V/lu
+        Ey = (f3 - f4) * rlx *
+             4.0; //factor 4.0 is D3Q7 lattice squared speed of sound
+        Ez = (f5 - f6) * rlx * 4.0;
+        */
+		Ex = (f1 - f2 + f7 - f8 + f9 - f10 + f11 - f12 + f13 - f14)*rlx*3.0;//NOTE the unit of electric field here is V/lu
+		Ey = (f3 - f4 + f7 - f8 - f9 + f10 + f15 - f16 + f17 - f18)*rlx*3.0;
+		Ez = (f5 - f6 + f11 - f12 - f13 + f14 + f15 - f16 - f17 + f18)*rlx*3.0;
+        ElectricField[n + 0 * Np] = Ex;
+        ElectricField[n + 1 * Np] = Ey;
+        ElectricField[n + 2 * Np] = Ez;
+
+        // q = 0
+        dist[n] = f0 * (1.0 - rlx) + 0.3333333333333333 * (rlx * psi + rho_e);
+
+        // q = 1
+        dist[1 * Np + n] = f1 * (1.0 - rlx) + 0.05555555555555555 * (rlx * psi + rho_e);
+
+        // q = 2
+        dist[2 * Np + n] = f2 * (1.0 - rlx) + 0.05555555555555555 * (rlx * psi + rho_e);
+
+        // q = 3
+        dist[3 * Np + n] = f3 * (1.0 - rlx) + 0.05555555555555555 * (rlx * psi + rho_e);
+
+        // q = 4
+        dist[4 * Np + n] = f4 * (1.0 - rlx) + 0.05555555555555555 * (rlx * psi + rho_e);
+
+        // q = 5
+        dist[5 * Np + n] = f5 * (1.0 - rlx) + 0.05555555555555555 * (rlx * psi + rho_e);
+
+        // q = 6
+        dist[6 * Np + n] = f6 * (1.0 - rlx) + 0.05555555555555555 * (rlx * psi + rho_e);
+        
+        dist[7 * Np + n] = f7 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+        dist[8 * Np + n] = f8* (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+        dist[9 * Np + n] = f9 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+        dist[10 * Np + n] = f10 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+        dist[11 * Np + n] = f11 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+        dist[12 * Np + n] = f12 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+        dist[13 * Np + n] = f13 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+        dist[14 * Np + n] = f14 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+        dist[15 * Np + n] = f15 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+        dist[16 * Np + n] = f16 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+        dist[17 * Np + n] = f17 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+        dist[18 * Np + n] = f18 * (1.0 - rlx) + 0.02777777777777778 * (rlx * psi + rho_e);
+
+        //........................................................................
+    }
+}
+
+extern "C" void ScaLBL_D3Q19_Poisson_Init(int *Map, double *dist, double *Psi,
+                                         int start, int finish, int Np) {
+    int n;
+    int ijk;
+    for (n = start; n < finish; n++) {
+        ijk = Map[n];
+        dist[0 * Np + n] = 0.3333333333333333* Psi[ijk];
+        dist[1 * Np + n] = 0.055555555555555555 * Psi[ijk];
+        dist[2 * Np + n] = 0.055555555555555555 * Psi[ijk];
+        dist[3 * Np + n] = 0.055555555555555555 * Psi[ijk];
+        dist[4 * Np + n] = 0.055555555555555555 * Psi[ijk];
+        dist[5 * Np + n] = 0.055555555555555555 * Psi[ijk];
+        dist[6 * Np + n] = 0.055555555555555555 * Psi[ijk];
+        dist[7 * Np + n] = 0.02777777777777778 * Psi[ijk];
+        dist[8 * Np + n] = 0.02777777777777778 * Psi[ijk];
+        dist[9 * Np + n] = 0.02777777777777778 * Psi[ijk];
+        dist[10 * Np + n] = 0.02777777777777778 * Psi[ijk];
+        dist[11 * Np + n] = 0.02777777777777778 * Psi[ijk];
+        dist[12 * Np + n] = 0.02777777777777778 * Psi[ijk];
+        dist[13 * Np + n] = 0.02777777777777778 * Psi[ijk];
+        dist[14 * Np + n] = 0.02777777777777778 * Psi[ijk];
+        dist[15 * Np + n] = 0.02777777777777778 * Psi[ijk];
+        dist[16 * Np + n] = 0.02777777777777778 * Psi[ijk];
+        dist[17 * Np + n] = 0.02777777777777778 * Psi[ijk];
+        dist[18 * Np + n] = 0.02777777777777778 * Psi[ijk];
+    }
+}

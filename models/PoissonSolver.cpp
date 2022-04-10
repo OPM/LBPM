@@ -42,7 +42,7 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	domain_db = db->getDatabase( "Domain" );
 	electric_db = db->getDatabase( "Poisson" );
 	
-    k2_inv = 4.0;//speed of sound for D3Q7 lattice 
+    k2_inv = 3.0;//speed of sound for D3Q19 lattice 
 	tau = 0.5+k2_inv;
 	timestepMax = 100000;
 	tolerance = 1.0e-6;//stopping criterion for obtaining steady-state electricla potential
@@ -598,7 +598,7 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, bool UseSlippingVelBC, int times
 
 
             /* compute the eletric field */
-            ScaLBL_D3Q19_Poisson_getElectricField(fq, ElectricField, tau, Np);
+            //ScaLBL_D3Q19_Poisson_getElectricField(fq, ElectricField, tau, Np);
 
         }
 	}
