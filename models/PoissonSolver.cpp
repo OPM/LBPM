@@ -44,7 +44,7 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	
     k2_inv = 3.0;//speed of sound for D3Q19 lattice 
 	tau = 0.5+k2_inv;
-	tau = 9.0 / 5.0 + 0.5; // moran wang D3Q19
+	tau = 1.0; // moran wang D3Q19
 	timestepMax = 100000;
 	tolerance = 1.0e-6;//stopping criterion for obtaining steady-state electricla potential
     h = 1.0;//resolution; unit: um/lu
