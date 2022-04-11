@@ -658,8 +658,6 @@ extern "C" void ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
         //When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
         //and thus the net space charge density is zero. 
         rho_e = (UseSlippingVelBC==1) ? 0.0 : Den_charge[n] / epsilon_LB;
-        idx = Map[n];
-        psi = Psi[idx];
 
         // q=0
         f0 = dist[n];
@@ -736,9 +734,12 @@ extern "C" void ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
          f18 = dist[nr18];
 
          sum_q = f1+f2+f3+f4+f5+f6+f7+f8+f9+f10+f11+f12+f13+f14+f15+f16+f17+f18;
-         error = 8.0*(sum_q - f0) - rho_e; 
+         error = 8.0*(sum_q - f0) + rho_e; 
 
-         psi = 2.0*(f0*(1.0 - rlx) + rlx*(sum_q - 0.125*rho_e));
+         psi = 2.0*(f0*(1.0 - rlx) + rlx*(sum_q + 0.125*rho_e));
+         
+         idx = Map[n];
+         Psi[idx] = psi;
 
          Ex = (f1 - f2 + 0.5*(f7 - f8 + f9 - f10 + f11 - f12 + f13 - f14))*4.0; //NOTE the unit of electric field here is V/lu
          Ey = (f3 - f4 + 0.5*(f7 - f8 - f9 + f10 + f15 - f16 + f17 - f18))*4.0;
@@ -831,8 +832,6 @@ extern "C" void ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 		//When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
 		//and thus the net space charge density is zero. 
 		rho_e = (UseSlippingVelBC==1) ? 0.0 : Den_charge[n] / epsilon_LB;
-		idx = Map[n];
-		psi = Psi[idx];
 
 		f0 = dist[n];
 		f1 = dist[2 * Np + n];
@@ -869,10 +868,13 @@ extern "C" void ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 		ElectricField[n + 2 * Np] = Ez;
 
 		sum_q = f1+f2+f3+f4+f5+f6+f7+f8+f9+f10+f11+f12+f13+f14+f15+f16+f17+f18;
-		error = 8.0*(sum_q - f0) - rho_e; 
+		error = 8.0*(sum_q - f0) + rho_e; 
 
-		psi = 2.0*(f0*(1.0 - rlx) + rlx*(sum_q - 0.125*rho_e));
-
+		psi = 2.0*(f0*(1.0 - rlx) + rlx*(sum_q + 0.125*rho_e));
+        
+        idx = Map[n];
+        Psi[idx] = psi;
+        
 		// q = 0
 		dist[n] =  W0*psi;//
 

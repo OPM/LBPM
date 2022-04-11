@@ -1399,17 +1399,17 @@ void Membrane::AssignCoefficients(int *Map, double *Psi, string method){
 	}
 	if (method == "impermeable"){
 		printf(".... impermeable membrane \n");
-		MassFractionIn = 0.0;
-		MassFractionOut = 0.0;
-		ThresholdMassFractionOut = 0.0;				
-		ThresholdMassFractionIn = 0.0;
+		MassFractionIn = 0.001;
+		MassFractionOut = 0.001;
+		ThresholdMassFractionOut = 0.001;				
+		ThresholdMassFractionIn = 0.0001;
 	}
 	if (method == "Na+"){
 		printf(".... Na+ permeable membrane \n");
-		MassFractionIn = 0.5;
-		MassFractionOut = 0.5;
-		ThresholdMassFractionOut = 0.5;				
-		ThresholdMassFractionIn = 0.5;
+		MassFractionIn = 0.05;
+		MassFractionOut = 0.05;
+		ThresholdMassFractionOut = 0.05;				
+		ThresholdMassFractionIn = 0.05;
 	}
 	
 	ScaLBL_D3Q7_Membrane_AssignLinkCoef(MembraneLinks, Map, MembraneDistance, Psi, MembraneCoef,
