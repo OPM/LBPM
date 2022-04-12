@@ -407,7 +407,56 @@ void ScaLBL_Poisson::Potential_Init(double *psi_init){
     Vin  = 1.0; //Boundary-z (inlet)  electric potential
     Vout = 1.0; //Boundary-Z (outlet) electric potential
 
-    if (BoundaryConditionInlet>0){
+    if (BoundaryConditionInlet==0 && BoundaryConditionOutlet==0){
+    
+        signed char VALUE=0;
+        double AFFINITY=0.f;
+
+        auto LabelList = electric_db->getVector<int>( "InitialValueLabels" );
+        auto AffinityList = electric_db->getVector<double>( "InitialValues" );
+
+        size_t NLABELS = LabelList.size();
+        if (NLABELS != AffinityList.size() || NLABELS != BoundaryConditionSolidList.size()){
+            ERROR("Error: LB-Poisson Solver: InitialValueLabels and InitialValues must be of the same length! \n");
+        }
+
+        std::vector<double> label_count( NLABELS, 0.0 );
+        std::vector<double> label_count_global( NLABELS, 0.0 );
+
+        for (int k=0;k<Nz;k++){
+            for (int j=0;j<Ny;j++){
+                for (int i=0;i<Nx;i++){
+                    int n = k*Nx*Ny+j*Nx+i;
+                    VALUE=Mask->id[n];
+                    AFFINITY=0.f;
+                    // Assign the affinity from the paired list
+                    for (unsigned int idx=0; idx < NLABELS; idx++){
+                        if (VALUE == LabelList[idx]){
+                            AFFINITY=AffinityList[idx];
+                            label_count[idx] += 1.0;
+                            idx = NLABELS;
+                        }
+                    }
+                    psi_init[n] = AFFINITY;
+                }
+            }
+        }
+
+        for (size_t idx=0; idx<NLABELS; idx++)
+            label_count_global[idx]=Dm->Comm.sumReduce(  label_count[idx]);
+
+        if (rank==0){
+            printf("LB-Poisson Solver: number of Poisson initial-value labels: %lu \n",NLABELS);
+            for (unsigned int idx=0; idx<NLABELS; idx++){
+                VALUE=LabelList[idx];
+                AFFINITY=AffinityList[idx];
+                double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
+                printf("   label=%d, initial potential=%.3g [V], volume fraction=%.2g\n",VALUE,AFFINITY,volume_fraction); 
+            }
+        }
+    }
+    else if (BoundaryConditionInlet>0 && BoundaryConditionOutlet>0){
+        //read input parameters for inlet
         switch (BoundaryConditionInlet){
             case 1:
                 if (electric_db->keyExists( "Vin" )){
@@ -431,8 +480,7 @@ void ScaLBL_Poisson::Potential_Init(double *psi_init){
                 } 
                 break;
         }
-    }
-    if (BoundaryConditionOutlet>0){
+        //read input parameters for outlet
         switch (BoundaryConditionOutlet){
             case 1:
                 if (electric_db->keyExists( "Vout" )){
@@ -456,30 +504,35 @@ void ScaLBL_Poisson::Potential_Init(double *psi_init){
                 } 
                 break;
         }
-    }
-    //By default only periodic BC is applied and Vin=Vout=1.0, i.e. there is no potential gradient along Z-axis
-    if (BoundaryConditionInlet==2)  Vin  = getBoundaryVoltagefromPeriodicBC(Vin0,freqIn,PhaseShift_In,0);
-    if (BoundaryConditionOutlet==2) Vout = getBoundaryVoltagefromPeriodicBC(Vout0,freqOut,PhaseShift_Out,0);
-    double slope = (Vout-Vin)/(Nz-2);
-    double psi_linearized;
-	for (int k=0;k<Nz;k++){
-        if (k==0 || k==1){
-            psi_linearized = Vin;
-        }
-        else if (k==Nz-1 || k==Nz-2){
-            psi_linearized = Vout;
-        }
-        else{
-            psi_linearized = slope*(k-1)+Vin;
-        }
-		for (int j=0;j<Ny;j++){
-			for (int i=0;i<Nx;i++){
-				int n = k*Nx*Ny+j*Nx+i;
-				if (Mask->id[n]>0){
-                    psi_init[n] = psi_linearized;
+        //calcualte inlet/outlet voltage for the case of BCInlet/Outlet=2
+        if (BoundaryConditionInlet==2)  Vin  = getBoundaryVoltagefromPeriodicBC(Vin0,freqIn,PhaseShift_In,0);
+        if (BoundaryConditionOutlet==2) Vout = getBoundaryVoltagefromPeriodicBC(Vout0,freqOut,PhaseShift_Out,0);
+
+        //initialize a linear electrical potential between inlet and outlet
+        double slope = (Vout-Vin)/(Nz-2);
+        double psi_linearized;
+        for (int k=0;k<Nz;k++){
+            if (k==0 || k==1){
+                psi_linearized = Vin;
+            }
+            else if (k==Nz-1 || k==Nz-2){
+                psi_linearized = Vout;
+            }
+            else{
+                psi_linearized = slope*(k-1)+Vin;
+            }
+            for (int j=0;j<Ny;j++){
+                for (int i=0;i<Nx;i++){
+                    int n = k*Nx*Ny+j*Nx+i;
+                    if (Mask->id[n]>0){
+                        psi_init[n] = psi_linearized;
+                    }
                 }
             }
         }
+    }
+    else{//mixed periodic and non-periodic BCs are not supported!
+        ERROR("Error: check the type of inlet and outlet boundary condition! Mixed periodic and non-periodic BCs are found!\n");
     }
 }
 
