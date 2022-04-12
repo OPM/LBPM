@@ -28,7 +28,7 @@ public:
                                       const vector<double> &IonTimeConv);
     vector<int> getIonNumIter_PNP_coupling(double StokesTimeConv,
                                            const vector<double> &IonTimeConv);
-    //void getIonNumIter_PNP_coupling(double StokesTimeConv,vector<double> &IonTimeConv,vector<int> &IonTimeMax);
+    vector<int> getIonNumIter_NernstPlanck_coupling(const vector<double> &IonTimeConv);
     void getTimeConvMax_PNP_coupling(double StokesTimeConv,
                                      const vector<double> &IonTimeConv);
 
