@@ -154,20 +154,21 @@ vector<int> ScaLBL_Multiphys_Controller::getIonNumIter_PNP_coupling(
 vector<int> ScaLBL_Multiphys_Controller::getIonNumIter_NernstPlanck_coupling(
     const vector<double> &IonTimeConv) {
     //Return number of internal iterations for the Ion transport solver
+    vector<double> TimeConv;
+    TimeConv.assign(IonTimeConv.begin(), IonTimeConv.end());
     vector<int> num_iter_ion;
-    vector<double>::iterator it_max =
-        max_element(IonTimeConv.begin(), IonTimeConv.end());
-    unsigned int idx_max = distance(IonTimeConv.begin(), it_max);
+    vector<double>::iterator it_max = max_element(TimeConv.begin(), TimeConv.end());
+    unsigned int idx_max = distance(TimeConv.begin(), it_max);
     if (idx_max == 0) {
         num_iter_ion.push_back(2);
-        for (unsigned int idx = 1; idx < IonTimeConv.size(); idx++) {
+        for (unsigned int idx = 1; idx < TimeConv.size(); idx++) {
             double temp =
                 2 * TimeConv[idx_max] /
                 TimeConv
                     [idx]; //the factor 2 is the number of iterations for the element has max time_conv
             num_iter_ion.push_back(int(round(temp / 2) * 2));
         }
-    } else if (idx_max == IonTimeConv.size() - 1) {
+    } else if (idx_max == TimeConv.size() - 1) {
         for (unsigned int idx = 0; idx < TimeConv.size() - 1; idx++) {
             double temp =
                 2 * TimeConv[idx_max] /
@@ -185,7 +186,7 @@ vector<int> ScaLBL_Multiphys_Controller::getIonNumIter_NernstPlanck_coupling(
             num_iter_ion.push_back(int(round(temp / 2) * 2));
         }
         num_iter_ion.push_back(2);
-        for (unsigned int idx = idx_max + 1; idx < IonTimeConv.size(); idx++) {
+        for (unsigned int idx = idx_max + 1; idx < TimeConv.size(); idx++) {
             double temp =
                 2 * TimeConv[idx_max] /
                 TimeConv

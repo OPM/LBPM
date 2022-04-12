@@ -72,8 +72,8 @@ int main(int argc, char **argv)
 
         //----------------------------------- print out for debugging ------------------------------------------//
         if (rank==0){
-            for (size_t i=0;i<IonModel.timestepMax.size(),i++){
-                printf("Main loop time_conv computed from %ith ion: %.5g[s/lt]"%(IonModel.timestepMax[i]*IonModel.time_conv[i]));
+            for (size_t i=0;i<IonModel.timestepMax.size();i++){
+                printf("Main loop time_conv computed from ion %i: %.5g[s/lt]\n",i+1,IonModel.timestepMax[i]*IonModel.time_conv[i]);
             }
         }
         //----------------------------------- print out for debugging ------------------------------------------//
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
         while (timestep < Study.timestepMax){
             
             timestep++;
-            PoissonSolver.Run(IonModel.ChargeDensity,StokesModel.UseSlippingVelBC,timestep);//solve Poisson equtaion to get steady-state electrical potental
+            PoissonSolver.Run(IonModel.ChargeDensity,false,timestep);//solve Poisson equtaion to get steady-state electrical potental
             //StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
             IonModel.Run(IonModel.FluidVelocityDummy,PoissonSolver.ElectricField); //solve for ion transport and electric potential
             
