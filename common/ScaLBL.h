@@ -376,14 +376,6 @@ extern "C" void ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(int *Map, double *d
 extern "C" void ScaLBL_D3Q19_Poisson_Init(int *Map, double *dist, double *Psi, int start, int finish, int Np);
 
 
-extern "C" void ScaLBL_D3Q19_AAodd_Poisson_ElectricPotential(int *neighborList, int *Map,
-                                            double *dist, double *Den_charge, double *Psi,
-                                            double epsilon_LB, bool UseSlippingVelBC,
-                                            int start, int finish, int Np);
-
-extern "C" void ScaLBL_D3Q19_AAeven_Poisson_ElectricPotential(int *Map, double *dist, double *Den_charge, 
-		double *Psi, double epsilon_LB, bool UseSlippingVelBC, int start, int finish, int Np);
-
 extern "C" void ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
                                           double *dist, double *Den_charge,
                                           double *Psi, double *ElectricField,
