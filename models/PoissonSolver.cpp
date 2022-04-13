@@ -437,7 +437,8 @@ void ScaLBL_Poisson::Potential_Init(double *psi_init){
                             idx = NLABELS;
                         }
                     }
-                    psi_init[n] = AFFINITY;
+                    int idx=Map(i,j,k);
+                    if (!(idx<0))  psi_init[n] = AFFINITY;
                 }
             }
         }
