@@ -416,7 +416,7 @@ void ScaLBL_Poisson::Potential_Init(double *psi_init){
         auto AffinityList = electric_db->getVector<double>( "InitialValues" );
 
         size_t NLABELS = LabelList.size();
-        if (NLABELS != AffinityList.size() || NLABELS != BoundaryConditionSolidList.size()){
+        if (NLABELS != AffinityList.size()){
             ERROR("Error: LB-Poisson Solver: InitialValueLabels and InitialValues must be of the same length! \n");
         }
 

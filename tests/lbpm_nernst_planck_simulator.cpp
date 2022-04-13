@@ -101,6 +101,9 @@ int main(int argc, char **argv)
             timestep++;
             PoissonSolver.Run(IonModel.ChargeDensity,false,timestep);//solve Poisson equtaion to get steady-state electrical potental
             //StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
+            
+            //for debugging    
+            IonModel.getIonConcentration_debug(0);
             IonModel.Run(IonModel.FluidVelocityDummy,PoissonSolver.ElectricField); //solve for ion transport and electric potential
             
 
