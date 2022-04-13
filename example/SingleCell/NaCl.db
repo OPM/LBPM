@@ -1,10 +1,9 @@
 MultiphysController {
-    timestepMax = 200
+    timestepMax = 2000
     num_iter_Ion_List = 2
-    analysis_interval  = 50
+    analysis_interval  = 40
     tolerance = 1.0e-9
-    visualization_interval = 100        // Frequency to write visualization data
-    analysis_interval = 50    // Frequency to perform analysis
+    visualization_interval = 40        // Frequency to write visualization data
 }
 Stokes {
     tau = 1.0
@@ -13,7 +12,7 @@ Stokes {
     nu_phys = 0.889e-6      //fluid kinematic viscosity; user-input unit: [m^2/sec]
 }
 Ions {
-    IonConcentrationFile = "cell_concentration_Na_40x40x40.raw", "double", "cell_concentration_Cl_40x40x40.raw", "double"
+    IonConcentrationFile = "cell_concentration_Na_64x64x64.raw", "double", "cell_concentration_Cl_64x64x64.raw", "double"
     temperature = 293.15 //unit [K]
     number_ion_species = 2  //number of ions
     tauList = 1.0, 1.0
@@ -42,16 +41,16 @@ Poisson {
     TestPeriodicTimeConv = 0.01 //unit:[sec]
     TestPeriodicSaveInterval = 0.2 //unit:[sec]
     //------------------------------ advanced setting ------------------------------------
-    timestepMax = 100000 //max timestep for obtaining steady-state electrical potential
-    analysis_interval  = 200 //timestep checking steady-state convergence
-    tolerance = 1.0e-6  //stopping criterion for steady-state solution
+    timestepMax = 4000 //max timestep for obtaining steady-state electrical potential
+    analysis_interval  = 25 //timestep checking steady-state convergence
+    tolerance = 1.0e-10  //stopping criterion for steady-state solution
 }
 Domain {
-    Filename = "cell_40x40x40.raw"
+    Filename = "cell_64x64x64.raw"
     nproc = 1, 1, 1     // Number of processors (Npx,Npy,Npz)
-    n = 40, 40, 40      // Size of local domain (Nx,Ny,Nz)
-    N = 40, 40, 40         // size of the input image
-    voxel_length = 1.0   //resolution; user-input unit: [um]
+    n = 64, 64, 64      // Size of local domain (Nx,Ny,Nz)
+    N = 64, 64, 64         // size of the input image
+    voxel_length = 0.1   //resolution; user-input unit: [um]
     BC = 0              // Boundary condition type
     ReadType = "8bit"
     ReadValues  = 0, 1, 2
