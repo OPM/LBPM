@@ -637,7 +637,7 @@ void ScaLBL_Poisson::getConvergenceLog(int timestep,double error){
 
 void ScaLBL_Poisson::SolveElectricPotentialAAodd(int timestep_from_Study, double *ChargeDensity, bool UseSlippingVelBC){
 	ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
-	ScaLBL_D3Q19_AAodd_Poisson_ElectricPotential(NeighborList, dvcMap, fq, ChargeDensity, Psi, epsilon_LB, UseSlippingVelBC, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	//ScaLBL_D3Q19_AAodd_Poisson_ElectricPotential(NeighborList, dvcMap, fq, ChargeDensity, Psi, epsilon_LB, UseSlippingVelBC, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
     ScaLBL_Comm->Barrier();
     /*
@@ -666,13 +666,13 @@ void ScaLBL_Poisson::SolveElectricPotentialAAodd(int timestep_from_Study, double
 	}
     //-------------------------//
      * */
-	ScaLBL_D3Q19_AAodd_Poisson_ElectricPotential(NeighborList, dvcMap, fq, ChargeDensity, Psi, epsilon_LB, UseSlippingVelBC, 0, ScaLBL_Comm->LastExterior(), Np);
+	//ScaLBL_D3Q19_AAodd_Poisson_ElectricPotential(NeighborList, dvcMap, fq, ChargeDensity, Psi, epsilon_LB, UseSlippingVelBC, 0, ScaLBL_Comm->LastExterior(), Np);
 }
 
 void ScaLBL_Poisson::SolveElectricPotentialAAeven(int timestep_from_Study, double *ChargeDensity, bool UseSlippingVelBC){
 	ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
-	ScaLBL_D3Q19_AAeven_Poisson_ElectricPotential(dvcMap, fq, ChargeDensity, Psi, epsilon_LB, UseSlippingVelBC,
-			ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	//ScaLBL_D3Q19_AAeven_Poisson_ElectricPotential(dvcMap, fq, ChargeDensity, Psi, epsilon_LB, UseSlippingVelBC,
+	//		ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
     ScaLBL_Comm->Barrier();
     
@@ -703,7 +703,7 @@ void ScaLBL_Poisson::SolveElectricPotentialAAeven(int timestep_from_Study, doubl
 	}
 	*/
     //-------------------------//
-	ScaLBL_D3Q19_AAeven_Poisson_ElectricPotential(dvcMap, fq, ChargeDensity, Psi, epsilon_LB, UseSlippingVelBC, 0, ScaLBL_Comm->LastExterior(), Np);
+	//ScaLBL_D3Q19_AAeven_Poisson_ElectricPotential(dvcMap, fq, ChargeDensity, Psi, epsilon_LB, UseSlippingVelBC, 0, ScaLBL_Comm->LastExterior(), Np);
 }
 
 void ScaLBL_Poisson::SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVelBC){
