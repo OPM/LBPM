@@ -64,6 +64,7 @@ int main(int argc, char **argv)
         //IonModel.timestepMax = Study.getIonNumIter_PNP_coupling(StokesModel.time_conv,IonModel.time_conv);
         IonModel.timestepMax = Study.getIonNumIter_NernstPlanck_coupling(IonModel.time_conv);
         IonModel.Initialize();   
+        IonModel.DummyFluidVelocity();
         
         // Get maximal time converting factor based on Sotkes and Ion solvers
         //Study.getTimeConvMax_PNP_coupling(StokesModel.time_conv,IonModel.time_conv);
@@ -101,9 +102,6 @@ int main(int argc, char **argv)
             timestep++;
             PoissonSolver.Run(IonModel.ChargeDensity,false,timestep);//solve Poisson equtaion to get steady-state electrical potental
             //StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
-            
-            //for debugging    
-            IonModel.getIonConcentration_debug(0);
             IonModel.Run(IonModel.FluidVelocityDummy,PoissonSolver.ElectricField); //solve for ion transport and electric potential
             
 
