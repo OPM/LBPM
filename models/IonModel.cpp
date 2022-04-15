@@ -17,6 +17,7 @@ ScaLBL_IonModel::~ScaLBL_IonModel() {}
 
 void ScaLBL_IonModel::ReadParams(string filename, vector<int> &num_iter) {
 
+	USE_MEMBRANE = true;
     // read the input database
     db = std::make_shared<Database>(filename);
     domain_db = db->getDatabase("Domain");
@@ -162,6 +163,15 @@ void ScaLBL_IonModel::ReadParams(string filename, vector<int> &num_iter) {
                 (h * h * h *
                  1.0e-18); //LB ion concentration has unit [mol/lu^3]
         }
+    }
+    
+    if (ion_db->keyExists("MembraneIonConcentrationList")) {
+        MembraneIonConcentration.clear();
+        MembraneIonConcentration = ion_db->getVector<double>("MembraneIonConcentrationList");
+        if (MembraneIonConcentration.size() != number_ion_species) {
+            ERROR("Error: number_ion_species and MembraneIonConcentrationList must be "
+                  "the same length! \n");
+        } 
     }
 
     //Read solid boundary condition specific to Ion model
@@ -775,6 +785,30 @@ void ScaLBL_IonModel::AssignSolidBoundary(double *ion_solid) {
     }
 }
 
+void ScaLBL_IonModel::AssignIonConcentrationMembrane( double *Ci, int ic) {
+//    double *Ci, const vector<double> MembraneIonConcentration, const vector<double> IonConcentration, int ic) {
+
+	double VALUE = 0.f;
+
+    for (int k = 0; k < Nz; k++) {
+        for (int j = 0; j < Ny; j++) {
+            for (int i = 0; i < Nx; i++) {
+                int idx = Map(i, j, k);
+                if (!(idx < 0)) {
+                    if (MembraneDistance(i,j,k) < 0.0) {
+                    	VALUE = MembraneIonConcentration[ic]* (h * h * h * 1.0e-18);
+                    } else {
+                    	VALUE = IonConcentration[ic]* (h * h * h * 1.0e-18);
+
+                    }
+                    Ci[idx] = VALUE;
+                }
+            }
+        }
+    }
+}
+
+
 void ScaLBL_IonModel::AssignIonConcentration_FromFile(
     double *Ci, const vector<std::string> &File_ion, int ic) {
     double *Ci_host;
@@ -920,7 +954,23 @@ void ScaLBL_IonModel::Initialize() {
 	 */
     if (rank == 0)
         printf("LB Ion Solver: initializing D3Q7 distributions\n");
-    if (ion_db->keyExists("IonConcentrationFile")) {
+    if (USE_MEMBRANE){
+            double *Ci_host;
+            Ci_host = new double[number_ion_species * Np];
+            for (size_t ic = 0; ic < number_ion_species; ic++) {
+            	AssignIonConcentrationMembrane( &Ci_host[ic * Np],  ic);
+
+            }
+            ScaLBL_CopyToDevice(Ci, Ci_host,
+                                number_ion_species * sizeof(double) * Np);
+            comm.barrier();
+            for (size_t ic = 0; ic < number_ion_species; ic++) {
+                ScaLBL_D3Q7_Ion_Init_FromFile(&fq[ic * Np * 7], &Ci[ic * Np],
+                                              Np);
+            }
+            delete[] Ci_host;
+    }
+    else if (ion_db->keyExists("IonConcentrationFile")) {
         //NOTE: "IonConcentrationFile" is a vector, including "file_name, datatype"
         auto File_ion = ion_db->getVector<std::string>("IonConcentrationFile");
         if (File_ion.size() == 2*number_ion_species) {
@@ -942,7 +992,8 @@ void ScaLBL_IonModel::Initialize() {
             ERROR("Error: Number of user-input ion concentration files should "
                   "be equal to number of ion species!\n");
         }
-    } else {
+    } 
+    else {
         for (size_t ic = 0; ic < number_ion_species; ic++) {
             ScaLBL_D3Q7_Ion_Init(&fq[ic * Np * 7], &Ci[ic * Np],
                                  IonConcentration[ic], Np);

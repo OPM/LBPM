@@ -68,6 +68,7 @@ public:
     vector<double> IonDiffusivity; //User input unit [m^2/sec]
     vector<int> IonValence;
     vector<double> IonConcentration; //unit [mol/m^3]
+    vector<double> MembraneIonConcentration; //unit [mol/m^3]
     vector<double>
         Cin; //inlet boundary value, can be either concentration [mol/m^3] or flux [mol/m^2/sec]
     vector<double>
@@ -102,11 +103,12 @@ public:
     double *FluxElectrical;
     
     /* these support membrane capabilities      */
+    bool USE_MEMBRANE;
     std::shared_ptr<Database> membrane_db;
     std::shared_ptr<Membrane> IonMembrane;
     DoubleArray MembraneDistance;
     int MembraneCount; // number of links the cross the membrane
-
+    
 private:
     Utilities::MPI comm;
 
@@ -122,6 +124,8 @@ private:
     void AssignIonConcentration_FromFile(double *Ci,
                                          const vector<std::string> &File_ion,
                                          int ic);
+    void AssignIonConcentrationMembrane( double *Ci, int ic);
+
     void IonConcentration_LB_to_Phys(DoubleArray &Den_reg);
     void IonFlux_LB_to_Phys(DoubleArray &Den_reg, const size_t ic);
 };
