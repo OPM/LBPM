@@ -90,26 +90,6 @@ Membrane::Membrane(std::shared_ptr <Domain> Dm, int *dvcNeighborList, int Nsites
 		printf("**** Creating membrane data structure ****** \n");
 	}
 	printf("   Number of active lattice sites (rank = %i): %i \n",rank, Np);
-	
-	/* check symmetry for send / recv counts */
-	if (sendCount_x != recvCount_X)   printf("WARNING: rank %i send/recv mismatch (x/X)! \n",rank);
-	if (sendCount_y != recvCount_Y)   printf("WARNING: rank %i send/recv mismatch (y/Y)! \n",rank);
-	if (sendCount_z != recvCount_Z)   printf("WARNING: rank %i send/recv mismatch (z/Z)! \n",rank);
-	if (sendCount_X != recvCount_x)   printf("WARNING: rank %i send/recv mismatch (X/x)! \n",rank);
-	if (sendCount_Y != recvCount_y)   printf("WARNING: rank %i send/recv mismatch (Y/y)! \n",rank);
-	if (sendCount_x != recvCount_z)   printf("WARNING: rank %i send/recv mismatch (Z/z)! \n",rank);	
-	if (sendCount_xy != recvCount_XY) printf("WARNING: rank %i send/recv mismatch (xy/XY)! \n",rank);
-	if (sendCount_Xy != recvCount_xY) printf("WARNING: rank %i send/recv mismatch (Xy/xY)! \n",rank);
-	if (sendCount_xY != recvCount_Xy) printf("WARNING: rank %i send/recv mismatch (xY/Xy)! \n",rank);
-	if (sendCount_XY != recvCount_xy) printf("WARNING: rank %i send/recv mismatch (XY/xy)! \n",rank);
-	if (sendCount_xz != recvCount_XZ) printf("WARNING: rank %i send/recv mismatch (xz/XZ)! \n",rank);
-	if (sendCount_Xz != recvCount_xZ) printf("WARNING: rank %i send/recv mismatch (Xz/xZ)! \n",rank);
-	if (sendCount_xZ != recvCount_Xz) printf("WARNING: rank %i send/recv mismatch (xZ/Xz)! \n",rank);
-	if (sendCount_XZ != recvCount_xz) printf("WARNING: rank %i send/recv mismatch (XZ/xz)! \n",rank);
-	if (sendCount_yz != recvCount_YZ) printf("WARNING: rank %i send/recv mismatch (yz/YZ)! \n",rank);
-	if (sendCount_Yz != recvCount_yZ) printf("WARNING: rank %i send/recv mismatch (Yz/yZ)! \n",rank);
-	if (sendCount_yZ != recvCount_Yz) printf("WARNING: rank %i send/recv mismatch (yZ/Yz)! \n",rank);
-	if (sendCount_YZ != recvCount_yz) printf("WARNING: rank %i send/recv mismatch (YZ/yz)! \n",rank);
 
 	iproc = Dm->iproc();
 	jproc = Dm->jproc();
