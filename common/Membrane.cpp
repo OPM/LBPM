@@ -1365,7 +1365,7 @@ void Membrane::AssignCoefficients(int *Map, double *Psi, string method){
 	
 	if (method == "ones"){
 		/* Initializing  */
-		printf(".... initialize permeable membrane \n");
+		//printf(".... initialize permeable membrane \n");
 		MassFractionIn = 1.0;
 		MassFractionOut = 1.0;
 		ThresholdMassFractionOut = 1.0;				
@@ -1378,14 +1378,14 @@ void Membrane::AssignCoefficients(int *Map, double *Psi, string method){
 		ThresholdMassFractionIn = 1.0;
 	}
 	if (method == "impermeable"){
-		printf(".... impermeable membrane \n");
+		//printf(".... impermeable membrane \n");
 		MassFractionIn = 0.001;
 		MassFractionOut = 0.001;
 		ThresholdMassFractionOut = 0.001;				
 		ThresholdMassFractionIn = 0.0001;
 	}
 	if (method == "Na+"){
-		printf(".... Na+ permeable membrane \n");
+		//printf(".... Na+ permeable membrane \n");
 		MassFractionIn = 0.05;
 		MassFractionOut = 0.05;
 		ThresholdMassFractionOut = 0.05;				
