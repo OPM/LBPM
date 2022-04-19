@@ -164,15 +164,6 @@ void ScaLBL_IonModel::ReadParams(string filename, vector<int> &num_iter) {
                  1.0e-18); //LB ion concentration has unit [mol/lu^3]
         }
     }
-    
-    if (ion_db->keyExists("MembraneIonConcentrationList")) {
-        MembraneIonConcentration.clear();
-        MembraneIonConcentration = ion_db->getVector<double>("MembraneIonConcentrationList");
-        if (MembraneIonConcentration.size() != number_ion_species) {
-            ERROR("Error: number_ion_species and MembraneIonConcentrationList must be "
-                  "the same length! \n");
-        } 
-    }
 
     //Read solid boundary condition specific to Ion model
     BoundaryConditionSolid = 0;
@@ -430,6 +421,25 @@ void ScaLBL_IonModel::ReadParams(string filename) {
                 (h * h * h *
                  1.0e-18); //LB ion concentration has unit [mol/lu^3]
         }
+    }
+    
+    
+    if (ion_db->keyExists("MembraneIonConcentrationList")) {
+    	printf(".... Read MembraneIonConcentrationList \n");
+    	MembraneIonConcentration.clear();
+    	MembraneIonConcentration = ion_db->getVector<double>("MembraneIonConcentrationList");
+    	if (MembraneIonConcentration.size() != number_ion_species) {
+    		ERROR("Error: number_ion_species and MembraneIonConcentrationList must be "
+    				"the same length! \n");
+    	} 
+    	else {
+    		for (size_t i = 0; i < MembraneIonConcentration.size(); i++) {
+    			MembraneIonConcentration[i] =
+    					MembraneIonConcentration[i] *
+    					(h * h * h *
+    							1.0e-18); //LB ion concentration has unit [mol/lu^3]
+    		}
+    	}
     }
 
     //Read solid boundary condition specific to Ion model
@@ -791,26 +801,24 @@ void ScaLBL_IonModel::AssignIonConcentrationMembrane( double *Ci, int ic) {
 	double VALUE = 0.f;
 
 	if (rank == 0){
-		for (unsigned int ic=0; ic<MembraneIonConcentration.size();ic++){
-			printf(".... Set concentration(%i): inside=%f, outside=%f \n", ic,  MembraneIonConcentration[ic], IonConcentration[ic]);
+		printf(".... Set concentration(%i): inside=%f, outside=%f \n", ic,  MembraneIonConcentration[ic], IonConcentration[ic]);
+	}
+	for (int k = 0; k < Nz; k++) {
+		for (int j = 0; j < Ny; j++) {
+			for (int i = 0; i < Nx; i++) {
+				int idx = Map(i, j, k);
+				if (!(idx < 0)) {
+					if (MembraneDistance(i,j,k) < 0.0) {
+						VALUE = MembraneIonConcentration[ic]* (h * h * h * 1.0e-18);
+					} else {
+						VALUE = IonConcentration[ic]* (h * h * h * 1.0e-18);
+
+					}
+					Ci[idx] = VALUE;
+				}
+			}
 		}
 	}
-    for (int k = 0; k < Nz; k++) {
-        for (int j = 0; j < Ny; j++) {
-            for (int i = 0; i < Nx; i++) {
-                int idx = Map(i, j, k);
-                if (!(idx < 0)) {
-                    if (MembraneDistance(i,j,k) < 0.0) {
-                    	VALUE = MembraneIonConcentration[ic]* (h * h * h * 1.0e-18);
-                    } else {
-                    	VALUE = IonConcentration[ic]* (h * h * h * 1.0e-18);
-
-                    }
-                    Ci[idx] = VALUE;
-                }
-            }
-        }
-    }
 }
 
 
@@ -959,6 +967,7 @@ void ScaLBL_IonModel::Initialize() {
 	 */
     if (rank == 0)
         printf("LB Ion Solver: initializing D3Q7 distributions\n");
+    USE_MEMBRANE = true; 
     if (USE_MEMBRANE){
             double *Ci_host;
             if (rank == 0)
@@ -966,7 +975,6 @@ void ScaLBL_IonModel::Initialize() {
             Ci_host = new double[number_ion_species * Np];
             for (size_t ic = 0; ic < number_ion_species; ic++) {
             	AssignIonConcentrationMembrane( &Ci_host[ic * Np],  ic);
-
             }
             ScaLBL_CopyToDevice(Ci, Ci_host, number_ion_species * sizeof(double) * Np);
             comm.barrier();
