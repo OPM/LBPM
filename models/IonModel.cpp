@@ -790,6 +790,11 @@ void ScaLBL_IonModel::AssignIonConcentrationMembrane( double *Ci, int ic) {
 
 	double VALUE = 0.f;
 
+	if (rank == 0){
+		for (unsigned int ic=0; ic<MembraneIonConcentration.size();ic++){
+			printf(".... Set concentration(%i): inside=%f, outside=%f \n", ic,  MembraneIonConcentration[ic], IonConcentration[ic]);
+		}
+	}
     for (int k = 0; k < Nz; k++) {
         for (int j = 0; j < Ny; j++) {
             for (int i = 0; i < Nx; i++) {
@@ -956,17 +961,17 @@ void ScaLBL_IonModel::Initialize() {
         printf("LB Ion Solver: initializing D3Q7 distributions\n");
     if (USE_MEMBRANE){
             double *Ci_host;
+            if (rank == 0)
+                printf("   ...initializing based on membrane list \n");
             Ci_host = new double[number_ion_species * Np];
             for (size_t ic = 0; ic < number_ion_species; ic++) {
             	AssignIonConcentrationMembrane( &Ci_host[ic * Np],  ic);
 
             }
-            ScaLBL_CopyToDevice(Ci, Ci_host,
-                                number_ion_species * sizeof(double) * Np);
+            ScaLBL_CopyToDevice(Ci, Ci_host, number_ion_species * sizeof(double) * Np);
             comm.barrier();
             for (size_t ic = 0; ic < number_ion_species; ic++) {
-                ScaLBL_D3Q7_Ion_Init_FromFile(&fq[ic * Np * 7], &Ci[ic * Np],
-                                              Np);
+                ScaLBL_D3Q7_Ion_Init_FromFile(&fq[ic * Np * 7], &Ci[ic * Np], Np);
             }
             delete[] Ci_host;
     }
