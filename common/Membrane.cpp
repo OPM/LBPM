@@ -88,8 +88,8 @@ Membrane::Membrane(std::shared_ptr <Domain> Dm, int *dvcNeighborList, int Nsites
 	
 	if (rank == 0){
 		printf("**** Creating membrane data structure ****** \n");
+		printf("   Number of active lattice sites (rank = %i): %i \n",rank, Np);
 	}
-	printf("   Number of active lattice sites (rank = %i): %i \n",rank, Np);
 
 	iproc = Dm->iproc();
 	jproc = Dm->jproc();
