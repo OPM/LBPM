@@ -809,9 +809,9 @@ void ScaLBL_IonModel::AssignIonConcentrationMembrane( double *Ci, int ic) {
 				int idx = Map(i, j, k);
 				if (!(idx < 0)) {
 					if (MembraneDistance(i,j,k) < 0.0) {
-						VALUE = MembraneIonConcentration[ic]* (h * h * h * 1.0e-18);
+						VALUE = MembraneIonConcentration[ic];//* (h * h * h * 1.0e-18);
 					} else {
-						VALUE = IonConcentration[ic]* (h * h * h * 1.0e-18);
+						VALUE = IonConcentration[ic];//* (h * h * h * 1.0e-18);
 
 					}
 					Ci[idx] = VALUE;
