@@ -498,7 +498,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
 
 __global__  void dvc_ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 		double *Den_charge, double *Psi,
-		double *ElectricField, double tau,
+		double *ElectricField, double *Error, double tau,
 		double epsilon_LB, bool UseSlippingVelBC,
 		int start, int finish, int Np) {
 	int n;
@@ -637,7 +637,7 @@ __global__  void dvc_ScaLBL_D3Q19_Poisson_Init(int *Map, double *dist, double *P
 
 extern "C" void ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
 		double *dist, double *Den_charge,
-		double *Psi, double *ElectricField,
+		double *Psi, double *ElectricField, 
 		double tau, double epsilon_LB, bool UseSlippingVelBC,
 		int start, int finish, int Np) {
 	//cudaProfilerStart();
@@ -652,12 +652,12 @@ extern "C" void ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
 
 extern "C" void ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 		double *Den_charge, double *Psi,
-		double *ElectricField, double tau,
+		double *ElectricField, double *Error, double tau,
 		double epsilon_LB, bool UseSlippingVelBC,
 		int start, int finish, int Np) {
 
 	dvc_ScaLBL_D3Q19_AAeven_Poisson<<<NBLOCKS,NTHREADS >>>( Map, dist, Den_charge, Psi,
-			ElectricField, tau, epsilon_LB, UseSlippingVelBC, start, finish, Np);
+			ElectricField, Error, tau, epsilon_LB, UseSlippingVelBC, start, finish, Np);
 
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){

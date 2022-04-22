@@ -384,7 +384,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
 
 extern "C" void ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
                                            double *Den_charge, double *Psi,
-                                           double *ElectricField, double tau,
+                                           double *ElectricField, double *Error, double tau,
                                            double epsilon_LB, bool UseSlippingVelBC,
                                            int start, int finish, int Np);
 

@@ -533,6 +533,8 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, bool UseSlippingVelBC, int times
 	//double starttime,stoptime,cputime;
 	//comm.barrier();
     //auto t1 = std::chrono::system_clock::now();
+	double *host_Error;
+	host_Error = new double [Np];
 
 	timestep=0;
 	double error = 1.0;
@@ -595,7 +597,16 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, bool UseSlippingVelBC, int times
                 error=Dm->Comm.maxReduce(MSE_loc_max);
             }
             else{
-		        ERROR("Error: user-specified tolerance_method cannot be identified; check you input database! \n");
+            	double err = 0.0;
+            	double max_error = 0.0;
+                ScaLBL_CopyToHost(host_Error,ResidualError,sizeof(double)*Np);
+                for (int idx=0; idx<Np; idx++){
+                	err = host_Error[idx]*host_Error[idx];
+                	if (err > max_error ){
+                		max_error = err;
+                	}
+                }
+                error=Dm->Comm.maxReduce(max_error);
             }
             ScaLBL_CopyToHost(Psi_previous.data(),Psi,sizeof(double)*Nx*Ny*Nz);
 
@@ -721,9 +732,9 @@ void ScaLBL_Poisson::SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVe
 
 void ScaLBL_Poisson::SolvePoissonAAeven(double *ChargeDensity, bool UseSlippingVelBC){
 	ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
-	ScaLBL_D3Q19_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, UseSlippingVelBC, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	ScaLBL_D3Q19_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, ResidualError, tau, epsilon_LB, UseSlippingVelBC, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
-	ScaLBL_D3Q19_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, UseSlippingVelBC, 0, ScaLBL_Comm->LastExterior(), Np);
+	ScaLBL_D3Q19_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, ResidualError, tau, epsilon_LB, UseSlippingVelBC, 0, ScaLBL_Comm->LastExterior(), Np);
     ScaLBL_Comm->Barrier();
 	//ScaLBL_Comm->SolidDirichletAndNeumannD3Q7(fq, Psi, Psi_BCLabel);
 }

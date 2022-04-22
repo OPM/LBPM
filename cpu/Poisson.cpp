@@ -810,7 +810,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
 
 extern "C" void ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 		double *Den_charge, double *Psi,
-		double *ElectricField, double tau,
+		double *ElectricField, double *Error, double tau,
 		double epsilon_LB, bool UseSlippingVelBC,
 		int start, int finish, int Np) {
 	int n;
@@ -869,6 +869,8 @@ extern "C" void ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 
 		sum_q = f1+f2+f3+f4+f5+f6+f7+f8+f9+f10+f11+f12+f13+f14+f15+f16+f17+f18;
 		error = 8.0*(sum_q - f0) + rho_e; 
+		
+		Error[n] = error;
 
 		psi = 2.0*(f0*(1.0 - rlx) + rlx*(sum_q + 0.125*rho_e));
         
