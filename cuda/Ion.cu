@@ -566,7 +566,7 @@ __global__  void dvc_ScaLBL_D3Q7_Ion_Init_FromFile(double *dist, double *Den, in
 	}
 }
 
-__global__  void dvc_ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity, int IonValence, int ion_component, int start, int finish, int Np){
+__global__  void dvc_ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity, double IonValence, int ion_component, int start, int finish, int Np){
 
     int n;
     double Ci;//ion concentration of species i
@@ -579,10 +579,17 @@ __global__  void dvc_ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDe
 		//........Get 1-D index for this thread....................
 		n =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
 		if (n<finish) {
+
             Ci = Den[n+ion_component*Np];
             CD = ChargeDensity[n];
+            if (ion_component == 0) CD=0.0;
             CD_tmp = F*IonValence*Ci;
-            ChargeDensity[n] = CD*(ion_component>0) + CD_tmp;
+            ChargeDensity[n] = CD + CD_tmp;
+
+ //           Ci = Den[n+ion_component*Np];
+   //         CD = ChargeDensity[n];
+     //       CD_tmp = F*IonValence*Ci;
+       //     ChargeDensity[n] = CD*(ion_component>0) + CD_tmp;
 		}
 	}
 }
@@ -660,7 +667,7 @@ extern "C" void ScaLBL_D3Q7_Ion_Init_FromFile(double *dist, double *Den, int Np)
 	//cudaProfilerStop();
 }
 
-extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity, int IonValence, int ion_component, int start, int finish, int Np){
+extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity, double IonValence, int ion_component, int start, int finish, int Np){
 
 	//cudaProfilerStart();
 	dvc_ScaLBL_D3Q7_Ion_ChargeDensity<<<NBLOCKS,NTHREADS >>>(Den,ChargeDensity,IonValence,ion_component,start,finish,Np);

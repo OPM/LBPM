@@ -557,6 +557,7 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, bool UseSlippingVelBC, int times
 		ScaLBL_Comm->Barrier(); comm.barrier();
 		//************************************************************************/
 
+		
         // Check convergence of steady-state solution
         if (timestep==2){
             //save electric potential for convergence check

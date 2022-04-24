@@ -1443,17 +1443,35 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
 
     //Compute charge density for Poisson equation
     for (size_t ic = 0; ic < number_ion_species; ic++) {
-        ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence[ic], ic,
+      int Valence = IonValence[ic];
+      if (rank==0) printf("compute charge density for ion %i, Valence =%i \n", ic,Valence);
+
+      ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, Valence, ic,
                                       ScaLBL_Comm->FirstInterior(),
                                       ScaLBL_Comm->LastInterior(), Np);
-        ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence[ic], ic, 0,
+        ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, Valence, ic, 0,
                                       ScaLBL_Comm->LastExterior(), Np);
     }
 
+    DoubleArray Charge(Nx,Ny,Nz);
+    ScaLBL_Comm->RegularLayout(Map, ChargeDensity, Charge);
+    double charge_sum=0.0;
+    double charge_sum_total=0.0;
+    for (int k=1; k<Nz-1; k++){
+      for (int j=1; j<Ny-1; j++){
+	for (int i=1; i<Nx-1; i++){
+	  charge_sum += Charge(i,j,k);
+	}
+      }
+    }
+    printf("  Local charge value = %.8g (rank=%i)\n",charge_sum, rank);
     ScaLBL_Comm->Barrier();
     comm.barrier();
-    if (rank==0) printf(" IonMembrane: completeted full step  \n");
-    fflush(stdout);
+    
+    ScaLBL_Comm->Barrier();
+    comm.barrier();
+    //if (rank==0) printf(" IonMembrane: completeted full step  \n");
+    //fflush(stdout);
     //************************************************************************/
     //if (rank==0) printf("-------------------------------------------------------------------\n");
     //// Compute the walltime per timestep

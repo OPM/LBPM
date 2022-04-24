@@ -301,7 +301,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *FluxDi
 extern "C" void ScaLBL_D3Q7_Ion_Init(double *dist, double *Den, double DenInit, int Np);
 extern "C" void ScaLBL_D3Q7_Ion_Init_FromFile(double *dist, double *Den, int Np);
 
-extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity, int IonValence, int ion_component, int start, int finish, int Np);
+extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity, double IonValence, int ion_component, int start, int finish, int Np);
 
 
 // LBM Poisson solver
