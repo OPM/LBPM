@@ -441,7 +441,6 @@ void ScaLBL_IonModel::ReadParams(string filename) {
     		}
     	}
     }
-
     //Read solid boundary condition specific to Ion model
     BoundaryConditionSolid = 0;
     if (ion_db->keyExists("BC_Solid")) {
@@ -1375,12 +1374,7 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
             timestep++;
 
             //LB-Ion collison
-            IonMembrane->SendD3Q7AA(&fq[ic * Np * 7]); //READ FORM NORMAL
-            IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
-            ScaLBL_Comm->Barrier();
-            comm.barrier();
-	    if (rank==0) printf(" IonMembrane: completeted # 1 \n");
-	    fflush(stdout);
+	    IonMembrane->SendD3Q7AA(&fq[ic * Np * 7]); //READ FORM NORMAL
 
 	    ScaLBL_D3Q7_AAodd_Ion(
                 IonMembrane->NeighborList, &fq[ic * Np * 7], &Ci[ic * Np],
@@ -1389,12 +1383,7 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
                 IonDiffusivity[ic], IonValence[ic], rlx[ic], Vt,
                 ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
             
-            ScaLBL_Comm->Barrier();
-            comm.barrier();
-	    if (rank==0) printf(" IonMembrane: completeted # 2 \n");
-	    fflush(stdout);
-	    
-	    //            IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
+            IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
 
             ScaLBL_D3Q7_AAodd_Ion(
                 IonMembrane->NeighborList, &fq[ic * Np * 7], &Ci[ic * Np],
@@ -1403,17 +1392,8 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
                 IonDiffusivity[ic], IonValence[ic], rlx[ic], Vt, 0,
                 ScaLBL_Comm->LastExterior(), Np);
 
-	    ScaLBL_Comm->Barrier();
-            comm.barrier();
-	    if (rank==0) printf(" IonMembrane: completeted # 3 \n");
-	    fflush(stdout);
 
            IonMembrane->IonTransport(&fq[ic * Np * 7],&Ci[ic * Np]);
-
-	   ScaLBL_Comm->Barrier();
-           comm.barrier();
-	   if (rank==0) printf(" IonMembrane: completeted # 4 \n");
-	   fflush(stdout);
 
 
 	   /*           if (BoundaryConditionSolid == 1) {
@@ -1428,15 +1408,6 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
 
             //LB-Ion collison
             IonMembrane->SendD3Q7AA(&fq[ic * Np * 7]); //READ FORM NORMAL
-            IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
-	    ScaLBL_Comm->Barrier();
-            comm.barrier();
-
-
-	    ScaLBL_Comm->Barrier();
-            comm.barrier();
-	    if (rank==0) printf(" IonMembrane: completeted # 5 \n");
-	    fflush(stdout);
 
             ScaLBL_D3Q7_AAeven_Ion(
                 &fq[ic * Np * 7], &Ci[ic * Np], &FluxDiffusive[3 * ic * Np],
@@ -1445,30 +1416,20 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
                 rlx[ic], Vt, ScaLBL_Comm->FirstInterior(),
                 ScaLBL_Comm->LastInterior(), Np);
 
-            //IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
-            ScaLBL_Comm->Barrier();
-            comm.barrier();
-	    if (rank==0) printf(" IonMembrane: completeted # 6 \n");
-	    fflush(stdout);
+
+	    IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
 
             ScaLBL_D3Q7_AAeven_Ion(
                 &fq[ic * Np * 7], &Ci[ic * Np], &FluxDiffusive[3 * ic * Np],
                 &FluxAdvective[3 * ic * Np], &FluxElectrical[3 * ic * Np],
                 Velocity, ElectricField, IonDiffusivity[ic], IonValence[ic],
                 rlx[ic], Vt, 0, ScaLBL_Comm->LastExterior(), Np);
-
-            ScaLBL_Comm->Barrier();
-            comm.barrier();
-	    if (rank==0) printf(" IonMembrane: completeted # 7 \n");
-	    fflush(stdout);
-
 	    
             IonMembrane->IonTransport(&fq[ic * Np * 7],&Ci[ic * Np]);
 
 	    ScaLBL_Comm->Barrier();
             comm.barrier();
-	    if (rank==0) printf(" IonMembrane: completeted # 8 \n");
-	    fflush(stdout);
+
 	    /*
             if (BoundaryConditionSolid == 1) {
                 //TODO IonSolid may also be species-dependent

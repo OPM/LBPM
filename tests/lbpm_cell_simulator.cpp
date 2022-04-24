@@ -124,7 +124,7 @@ int main(int argc, char **argv)
 	    fflush(stdout);
 
             timestep++;//AA operations
-	    /*
+	    
 
             if (timestep%Study.analysis_interval==0){
 	      Analysis.Basic(IonModel,PoissonSolver,StokesModel,timestep);
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
                 //StokesModel.getVelocity(timestep);
             	 
             }
-	    */
+	    
         }
 
         if (rank==0) printf("Save simulation raw data at maximum timestep\n");

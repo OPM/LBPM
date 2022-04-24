@@ -560,9 +560,10 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, bool UseSlippingVelBC, int times
         // Check convergence of steady-state solution
         if (timestep==2){
             //save electric potential for convergence check
-            ScaLBL_CopyToHost(Psi_previous.data(),Psi,sizeof(double)*Nx*Ny*Nz);
         }
         if (timestep%analysis_interval==0){
+	  /* get the elecric potential */
+            ScaLBL_CopyToHost(Psi_host.data(),Psi,sizeof(double)*Nx*Ny*Nz);
         	if (rank==0) printf("   ... getting Poisson solver error \n");
         	double err = 0.0;
         	double max_error = 0.0;
@@ -684,10 +685,10 @@ void ScaLBL_Poisson::SolveElectricPotentialAAeven(int timestep_from_Study, doubl
 void ScaLBL_Poisson::SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVelBC){
 	
 	ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
-	ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
-    ScaLBL_Comm->Barrier();
 	ScaLBL_D3Q19_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, UseSlippingVelBC, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	//ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+	ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+
 	ScaLBL_D3Q19_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, UseSlippingVelBC, 0, ScaLBL_Comm->LastExterior(), Np);
     ScaLBL_Comm->Barrier();
     //TODO: perhaps add another ScaLBL_Comm routine to update Psi values on solid boundary nodes.
@@ -698,9 +699,8 @@ void ScaLBL_Poisson::SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVe
 
 void ScaLBL_Poisson::SolvePoissonAAeven(double *ChargeDensity, bool UseSlippingVelBC){
 	ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
-	ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
-    ScaLBL_Comm->Barrier(); 
 	ScaLBL_D3Q19_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, ResidualError, tau, epsilon_LB, UseSlippingVelBC, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 	//	ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 	ScaLBL_D3Q19_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, ResidualError, tau, epsilon_LB, UseSlippingVelBC, 0, ScaLBL_Comm->LastExterior(), Np);
     ScaLBL_Comm->Barrier();
