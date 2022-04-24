@@ -448,14 +448,14 @@ __global__  void dvc_ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
 			dist[nr18] = W2*psi; //f17 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 
 			// q = 18
-			dist[nr17] = W2*psi; //f18 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+			dist[nr17] = W2*psi;
 		}
 	}
 }
 
 __global__  void dvc_ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 		double *Den_charge, double *Psi,
-		double *ElectricField, double tau,
+		double *ElectricField, double *Error, double tau,
 		double epsilon_LB, bool UseSlippingVelBC,
 		int start, int finish, int Np) {
 	int n;
@@ -476,7 +476,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 		//........Get 1-D index for this thread....................
 		n =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
 		if (n<finish) {
-			//Load data
+				//Load data
 			//When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
 			//and thus the net space charge density is zero. 
 			rho_e = (UseSlippingVelBC==1) ? 0.0 : Den_charge[n] / epsilon_LB;
@@ -597,28 +597,33 @@ extern "C" void ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
 		double *Psi, double *ElectricField,
 		double tau, double epsilon_LB, bool UseSlippingVelBC,
 		int start, int finish, int Np) {
-	//cudaProfilerStart();
+	
+		hipFuncSetCacheConfig( (void*) dvc_ScaLBL_D3Q19_AAodd_Poisson, hipFuncCachePreferL1);
+	
 	dvc_ScaLBL_D3Q19_AAodd_Poisson<<<NBLOCKS,NTHREADS >>>(neighborList, Map,
 			dist, Den_charge, Psi, ElectricField, tau, epsilon_LB, UseSlippingVelBC, start, finish, Np);
 
 	hipError_t err = hipGetLastError();
 	if (hipSuccess != err){
-		printf("CUDA error in dvc_ScaLBL_D3Q19_AAodd_Poisson: %s \n",hipGetErrorString(err));
+		printf("Hip error in dvc_ScaLBL_D3Q19_AAodd_Poisson: %s \n",hipGetErrorString(err));
 	}
 }
 
 extern "C" void ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 		double *Den_charge, double *Psi,
-		double *ElectricField, double tau,
+		double *ElectricField, double *Error, double tau,
 		double epsilon_LB, bool UseSlippingVelBC,
 		int start, int finish, int Np) {
+		
+			hipFuncSetCacheConfig( (void*) dvc_ScaLBL_D3Q19_AAeven_Poisson, hipFuncCachePreferL1);
+		
 
 	dvc_ScaLBL_D3Q19_AAeven_Poisson<<<NBLOCKS,NTHREADS >>>( Map, dist, Den_charge, Psi,
-			ElectricField, tau, epsilon_LB, UseSlippingVelBC, start, finish, Np);
+			ElectricField, Error, tau, epsilon_LB, UseSlippingVelBC, start, finish, Np);
 
 	hipError_t err = hipGetLastError();
 	if (hipSuccess != err){
-		printf("CUDA error in dvc_ScaLBL_D3Q19_AAeven_Poisson: %s \n",hipGetErrorString(err));
+		printf("Hip error in dvc_ScaLBL_D3Q19_AAeven_Poisson: %s \n",hipGetErrorString(err));
 	}
 }
 
@@ -630,7 +635,7 @@ extern "C" void ScaLBL_D3Q19_Poisson_Init(int *Map, double *dist, double *Psi,
 
 	hipError_t err = hipGetLastError();
 	if (hipSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_Poisson_Init: %s \n",hipGetErrorString(err));
+		printf("Hip error in ScaLBL_D3Q19_Poisson_Init: %s \n",hipGetErrorString(err));
 	}
 
 }
