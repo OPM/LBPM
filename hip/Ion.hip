@@ -169,7 +169,7 @@ __global__  void dvc_ScaLBL_D3Q7_Membrane_Unpack(int q,
 		/* First unpack the regular links */
 		if (link < nlinks) {
 			// get the index for the recv list (deal with reordering of links)
-			idx = d3q7_linkList[link]; 
+			idx = d3q7_linkList[start+link]; 
 			// get the distribution index
 			n = d3q7_recvlist[start+idx];
 			if (!(n < 0)){
@@ -177,22 +177,22 @@ __global__  void dvc_ScaLBL_D3Q7_Membrane_Unpack(int q,
 				dist[q * N + n] = fp;
 			}
 		}
-		else if (link < count){
-			/* second enforce custom rule for membrane links */
-			// get the index for the recv list (deal with reordering of links)
-			idx = d3q7_linkList[link]; 
-			// get the distribution index
-			n = d3q7_recvlist[start+idx];
-			// update link based on mass transfer coefficients
-			if (!(n < 0)){
-				aq = coef[2*(link-nlinks)];
-				ap = coef[2*(link-nlinks)+1];
-				fq = dist[q * N + n];
-				fp = recvbuf[start + idx];
-				fqq = (1-aq)*fq+ap*fp;
-				dist[q * N + n] = fqq;
-			}
-		} 
+//		else if (link < count){
+//			/* second enforce custom rule for membrane links */
+//			// get the index for the recv list (deal with reordering of links)
+//			idx = d3q7_linkList[link]; 
+//			// get the distribution index
+//			n = d3q7_recvlist[start+idx];
+//			// update link based on mass transfer coefficients
+//			if (!(n < 0)){
+//				aq = coef[2*(link-nlinks)];
+//				ap = coef[2*(link-nlinks)+1];
+//				fq = dist[q * N + n];
+//				fp = recvbuf[start + idx];
+//				fqq = (1-aq)*fq+ap*fp;
+//				dist[q * N + n] = fqq;
+//			}
+//		} 
 	}
 }
 
@@ -707,7 +707,9 @@ extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,
 		int *d3q7_recvlist, int *d3q7_linkList, int start, int nlinks, int count,
 		double *recvbuf, double *dist, int N,  double *coef) {
 	
-	dvc_ScaLBL_D3Q7_Membrane_Unpack<<<NBLOCKS,NTHREADS >>>(q, d3q7_recvlist, d3q7_linkList, start, nlinks, count,
+        int GRID = count / 1024 + 1;
+
+	dvc_ScaLBL_D3Q7_Membrane_Unpack<<<GRID,1024 >>>(q, d3q7_recvlist, d3q7_linkList, start, nlinks, count,
 			recvbuf, dist, N,  coef) ;
 
 	hipError_t err = hipGetLastError();
