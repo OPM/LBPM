@@ -5,17 +5,22 @@
 
 Membrane::Membrane(std::shared_ptr <Domain> Dm, int *dvcNeighborList, int Nsites) {
 
-	Np = Nsites;
-	initialNeighborList = new int[18*Np];
-    ScaLBL_AllocateDeviceMemory((void **)&NeighborList, 18*Np*sizeof(int));    
-    Lock=false; // unlock the communicator
 	//......................................................................................
 	// Create a separate copy of the communicator for the device
-    MPI_COMM_SCALBL = Dm->Comm.dup();
+	MPI_COMM_SCALBL = Dm->Comm.dup();
+	Np = Nsites;
+	if (Dm->rank() == 0){
+		printf("**** Creating membrane data structure ****** \n");
+		printf("   Number of active lattice sites (rank = %i): %i \n",Dm->rank(), Np);
+	}
+
+       	initialNeighborList = new int[18*Np];
+	ScaLBL_AllocateDeviceMemory((void **)&NeighborList, 18*Np*sizeof(int));    
+	Lock=false; // unlock the communicator
     
-    ScaLBL_CopyToHost(initialNeighborList, dvcNeighborList, 18*Np*sizeof(int));
-    Dm->Comm.barrier();
-    ScaLBL_CopyToDevice(NeighborList, initialNeighborList, 18*Np*sizeof(int));
+	ScaLBL_CopyToHost(initialNeighborList, dvcNeighborList, 18*Np*sizeof(int));
+	Dm->Comm.barrier();
+	ScaLBL_CopyToDevice(NeighborList, initialNeighborList, 18*Np*sizeof(int));
     
 	/* Copy communication lists */
 	//......................................................................................
@@ -86,11 +91,6 @@ Membrane::Membrane(std::shared_ptr <Domain> Dm, int *dvcNeighborList, int Nsites
 	recvCount_YZ=Dm->recvCount("YZ");
 	recvCount_XZ=Dm->recvCount("XZ");
 	
-	if (rank == 0){
-		printf("**** Creating membrane data structure ****** \n");
-		printf("   Number of active lattice sites (rank = %i): %i \n",rank, Np);
-	}
-
 	iproc = Dm->iproc();
 	jproc = Dm->jproc();
 	kproc = Dm->kproc();
@@ -99,7 +99,7 @@ Membrane::Membrane(std::shared_ptr <Domain> Dm, int *dvcNeighborList, int Nsites
 	nprocz = Dm->nprocz();
 	//BoundaryCondition = Dm->BoundaryCondition;
 	//......................................................................................
-
+	if (rank==0) printf(" Create Membrane: copying communication structures...\n");
 	ScaLBL_AllocateZeroCopy((void **) &sendbuf_x, 2*5*sendCount_x*sizeof(double));	// Allocate device memory
 	ScaLBL_AllocateZeroCopy((void **) &sendbuf_X, 2*5*sendCount_X*sizeof(double));	// Allocate device memory
 	ScaLBL_AllocateZeroCopy((void **) &sendbuf_y, 2*5*sendCount_y*sizeof(double));	// Allocate device memory

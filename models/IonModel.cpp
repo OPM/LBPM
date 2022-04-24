@@ -425,7 +425,7 @@ void ScaLBL_IonModel::ReadParams(string filename) {
     
     
     if (ion_db->keyExists("MembraneIonConcentrationList")) {
-    	printf(".... Read MembraneIonConcentrationList \n");
+      if (rank == 0) printf(".... Read MembraneIonConcentrationList \n");
     	MembraneIonConcentration.clear();
     	MembraneIonConcentration = ion_db->getVector<double>("MembraneIonConcentrationList");
     	if (MembraneIonConcentration.size() != number_ion_species) {
@@ -662,6 +662,7 @@ void ScaLBL_IonModel::SetMembrane() {
     }
     CalcDist(MembraneDistance, membrane_id, *Dm);
     /* create the membrane data structure */
+    if (rank==0) printf("Creating membrane data structure...\n");
     MembraneCount = IonMembrane->Create(Dm, MembraneDistance, Map);
     
     // clean up
@@ -877,7 +878,7 @@ void ScaLBL_IonModel::Create() {
     Map.fill(-2);
     auto neighborList = new int[18 * Npad];
     Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map, neighborList,
-                                              Mask->id.data(), Np, 1);
+                                              Mask->id.data(), Npad, 1);
     comm.barrier();
 
     //...........................................................................
@@ -1375,14 +1376,25 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
 
             //LB-Ion collison
             IonMembrane->SendD3Q7AA(&fq[ic * Np * 7]); //READ FORM NORMAL
-            ScaLBL_D3Q7_AAodd_Ion(
+            IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
+            ScaLBL_Comm->Barrier();
+            comm.barrier();
+	    if (rank==0) printf(" IonMembrane: completeted # 1 \n");
+	    fflush(stdout);
+
+	    ScaLBL_D3Q7_AAodd_Ion(
                 IonMembrane->NeighborList, &fq[ic * Np * 7], &Ci[ic * Np],
                 &FluxDiffusive[3 * ic * Np], &FluxAdvective[3 * ic * Np],
                 &FluxElectrical[3 * ic * Np], Velocity, ElectricField,
                 IonDiffusivity[ic], IonValence[ic], rlx[ic], Vt,
                 ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
             
-            IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
+            ScaLBL_Comm->Barrier();
+            comm.barrier();
+	    if (rank==0) printf(" IonMembrane: completeted # 2 \n");
+	    fflush(stdout);
+	    
+	    //            IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
 
             ScaLBL_D3Q7_AAodd_Ion(
                 IonMembrane->NeighborList, &fq[ic * Np * 7], &Ci[ic * Np],
@@ -1390,22 +1402,42 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
                 &FluxElectrical[3 * ic * Np], Velocity, ElectricField,
                 IonDiffusivity[ic], IonValence[ic], rlx[ic], Vt, 0,
                 ScaLBL_Comm->LastExterior(), Np);
-            
+
+	    ScaLBL_Comm->Barrier();
+            comm.barrier();
+	    if (rank==0) printf(" IonMembrane: completeted # 3 \n");
+	    fflush(stdout);
+
            IonMembrane->IonTransport(&fq[ic * Np * 7],&Ci[ic * Np]);
 
+	   ScaLBL_Comm->Barrier();
+           comm.barrier();
+	   if (rank==0) printf(" IonMembrane: completeted # 4 \n");
+	   fflush(stdout);
 
-            if (BoundaryConditionSolid == 1) {
+
+	   /*           if (BoundaryConditionSolid == 1) {
                 //TODO IonSolid may also be species-dependent
                 ScaLBL_Comm->SolidDirichletD3Q7(&fq[ic * Np * 7], IonSolid);
             }
             ScaLBL_Comm->Barrier();
             comm.barrier();
-
+	   */
             // *************EVEN TIMESTEP*************//            
             timestep++;
 
             //LB-Ion collison
             IonMembrane->SendD3Q7AA(&fq[ic * Np * 7]); //READ FORM NORMAL
+            IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
+	    ScaLBL_Comm->Barrier();
+            comm.barrier();
+
+
+	    ScaLBL_Comm->Barrier();
+            comm.barrier();
+	    if (rank==0) printf(" IonMembrane: completeted # 5 \n");
+	    fflush(stdout);
+
             ScaLBL_D3Q7_AAeven_Ion(
                 &fq[ic * Np * 7], &Ci[ic * Np], &FluxDiffusive[3 * ic * Np],
                 &FluxAdvective[3 * ic * Np], &FluxElectrical[3 * ic * Np],
@@ -1413,23 +1445,38 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
                 rlx[ic], Vt, ScaLBL_Comm->FirstInterior(),
                 ScaLBL_Comm->LastInterior(), Np);
 
-            IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
+            //IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
+            ScaLBL_Comm->Barrier();
+            comm.barrier();
+	    if (rank==0) printf(" IonMembrane: completeted # 6 \n");
+	    fflush(stdout);
 
             ScaLBL_D3Q7_AAeven_Ion(
                 &fq[ic * Np * 7], &Ci[ic * Np], &FluxDiffusive[3 * ic * Np],
                 &FluxAdvective[3 * ic * Np], &FluxElectrical[3 * ic * Np],
                 Velocity, ElectricField, IonDiffusivity[ic], IonValence[ic],
                 rlx[ic], Vt, 0, ScaLBL_Comm->LastExterior(), Np);
-            
+
+            ScaLBL_Comm->Barrier();
+            comm.barrier();
+	    if (rank==0) printf(" IonMembrane: completeted # 7 \n");
+	    fflush(stdout);
+
+	    
             IonMembrane->IonTransport(&fq[ic * Np * 7],&Ci[ic * Np]);
 
-
+	    ScaLBL_Comm->Barrier();
+            comm.barrier();
+	    if (rank==0) printf(" IonMembrane: completeted # 8 \n");
+	    fflush(stdout);
+	    /*
             if (BoundaryConditionSolid == 1) {
                 //TODO IonSolid may also be species-dependent
                 ScaLBL_Comm->SolidDirichletD3Q7(&fq[ic * Np * 7], IonSolid);
             }
             ScaLBL_Comm->Barrier();
             comm.barrier();
+	    */
         }
     }
 
@@ -1441,6 +1488,11 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
         ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence[ic], ic, 0,
                                       ScaLBL_Comm->LastExterior(), Np);
     }
+
+    ScaLBL_Comm->Barrier();
+    comm.barrier();
+    if (rank==0) printf(" IonMembrane: completeted full step  \n");
+    fflush(stdout);
     //************************************************************************/
     //if (rank==0) printf("-------------------------------------------------------------------\n");
     //// Compute the walltime per timestep

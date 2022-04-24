@@ -333,7 +333,7 @@ void ScaLBL_Poisson::Create(){
 	if (rank==0)    printf ("LB-Poisson Solver: Set up memory efficient layout \n");
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
-	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Np,1);
+	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Npad,1);
 	comm.barrier();
 
 	//...........................................................................
@@ -369,6 +369,8 @@ void ScaLBL_Poisson::Create(){
 			}
 		}
 	}
+	comm.barrier();
+	if (rank==0)    printf (" .... LB-Poisson Solver: check  neighbor list \n");
 	// check that TmpMap is valid
 	for (int idx=0; idx<ScaLBL_Comm->LastExterior(); idx++){
 		auto n = TmpMap[idx];
@@ -384,6 +386,8 @@ void ScaLBL_Poisson::Create(){
 			TmpMap[idx] = Nx*Ny*Nz-1;
 		}
 	}
+	comm.barrier();
+	if (rank==0)    printf (" .... LB-Poisson Solver: copy  neighbor list to GPU \n");
 	ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int)*Np);
 	ScaLBL_Comm->Barrier();
 	delete [] TmpMap;
@@ -720,8 +724,10 @@ void ScaLBL_Poisson::SolveElectricPotentialAAeven(int timestep_from_Study, doubl
 void ScaLBL_Poisson::SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVelBC){
 	
 	ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
-	ScaLBL_D3Q19_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, UseSlippingVelBC, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+    ScaLBL_Comm->Barrier();
+	ScaLBL_D3Q19_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, UseSlippingVelBC, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	//ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 	ScaLBL_D3Q19_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, UseSlippingVelBC, 0, ScaLBL_Comm->LastExterior(), Np);
     ScaLBL_Comm->Barrier();
     //TODO: perhaps add another ScaLBL_Comm routine to update Psi values on solid boundary nodes.
@@ -732,10 +738,13 @@ void ScaLBL_Poisson::SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVe
 
 void ScaLBL_Poisson::SolvePoissonAAeven(double *ChargeDensity, bool UseSlippingVelBC){
 	ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
-	ScaLBL_D3Q19_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, ResidualError, tau, epsilon_LB, UseSlippingVelBC, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+    ScaLBL_Comm->Barrier(); 
+	ScaLBL_D3Q19_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, ResidualError, tau, epsilon_LB, UseSlippingVelBC, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	//	ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 	ScaLBL_D3Q19_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, ResidualError, tau, epsilon_LB, UseSlippingVelBC, 0, ScaLBL_Comm->LastExterior(), Np);
     ScaLBL_Comm->Barrier();
+    
 	//ScaLBL_Comm->SolidDirichletAndNeumannD3Q7(fq, Psi, Psi_BCLabel);
 }
 
