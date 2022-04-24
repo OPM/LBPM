@@ -563,60 +563,20 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, bool UseSlippingVelBC, int times
             ScaLBL_CopyToHost(Psi_previous.data(),Psi,sizeof(double)*Nx*Ny*Nz);
         }
         if (timestep%analysis_interval==0){
-            if (tolerance_method.compare("MSE")==0){
-                double count_loc=0;
-                double count;
-                double MSE_loc=0.0;
-                ScaLBL_CopyToHost(Psi_host.data(),Psi,sizeof(double)*Nx*Ny*Nz);
-                for (int k=1; k<Nz-1; k++){
-                    for (int j=1; j<Ny-1; j++){
-                        for (int i=1; i<Nx-1; i++){
-                            if (Distance(i,j,k) > 0){
-                                MSE_loc += (Psi_host(i,j,k) - Psi_previous(i,j,k))*(Psi_host(i,j,k) - Psi_previous(i,j,k));
-                                count_loc+=1.0;
-                            }
-                        }
-                    }
-                }
-                error=Dm->Comm.sumReduce(MSE_loc);
-                count=Dm->Comm.sumReduce(count_loc);
-                error /= count;
-            }
-            else if (tolerance_method.compare("MSE_max")==0){
-                vector<double>MSE_loc;
-                double MSE_loc_max;
-                ScaLBL_CopyToHost(Psi_host.data(),Psi,sizeof(double)*Nx*Ny*Nz);
-                for (int k=1; k<Nz-1; k++){
-                    for (int j=1; j<Ny-1; j++){
-                        for (int i=1; i<Nx-1; i++){
-                            if (Distance(i,j,k) > 0){
-                                MSE_loc.push_back((Psi_host(i,j,k) - Psi_previous(i,j,k))*(Psi_host(i,j,k) - Psi_previous(i,j,k)));
-                            }
-                        }
-                    }
-                }
-                vector<double>::iterator it_max = max_element(MSE_loc.begin(),MSE_loc.end());
-                unsigned int idx_max=distance(MSE_loc.begin(),it_max);
-                MSE_loc_max=MSE_loc[idx_max];
-                error=Dm->Comm.maxReduce(MSE_loc_max);
-            }
-            else{
-            	double err = 0.0;
-            	double max_error = 0.0;
-                ScaLBL_CopyToHost(host_Error,ResidualError,sizeof(double)*Np);
-                for (int idx=0; idx<Np; idx++){
-                	err = host_Error[idx]*host_Error[idx];
-                	if (err > max_error ){
-                		max_error = err;
-                	}
-                }
-                error=Dm->Comm.maxReduce(max_error);
-            }
-            ScaLBL_CopyToHost(Psi_previous.data(),Psi,sizeof(double)*Nx*Ny*Nz);
+        	if (rank==0) printf("   ... getting Poisson solver error \n");
+        	double err = 0.0;
+        	double max_error = 0.0;
+        	ScaLBL_CopyToHost(host_Error,ResidualError,sizeof(double)*Np);
+        	for (int idx=0; idx<Np; idx++){
+        		err = host_Error[idx]*host_Error[idx];
+        		if (err > max_error ){
+        			max_error = err;
+        		}
+        	}
+        	error=Dm->Comm.maxReduce(max_error);
 
-
-            /* compute the eletric field */
-            //ScaLBL_D3Q19_Poisson_getElectricField(fq, ElectricField, tau, Np);
+        	/* compute the eletric field */
+        	//ScaLBL_D3Q19_Poisson_getElectricField(fq, ElectricField, tau, Np);
 
         }
 	}
