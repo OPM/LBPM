@@ -1453,7 +1453,7 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
                                       ScaLBL_Comm->LastExterior(), Np);
     }
 
-    DoubleArray Charge(Nx,Ny,Nz);
+    /*    DoubleArray Charge(Nx,Ny,Nz);
     ScaLBL_Comm->RegularLayout(Map, ChargeDensity, Charge);
     double charge_sum=0.0;
     double charge_sum_total=0.0;
@@ -1467,7 +1467,7 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
     printf("  Local charge value = %.8g (rank=%i)\n",charge_sum, rank);
     ScaLBL_Comm->Barrier();
     comm.barrier();
-    
+    */
     ScaLBL_Comm->Barrier();
     comm.barrier();
     //if (rank==0) printf(" IonMembrane: completeted full step  \n");

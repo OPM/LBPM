@@ -114,17 +114,16 @@ int main(int argc, char **argv)
             timestep++;
             PoissonSolver.Run(IonModel.ChargeDensity,SlipBC,timestep);//solve Poisson equtaion to get steady-state electrical potental
 	    comm.barrier();
-	    if (rank == 0) printf("    Poisson step %i \n",timestep);
-            //StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
-	    fflush(stdout);
+	    //if (rank == 0) printf("    Poisson step %i \n",timestep);
+            StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
+	    //fflush(stdout);
 
             IonModel.RunMembrane(StokesModel.Velocity,PoissonSolver.ElectricField,PoissonSolver.Psi); //solve for ion transport with membrane
 	    comm.barrier();
-            if (rank == 0) printf("    Membrane step %i \n",timestep);
-	    fflush(stdout);
+            //if (rank == 0) printf("    Membrane step %i \n",timestep);
+	    //fflush(stdout);
 
             timestep++;//AA operations
-	    
 
             if (timestep%Study.analysis_interval==0){
 	      Analysis.Basic(IonModel,PoissonSolver,StokesModel,timestep);
@@ -137,7 +136,6 @@ int main(int argc, char **argv)
                 //StokesModel.getVelocity(timestep);
             	 
             }
-	    
         }
 
         if (rank==0) printf("Save simulation raw data at maximum timestep\n");
