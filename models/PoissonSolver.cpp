@@ -571,9 +571,10 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, bool UseSlippingVelBC, int times
         	}
         	error=Dm->Comm.maxReduce(max_error);
 
-        /* compute the eletric field */
-        //ScaLBL_D3Q19_Poisson_getElectricField(fq, ElectricField, tau, Np);
+        	/* compute the eletric field */
+        	//ScaLBL_D3Q19_Poisson_getElectricField(fq, ElectricField, tau, Np);
 
+        }
 	}
     if(WriteLog==true){
         getConvergenceLog(timestep,error);
