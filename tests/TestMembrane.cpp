@@ -200,7 +200,7 @@ int main(int argc, char **argv)
         ScaLBL_D3Q19_AAodd_Compact(M.NeighborList, gq, Np);
 
         /* explicit mass transfer step with the membrane*/
-        M.AssignCoefficients(dvcMap, Psi, "ones");
+        M.AssignCoefficients(dvcMap, Psi, 0.0, 1.0, 1.0, 1.0, 1.0);
         M.IonTransport(gq, Cj);
         ScaLBL_CopyToHost(Ci_host, Cj, sizeof(double) * Np);
         

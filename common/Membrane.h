@@ -97,7 +97,9 @@ public:
 	void RecvD3Q19AA(double *dist);
 	void SendD3Q7AA(double *dist);
 	void RecvD3Q7AA(double *dist);
-	void AssignCoefficients(int *Map, double *Psi, std::string method);
+	void AssignCoefficients(int *Map, double *Psi, double Threshold,
+			double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn,
+			double ThresholdMassFractionOut);
 	void IonTransport(double *dist, double *den);
 	//......................................................................................
 	// Buffers to store data sent and recieved by this MPI process

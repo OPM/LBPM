@@ -115,7 +115,7 @@ int main(int argc, char **argv)
             PoissonSolver.Run(IonModel.ChargeDensity,SlipBC,timestep);//solve Poisson equtaion to get steady-state electrical potental
 	    comm.barrier();
 	    //if (rank == 0) printf("    Poisson step %i \n",timestep);
-            StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
+           StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
 	    //fflush(stdout);
 
             IonModel.RunMembrane(StokesModel.Velocity,PoissonSolver.ElectricField,PoissonSolver.Psi); //solve for ion transport with membrane
