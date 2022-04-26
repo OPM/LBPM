@@ -17,6 +17,7 @@ ScaLBL_IonModel::~ScaLBL_IonModel() {}
 
 void ScaLBL_IonModel::ReadParams(string filename, vector<int> &num_iter) {
 
+	USE_MEMBRANE = true;
     // read the input database
     db = std::make_shared<Database>(filename);
     domain_db = db->getDatabase("Domain");
@@ -421,7 +422,25 @@ void ScaLBL_IonModel::ReadParams(string filename) {
                  1.0e-18); //LB ion concentration has unit [mol/lu^3]
         }
     }
-
+    
+    
+    if (ion_db->keyExists("MembraneIonConcentrationList")) {
+      if (rank == 0) printf(".... Read MembraneIonConcentrationList \n");
+    	MembraneIonConcentration.clear();
+    	MembraneIonConcentration = ion_db->getVector<double>("MembraneIonConcentrationList");
+    	if (MembraneIonConcentration.size() != number_ion_species) {
+    		ERROR("Error: number_ion_species and MembraneIonConcentrationList must be "
+    				"the same length! \n");
+    	} 
+    	else {
+    		for (size_t i = 0; i < MembraneIonConcentration.size(); i++) {
+    			MembraneIonConcentration[i] =
+    					MembraneIonConcentration[i] *
+    					(h * h * h *
+    							1.0e-18); //LB ion concentration has unit [mol/lu^3]
+    		}
+    	}
+    }
     //Read solid boundary condition specific to Ion model
     BoundaryConditionSolid = 0;
     if (ion_db->keyExists("BC_Solid")) {
@@ -583,6 +602,73 @@ void ScaLBL_IonModel::SetDomain() {
     nprocz = Dm->nprocz();
 }
 
+void ScaLBL_IonModel::SetMembrane() {
+    size_t NLABELS = 0;
+
+    membrane_db = db->getDatabase("Membrane");
+    
+    /* set distance based on labels inside the membrane (all other labels will be outside) */
+    auto MembraneLabels = membrane_db->getVector<int>("MembraneLabels");
+
+    IonMembrane = std::shared_ptr<Membrane>(new Membrane(Dm, NeighborList, Np));
+    
+    signed char LABEL = 0;
+    double *label_count;
+    double *label_count_global;
+    Array<char> membrane_id(Nx,Ny,Nz);
+    label_count = new double[NLABELS];
+    label_count_global = new double[NLABELS];
+    // Assign the labels
+    for (size_t idx = 0; idx < NLABELS; idx++)
+        label_count[idx] = 0;
+    /* set the distance to the membrane */
+    MembraneDistance.resize(Nx, Ny, Nz);
+    MembraneDistance.fill(0);
+    for (int k = 0; k < Nz; k++) {
+        for (int j = 0; j < Ny; j++) {
+            for (int i = 0; i < Nx; i++) {
+            	membrane_id(i,j,k) = 1; // default value
+            	LABEL = Dm->id[k*Nx*Ny + j*Nx + i]; 
+            	for (size_t m=0; m<MembraneLabels.size(); m++){
+                    if (LABEL == MembraneLabels[m]) {
+                        label_count[m] += 1.0;
+                    	membrane_id(i,j,k) = 0;    // inside
+                        m = MembraneLabels.size(); //exit loop
+                    }
+            	}
+            }
+        }
+    }
+	for (size_t m=0; m<MembraneLabels.size(); m++){
+        label_count_global[m] = Dm->Comm.sumReduce(label_count[m]);
+	}
+    if (rank == 0) {
+        printf("   Membrane labels: %lu \n", MembraneLabels.size());
+    	for (size_t m=0; m<MembraneLabels.size(); m++){
+    		LABEL = MembraneLabels[m];
+            double volume_fraction =  double(label_count_global[m]) /
+                double((Nx - 2) * (Ny - 2) * (Nz - 2) * nprocs);
+            printf("      label=%d, volume fraction = %f\n", LABEL, volume_fraction);
+        }
+    }
+    /* signed distance to the membrane ( - inside / + outside) */
+    for (int k = 0; k < Nz; k++) {
+        for (int j = 0; j < Ny; j++) {
+            for (int i = 0; i < Nx; i++) {
+                MembraneDistance(i, j, k) = 2.0 * double(membrane_id(i, j, k)) - 1.0;
+            }
+        }
+    }
+    CalcDist(MembraneDistance, membrane_id, *Dm);
+    /* create the membrane data structure */
+    if (rank==0) printf("Creating membrane data structure...\n");
+    MembraneCount = IonMembrane->Create(Dm, MembraneDistance, Map);
+    
+    // clean up
+    delete [] label_count;
+    delete [] label_count_global;    
+}
+
 void ScaLBL_IonModel::ReadInput() {
 
     sprintf(LocalRankString, "%05d", Dm->rank());
@@ -709,6 +795,33 @@ void ScaLBL_IonModel::AssignSolidBoundary(double *ion_solid) {
     }
 }
 
+void ScaLBL_IonModel::AssignIonConcentrationMembrane( double *Ci, int ic) {
+//    double *Ci, const vector<double> MembraneIonConcentration, const vector<double> IonConcentration, int ic) {
+
+	double VALUE = 0.f;
+
+	if (rank == 0){
+		printf(".... Set concentration(%i): inside=%f, outside=%f \n", ic,  MembraneIonConcentration[ic], IonConcentration[ic]);
+	}
+	for (int k = 0; k < Nz; k++) {
+		for (int j = 0; j < Ny; j++) {
+			for (int i = 0; i < Nx; i++) {
+				int idx = Map(i, j, k);
+				if (!(idx < 0)) {
+					if (MembraneDistance(i,j,k) < 0.0) {
+						VALUE = MembraneIonConcentration[ic];//* (h * h * h * 1.0e-18);
+					} else {
+						VALUE = IonConcentration[ic];//* (h * h * h * 1.0e-18);
+
+					}
+					Ci[idx] = VALUE;
+				}
+			}
+		}
+	}
+}
+
+
 void ScaLBL_IonModel::AssignIonConcentration_FromFile(
     double *Ci, const vector<std::string> &File_ion, int ic) {
     double *Ci_host;
@@ -764,7 +877,7 @@ void ScaLBL_IonModel::Create() {
     Map.fill(-2);
     auto neighborList = new int[18 * Npad];
     Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map, neighborList,
-                                              Mask->id.data(), Np, 1);
+                                              Mask->id.data(), Npad, 1);
     comm.barrier();
 
     //...........................................................................
@@ -778,6 +891,7 @@ void ScaLBL_IonModel::Create() {
     int neighborSize = 18 * (Np * sizeof(int));
     //...........................................................................
     ScaLBL_AllocateDeviceMemory((void **)&NeighborList, neighborSize);
+    ScaLBL_AllocateDeviceMemory((void **)&dvcMap, sizeof(int) * Np);
     ScaLBL_AllocateDeviceMemory((void **)&fq,
                                 number_ion_species * 7 * dist_mem_size);
     ScaLBL_AllocateDeviceMemory((void **)&Ci,
@@ -794,6 +908,37 @@ void ScaLBL_IonModel::Create() {
     if (rank == 0)
         printf("LB Ion Solver: Setting up device map and neighbor list \n");
     // copy the neighbor list
+    int *TmpMap;
+    TmpMap = new int[Np];
+    for (int k = 1; k < Nz - 1; k++) {
+        for (int j = 1; j < Ny - 1; j++) {
+            for (int i = 1; i < Nx - 1; i++) {
+                int idx = Map(i, j, k);
+                if (!(idx < 0))
+                    TmpMap[idx] = k * Nx * Ny + j * Nx + i;
+            }
+        }
+    }
+    // check that TmpMap is valid
+    for (int idx = 0; idx < ScaLBL_Comm->LastExterior(); idx++) {
+        auto n = TmpMap[idx];
+        if (n > Nx * Ny * Nz) {
+            printf("Bad value! idx=%i \n", n);
+            TmpMap[idx] = Nx * Ny * Nz - 1;
+        }
+    }
+    for (int idx = ScaLBL_Comm->FirstInterior();
+         idx < ScaLBL_Comm->LastInterior(); idx++) {
+        auto n = TmpMap[idx];
+        if (n > Nx * Ny * Nz) {
+            printf("Bad value! idx=%i \n", n);
+            TmpMap[idx] = Nx * Ny * Nz - 1;
+        }
+    }
+    ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int) * Np);
+    ScaLBL_Comm->Barrier();
+    delete[] TmpMap;
+    
     ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
     comm.barrier();
 
@@ -822,10 +967,26 @@ void ScaLBL_IonModel::Initialize() {
 	 */
     if (rank == 0)
         printf("LB Ion Solver: initializing D3Q7 distributions\n");
-    if (ion_db->keyExists("IonConcentrationFile")) {
+    USE_MEMBRANE = true; 
+    if (USE_MEMBRANE){
+            double *Ci_host;
+            if (rank == 0)
+                printf("   ...initializing based on membrane list \n");
+            Ci_host = new double[number_ion_species * Np];
+            for (size_t ic = 0; ic < number_ion_species; ic++) {
+            	AssignIonConcentrationMembrane( &Ci_host[ic * Np],  ic);
+            }
+            ScaLBL_CopyToDevice(Ci, Ci_host, number_ion_species * sizeof(double) * Np);
+            comm.barrier();
+            for (size_t ic = 0; ic < number_ion_species; ic++) {
+                ScaLBL_D3Q7_Ion_Init_FromFile(&fq[ic * Np * 7], &Ci[ic * Np], Np);
+            }
+            delete[] Ci_host;
+    }
+    else if (ion_db->keyExists("IonConcentrationFile")) {
         //NOTE: "IonConcentrationFile" is a vector, including "file_name, datatype"
         auto File_ion = ion_db->getVector<std::string>("IonConcentrationFile");
-        if (File_ion.size() == 2 * number_ion_species) {
+        if (File_ion.size() == 2*number_ion_species) {
             double *Ci_host;
             Ci_host = new double[number_ion_species * Np];
             for (size_t ic = 0; ic < number_ion_species; ic++) {
@@ -844,7 +1005,8 @@ void ScaLBL_IonModel::Initialize() {
             ERROR("Error: Number of user-input ion concentration files should "
                   "be equal to number of ion species!\n");
         }
-    } else {
+    } 
+    else {
         for (size_t ic = 0; ic < number_ion_species; ic++) {
             ScaLBL_D3Q7_Ion_Init(&fq[ic * Np * 7], &Ci[ic * Np],
                                  IonConcentration[ic], Np);
@@ -1180,6 +1342,152 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField) {
     //if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
     //if (rank==0) printf("********************************************************\n");
 }
+
+void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, double *Psi) {
+
+    //Input parameter:
+    //1. Velocity is from StokesModel
+    //2. ElectricField is from Poisson model
+
+    //LB-related parameter
+    vector<double> rlx;
+    for (size_t ic = 0; ic < tau.size(); ic++) {
+        rlx.push_back(1.0 / tau[ic]);
+    }
+
+    //.......create and start timer............
+    //double starttime,stoptime,cputime;
+    //ScaLBL_Comm->Barrier(); comm.barrier();
+    //auto t1 = std::chrono::system_clock::now();
+
+    for (size_t ic = 0; ic < number_ion_species; ic++) {
+        /* set the mass transfer coefficients for the membrane */
+    	if (ic == 0)
+    		IonMembrane->AssignCoefficients(dvcMap, Psi, "Na+");
+    	else {
+    		IonMembrane->AssignCoefficients(dvcMap, Psi, "impermeable");
+    	}
+        timestep = 0;
+        while (timestep < timestepMax[ic]) {
+            //************************************************************************/
+            // *************ODD TIMESTEP*************//
+            timestep++;
+
+            //LB-Ion collison
+	    IonMembrane->SendD3Q7AA(&fq[ic * Np * 7]); //READ FORM NORMAL
+
+	    ScaLBL_D3Q7_AAodd_Ion(
+                IonMembrane->NeighborList, &fq[ic * Np * 7], &Ci[ic * Np],
+                &FluxDiffusive[3 * ic * Np], &FluxAdvective[3 * ic * Np],
+                &FluxElectrical[3 * ic * Np], Velocity, ElectricField,
+                IonDiffusivity[ic], IonValence[ic], rlx[ic], Vt,
+                ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+            
+            IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
+
+            ScaLBL_D3Q7_AAodd_Ion(
+                IonMembrane->NeighborList, &fq[ic * Np * 7], &Ci[ic * Np],
+                &FluxDiffusive[3 * ic * Np], &FluxAdvective[3 * ic * Np],
+                &FluxElectrical[3 * ic * Np], Velocity, ElectricField,
+                IonDiffusivity[ic], IonValence[ic], rlx[ic], Vt, 0,
+                ScaLBL_Comm->LastExterior(), Np);
+
+
+           IonMembrane->IonTransport(&fq[ic * Np * 7],&Ci[ic * Np]);
+
+
+	   /*           if (BoundaryConditionSolid == 1) {
+                //TODO IonSolid may also be species-dependent
+                ScaLBL_Comm->SolidDirichletD3Q7(&fq[ic * Np * 7], IonSolid);
+            }
+            ScaLBL_Comm->Barrier();
+            comm.barrier();
+	   */
+            // *************EVEN TIMESTEP*************//            
+            timestep++;
+
+            //LB-Ion collison
+            IonMembrane->SendD3Q7AA(&fq[ic * Np * 7]); //READ FORM NORMAL
+
+            ScaLBL_D3Q7_AAeven_Ion(
+                &fq[ic * Np * 7], &Ci[ic * Np], &FluxDiffusive[3 * ic * Np],
+                &FluxAdvective[3 * ic * Np], &FluxElectrical[3 * ic * Np],
+                Velocity, ElectricField, IonDiffusivity[ic], IonValence[ic],
+                rlx[ic], Vt, ScaLBL_Comm->FirstInterior(),
+                ScaLBL_Comm->LastInterior(), Np);
+
+
+	    IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
+
+            ScaLBL_D3Q7_AAeven_Ion(
+                &fq[ic * Np * 7], &Ci[ic * Np], &FluxDiffusive[3 * ic * Np],
+                &FluxAdvective[3 * ic * Np], &FluxElectrical[3 * ic * Np],
+                Velocity, ElectricField, IonDiffusivity[ic], IonValence[ic],
+                rlx[ic], Vt, 0, ScaLBL_Comm->LastExterior(), Np);
+	    
+            IonMembrane->IonTransport(&fq[ic * Np * 7],&Ci[ic * Np]);
+
+	    ScaLBL_Comm->Barrier();
+            comm.barrier();
+
+	    /*
+            if (BoundaryConditionSolid == 1) {
+                //TODO IonSolid may also be species-dependent
+                ScaLBL_Comm->SolidDirichletD3Q7(&fq[ic * Np * 7], IonSolid);
+            }
+            ScaLBL_Comm->Barrier();
+            comm.barrier();
+	    */
+        }
+    }
+
+    //Compute charge density for Poisson equation
+    for (size_t ic = 0; ic < number_ion_species; ic++) {
+      int Valence = IonValence[ic];
+      if (rank==0) printf("compute charge density for ion %i, Valence =%i \n", ic,Valence);
+
+      ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, Valence, ic,
+                                      ScaLBL_Comm->FirstInterior(),
+                                      ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, Valence, ic, 0,
+                                      ScaLBL_Comm->LastExterior(), Np);
+    }
+
+    /*    DoubleArray Charge(Nx,Ny,Nz);
+    ScaLBL_Comm->RegularLayout(Map, ChargeDensity, Charge);
+    double charge_sum=0.0;
+    double charge_sum_total=0.0;
+    for (int k=1; k<Nz-1; k++){
+      for (int j=1; j<Ny-1; j++){
+	for (int i=1; i<Nx-1; i++){
+	  charge_sum += Charge(i,j,k);
+	}
+      }
+    }
+    printf("  Local charge value = %.8g (rank=%i)\n",charge_sum, rank);
+    ScaLBL_Comm->Barrier();
+    comm.barrier();
+    */
+    ScaLBL_Comm->Barrier();
+    comm.barrier();
+    //if (rank==0) printf(" IonMembrane: completeted full step  \n");
+    //fflush(stdout);
+    //************************************************************************/
+    //if (rank==0) printf("-------------------------------------------------------------------\n");
+    //// Compute the walltime per timestep
+    //auto t2 = std::chrono::system_clock::now();
+    //double cputime = std::chrono::duration<double>( t2 - t1 ).count() / timestep;
+    //// Performance obtained from each node
+    //double MLUPS = double(Np)/cputime/1000000;
+
+    //if (rank==0) printf("********************************************************\n");
+    //if (rank==0) printf("CPU time = %f \n", cputime);
+    //if (rank==0) printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
+    //MLUPS *= nprocs;
+    //if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
+    //if (rank==0) printf("********************************************************\n");
+}
+
 
 void ScaLBL_IonModel::getIonConcentration(DoubleArray &IonConcentration,
                                           const size_t ic) {

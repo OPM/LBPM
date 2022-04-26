@@ -108,8 +108,8 @@ private:
     void AssignSolidBoundary(double *poisson_solid, int *poisson_solid_label);
     void Potential_Init(double *psi_init);
     void ElectricField_LB_to_Phys(DoubleArray &Efield_reg);
-    void SolveElectricPotentialAAodd(int timestep_from_Study);
-    void SolveElectricPotentialAAeven(int timestep_from_Study);
+    void SolveElectricPotentialAAeven(int timestep_from_Study, double *ChargeDensity, bool UseSlippingVelBC);
+    void SolveElectricPotentialAAodd(int timestep_from_Study, double *ChargeDensity, bool UseSlippingVelBC);
     //void SolveElectricField();
     void SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVelBC);
     void SolvePoissonAAeven(double *ChargeDensity, bool UseSlippingVelBC);

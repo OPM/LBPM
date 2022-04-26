@@ -7,9 +7,10 @@ ADD_LBPM_EXECUTABLE( lbpm_greyscale_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_greyscaleColor_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_electrokinetic_SingleFluid_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_nernst_planck_simulator )
+ADD_LBPM_EXECUTABLE( lbpm_cell_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_freelee_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_freelee_SingleFluidBGK_simulator )
-#ADD_LBPM_EXECUTABLE( lbpm_BGK_simulator )
+ADD_LBPM_EXECUTABLE( lbpm_BGK_simulator )
 #ADD_LBPM_EXECUTABLE( lbpm_color_macro_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_dfh_simulator )
 #ADD_LBPM_EXECUTABLE( lbpm_sphere_pp )
@@ -48,7 +49,6 @@ ADD_LBPM_EXECUTABLE( TestPNP_Stokes )
 ADD_LBPM_EXECUTABLE( TestMixedGrad )
 
 
-
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cylindertest ${CMAKE_CURRENT_BINARY_DIR}/cylindertest COPYONLY )
 
 # Add the tests
@@ -60,6 +60,7 @@ ADD_LBPM_TEST( TestTopo3D )
 ADD_LBPM_TEST( TestFluxBC )
 ADD_LBPM_TEST( TestFlowAdaptor )
 ADD_LBPM_TEST( TestMap )
+ADD_LBPM_TEST( TestMembrane )
 #ADD_LBPM_TEST( TestMRT )
 #ADD_LBPM_TEST( TestColorGrad )
 ADD_LBPM_TEST( TestWideHalo )

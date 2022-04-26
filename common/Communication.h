@@ -208,72 +208,68 @@ inline void CommunicateSendRecvCounts(
 }
 
 //***************************************************************************************
-inline void CommunicateRecvLists(
-    const Utilities::MPI &comm, int sendtag, int recvtag, int *sendList_x,
-    int *sendList_y, int *sendList_z, int *sendList_X, int *sendList_Y,
-    int *sendList_Z, int *sendList_xy, int *sendList_XY, int *sendList_xY,
-    int *sendList_Xy, int *sendList_xz, int *sendList_XZ, int *sendList_xZ,
-    int *sendList_Xz, int *sendList_yz, int *sendList_YZ, int *sendList_yZ,
-    int *sendList_Yz, int sendCount_x, int sendCount_y, int sendCount_z,
-    int sendCount_X, int sendCount_Y, int sendCount_Z, int sendCount_xy,
-    int sendCount_XY, int sendCount_xY, int sendCount_Xy, int sendCount_xz,
-    int sendCount_XZ, int sendCount_xZ, int sendCount_Xz, int sendCount_yz,
-    int sendCount_YZ, int sendCount_yZ, int sendCount_Yz, int *recvList_x,
-    int *recvList_y, int *recvList_z, int *recvList_X, int *recvList_Y,
-    int *recvList_Z, int *recvList_xy, int *recvList_XY, int *recvList_xY,
-    int *recvList_Xy, int *recvList_xz, int *recvList_XZ, int *recvList_xZ,
-    int *recvList_Xz, int *recvList_yz, int *recvList_YZ, int *recvList_yZ,
-    int *recvList_Yz, int recvCount_x, int recvCount_y, int recvCount_z,
-    int recvCount_X, int recvCount_Y, int recvCount_Z, int recvCount_xy,
-    int recvCount_XY, int recvCount_xY, int recvCount_Xy, int recvCount_xz,
-    int recvCount_XZ, int recvCount_xZ, int recvCount_Xz, int recvCount_yz,
-    int recvCount_YZ, int recvCount_yZ, int recvCount_Yz, int rank_x,
-    int rank_y, int rank_z, int rank_X, int rank_Y, int rank_Z, int rank_xy,
-    int rank_XY, int rank_xY, int rank_Xy, int rank_xz, int rank_XZ,
-    int rank_xZ, int rank_Xz, int rank_yz, int rank_YZ, int rank_yZ,
-    int rank_Yz) {
-    MPI_Request req1[18], req2[18];
-    req1[0] = comm.Isend(sendList_x, sendCount_x, rank_x, sendtag);
-    req2[0] = comm.Irecv(recvList_X, recvCount_X, rank_X, recvtag);
-    req1[1] = comm.Isend(sendList_X, sendCount_X, rank_X, sendtag);
-    req2[1] = comm.Irecv(recvList_x, recvCount_x, rank_x, recvtag);
-    req1[2] = comm.Isend(sendList_y, sendCount_y, rank_y, sendtag);
-    req2[2] = comm.Irecv(recvList_Y, recvCount_Y, rank_Y, recvtag);
-    req1[3] = comm.Isend(sendList_Y, sendCount_Y, rank_Y, sendtag);
-    req2[3] = comm.Irecv(recvList_y, recvCount_y, rank_y, recvtag);
-    req1[4] = comm.Isend(sendList_z, sendCount_z, rank_z, sendtag);
-    req2[4] = comm.Irecv(recvList_Z, recvCount_Z, rank_Z, recvtag);
-    req1[5] = comm.Isend(sendList_Z, sendCount_Z, rank_Z, sendtag);
-    req2[5] = comm.Irecv(recvList_z, recvCount_z, rank_z, recvtag);
+inline void CommunicateRecvLists( const Utilities::MPI& comm, int sendtag, int recvtag, 
+		int *sendList_x, int *sendList_y, int *sendList_z, int *sendList_X, int *sendList_Y, int *sendList_Z,
+		int *sendList_xy, int *sendList_XY, int *sendList_xY, int *sendList_Xy,
+		int *sendList_xz, int *sendList_XZ, int *sendList_xZ, int *sendList_Xz,
+		int *sendList_yz, int *sendList_YZ, int *sendList_yZ, int *sendList_Yz,
+		int sendCount_x, int sendCount_y, int sendCount_z, int sendCount_X, int sendCount_Y, int sendCount_Z,
+		int sendCount_xy, int sendCount_XY, int sendCount_xY, int sendCount_Xy,
+		int sendCount_xz, int sendCount_XZ, int sendCount_xZ, int sendCount_Xz,
+		int sendCount_yz, int sendCount_YZ, int sendCount_yZ, int sendCount_Yz,
+		int *recvList_x, int *recvList_y, int *recvList_z, int *recvList_X, int *recvList_Y, int *recvList_Z,
+		int *recvList_xy, int *recvList_XY, int *recvList_xY, int *recvList_Xy,
+		int *recvList_xz, int *recvList_XZ, int *recvList_xZ, int *recvList_Xz,
+		int *recvList_yz, int *recvList_YZ, int *recvList_yZ, int *recvList_Yz,
+		int recvCount_x, int recvCount_y, int recvCount_z, int recvCount_X, int recvCount_Y, int recvCount_Z,
+		int recvCount_xy, int recvCount_XY, int recvCount_xY, int recvCount_Xy,
+		int recvCount_xz, int recvCount_XZ, int recvCount_xZ, int recvCount_Xz,
+		int recvCount_yz, int recvCount_YZ, int recvCount_yZ, int recvCount_Yz,
+		int rank_x, int rank_y, int rank_z, int rank_X, int rank_Y, int rank_Z, int rank_xy, int rank_XY, int rank_xY,
+		int rank_Xy, int rank_xz, int rank_XZ, int rank_xZ, int rank_Xz, int rank_yz, int rank_YZ, int rank_yZ, int rank_Yz)
+{
+	MPI_Request req1[18], req2[18];
+	req1[0] = comm.Isend(sendList_x,sendCount_x,rank_x,sendtag+0);
+	req2[0] = comm.Irecv(recvList_X,recvCount_X,rank_X,recvtag+0);
+	req1[1] = comm.Isend(sendList_X,sendCount_X,rank_X,sendtag+1);
+	req2[1] = comm.Irecv(recvList_x,recvCount_x,rank_x,recvtag+1);
+	req1[2] = comm.Isend(sendList_y,sendCount_y,rank_y,sendtag+2);
+	req2[2] = comm.Irecv(recvList_Y,recvCount_Y,rank_Y,recvtag+2);
+	req1[3] = comm.Isend(sendList_Y,sendCount_Y,rank_Y,sendtag+3);
+	req2[3] = comm.Irecv(recvList_y,recvCount_y,rank_y,recvtag+3);
+	req1[4] = comm.Isend(sendList_z,sendCount_z,rank_z,sendtag+4);
+	req2[4] = comm.Irecv(recvList_Z,recvCount_Z,rank_Z,recvtag+4);
+	req1[5] = comm.Isend(sendList_Z,sendCount_Z,rank_Z,sendtag+5);
+	req2[5] = comm.Irecv(recvList_z,recvCount_z,rank_z,recvtag+5);
 
-    req1[6] = comm.Isend(sendList_xy, sendCount_xy, rank_xy, sendtag);
-    req2[6] = comm.Irecv(recvList_XY, recvCount_XY, rank_XY, recvtag);
-    req1[7] = comm.Isend(sendList_XY, sendCount_XY, rank_XY, sendtag);
-    req2[7] = comm.Irecv(recvList_xy, recvCount_xy, rank_xy, recvtag);
-    req1[8] = comm.Isend(sendList_Xy, sendCount_Xy, rank_Xy, sendtag);
-    req2[8] = comm.Irecv(recvList_xY, recvCount_xY, rank_xY, recvtag);
-    req1[9] = comm.Isend(sendList_xY, sendCount_xY, rank_xY, sendtag);
-    req2[9] = comm.Irecv(recvList_Xy, recvCount_Xy, rank_Xy, recvtag);
+	req1[6] = comm.Isend(sendList_xy,sendCount_xy,rank_xy,sendtag+6);
+	req2[6] = comm.Irecv(recvList_XY,recvCount_XY,rank_XY,recvtag+6);
+	req1[7] = comm.Isend(sendList_XY,sendCount_XY,rank_XY,sendtag+7);
+	req2[7] = comm.Irecv(recvList_xy,recvCount_xy,rank_xy,recvtag+7);
+	req1[8] = comm.Isend(sendList_Xy,sendCount_Xy,rank_Xy,sendtag+8);
+	req2[8] = comm.Irecv(recvList_xY,recvCount_xY,rank_xY,recvtag+8);
+	req1[9] = comm.Isend(sendList_xY,sendCount_xY,rank_xY,sendtag+9);
+	req2[9] = comm.Irecv(recvList_Xy,recvCount_Xy,rank_Xy,recvtag+9);
 
-    req1[10] = comm.Isend(sendList_xz, sendCount_xz, rank_xz, sendtag);
-    req2[10] = comm.Irecv(recvList_XZ, recvCount_XZ, rank_XZ, recvtag);
-    req1[11] = comm.Isend(sendList_XZ, sendCount_XZ, rank_XZ, sendtag);
-    req2[11] = comm.Irecv(recvList_xz, recvCount_xz, rank_xz, recvtag);
-    req1[12] = comm.Isend(sendList_Xz, sendCount_Xz, rank_Xz, sendtag);
-    req2[12] = comm.Irecv(recvList_xZ, recvCount_xZ, rank_xZ, recvtag);
-    req1[13] = comm.Isend(sendList_xZ, sendCount_xZ, rank_xZ, sendtag);
-    req2[13] = comm.Irecv(recvList_Xz, recvCount_Xz, rank_Xz, recvtag);
+	req1[10] = comm.Isend(sendList_xz,sendCount_xz,rank_xz,sendtag+10);
+	req2[10] = comm.Irecv(recvList_XZ,recvCount_XZ,rank_XZ,recvtag+10);
+	req1[11] = comm.Isend(sendList_XZ,sendCount_XZ,rank_XZ,sendtag+11);
+	req2[11] = comm.Irecv(recvList_xz,recvCount_xz,rank_xz,recvtag+11);
+	req1[12] = comm.Isend(sendList_Xz,sendCount_Xz,rank_Xz,sendtag+12);
+	req2[12] = comm.Irecv(recvList_xZ,recvCount_xZ,rank_xZ,recvtag+12);
+	req1[13] = comm.Isend(sendList_xZ,sendCount_xZ,rank_xZ,sendtag+13);
+	req2[13] = comm.Irecv(recvList_Xz,recvCount_Xz,rank_Xz,recvtag+13);
 
-    req1[14] = comm.Isend(sendList_yz, sendCount_yz, rank_yz, sendtag);
-    req2[14] = comm.Irecv(recvList_YZ, recvCount_YZ, rank_YZ, recvtag);
-    req1[15] = comm.Isend(sendList_YZ, sendCount_YZ, rank_YZ, sendtag);
-    req2[15] = comm.Irecv(recvList_yz, recvCount_yz, rank_yz, recvtag);
-    req1[16] = comm.Isend(sendList_Yz, sendCount_Yz, rank_Yz, sendtag);
-    req2[16] = comm.Irecv(recvList_yZ, recvCount_yZ, rank_yZ, recvtag);
-    req1[17] = comm.Isend(sendList_yZ, sendCount_yZ, rank_yZ, sendtag);
-    req2[17] = comm.Irecv(recvList_Yz, recvCount_Yz, rank_Yz, recvtag);
-    comm.waitAll(18, req1);
-    comm.waitAll(18, req2);
+	req1[14] = comm.Isend(sendList_yz,sendCount_yz,rank_yz,sendtag+14);
+	req2[14] = comm.Irecv(recvList_YZ,recvCount_YZ,rank_YZ,recvtag+14);
+	req1[15] = comm.Isend(sendList_YZ,sendCount_YZ,rank_YZ,sendtag+15);
+	req2[15] = comm.Irecv(recvList_yz,recvCount_yz,rank_yz,recvtag+15);
+	req1[16] = comm.Isend(sendList_Yz,sendCount_Yz,rank_Yz,sendtag+16);
+	req2[16] = comm.Irecv(recvList_yZ,recvCount_yZ,rank_yZ,recvtag+16);
+	req1[17] = comm.Isend(sendList_yZ,sendCount_yZ,rank_yZ,sendtag+17);
+	req2[17] = comm.Irecv(recvList_Yz,recvCount_Yz,rank_Yz,recvtag+17);
+    comm.waitAll( 18, req1 );
+    comm.waitAll( 18, req2 );
 }
 
 //***************************************************************************************

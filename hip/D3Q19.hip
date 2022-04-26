@@ -19,7 +19,7 @@
 #include "hip/hip_cooperative_groups.h"
 
 #define NBLOCKS 1024
-#define NTHREADS 256
+#define NTHREADS 512
 
 /*
 1. constants that are known at compile time should be defined using preprocessor macros (e.g. #define) or via C/C++ const variables at global/file scope.
@@ -321,10 +321,10 @@ __global__  void dvc_ScaLBL_D3Q19_Swap_Compact(int *neighborList, double *distev
 	}
 }
 
-//__launch_bounds__(512,4)
+//__launch_bounds__(512,1)
 
 __global__ void 
-dvc_ScaLBL_AAodd_Compact(char * ID, int *d_neighborList, double *dist, int Np) {
+dvc_ScaLBL_AAodd_Compact( int *d_neighborList, double *dist, int Np) {
 
 	int n;
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
@@ -463,7 +463,8 @@ dvc_ScaLBL_AAodd_Compact(char * ID, int *d_neighborList, double *dist, int Np) {
 }
 
 
-__global__ void 
+__global__ void
+__launch_bounds__(512,1)
 dvc_ScaLBL_AAodd_MRT(int *neighborList, double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx, double Fy, double Fz) {
 
 	int n;
@@ -932,7 +933,8 @@ dvc_ScaLBL_AAodd_MRT(int *neighborList, double *dist, int start, int finish, int
 
 
 //__launch_bounds__(512,1)
-__global__ void 
+__global__ void
+__launch_bounds__(512,1) 
 dvc_ScaLBL_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx, double Fy, double Fz) {
 
 	int n;
@@ -1353,9 +1355,9 @@ dvc_ScaLBL_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_se
 	}
 }
 
-//__launch_bounds__(512,4)
+//__launch_bounds__(512,1)
 
-__global__ void dvc_ScaLBL_AAeven_Compact(char * ID, double *dist, int Np) {
+__global__ void dvc_ScaLBL_AAeven_Compact( double *dist, int Np) {
 
 	int n;
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
@@ -2374,12 +2376,12 @@ __global__ void dvc_ScaLBL_D3Q19_Init_Simple(char *ID, double *f_even, double *f
 
 extern "C" void ScaLBL_D3Q19_Pack(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
 	int GRID = count / 512 + 1;
-	dvc_ScaLBL_D3Q19_Pack <<<GRID,512 >>>(q, list, start, count, sendbuf, dist, N);
+	dvc_ScaLBL_D3Q19_Pack <<<NBLOCKS,NTHREADS >>>(q, list, start, count, sendbuf, dist, N);
 }
 
 extern "C" void ScaLBL_D3Q19_Unpack(int q, int *list,  int start, int count, double *recvbuf, double *dist, int N){
 	int GRID = count / 512 + 1;
-	dvc_ScaLBL_D3Q19_Unpack <<<GRID,512 >>>(q, list, start, count, recvbuf, dist, N);
+	dvc_ScaLBL_D3Q19_Unpack <<<NBLOCKS,NTHREADS >>>(q, list, start, count, recvbuf, dist, N);
 }
 //*************************************************************************
 
@@ -2423,19 +2425,17 @@ extern "C" void ScaLBL_D3Q19_Swap_Compact(int *neighborList, double *disteven, d
 		printf("CUDA error in ScaLBL_D3Q19_Swap: %s \n",hipGetErrorString(err));
 	}
 }
-
-extern "C" void ScaLBL_D3Q19_AAeven_Compact(char * ID, double *d_dist,  int Np) {
+extern "C" void ScaLBL_D3Q19_AAeven_Compact( double *d_dist,  int Np) {
         hipFuncSetCacheConfig( (void*) dvc_ScaLBL_AAeven_Compact, hipFuncCachePreferL1);
-	dvc_ScaLBL_AAeven_Compact<<<NBLOCKS,NTHREADS>>>(ID, d_dist, Np);
+	dvc_ScaLBL_AAeven_Compact<<<NBLOCKS,NTHREADS>>>( d_dist, Np);
 	hipError_t err = hipGetLastError();
 	if (hipSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_Init: %s \n",hipGetErrorString(err));
 	}
 }
-
-extern "C" void ScaLBL_D3Q19_AAodd_Compact(char * ID, int *d_neighborList, double *d_dist, int Np) {
+extern "C" void ScaLBL_D3Q19_AAodd_Compact( int *d_neighborList, double *d_dist, int Np) {
         hipFuncSetCacheConfig( (void*) dvc_ScaLBL_AAodd_Compact, hipFuncCachePreferL1);
-	dvc_ScaLBL_AAodd_Compact<<<NBLOCKS,NTHREADS>>>(ID,d_neighborList, d_dist,Np);
+	dvc_ScaLBL_AAodd_Compact<<<NBLOCKS,NTHREADS>>>(d_neighborList, d_dist,Np);
 	hipError_t err = hipGetLastError();
 	if (hipSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_Init: %s \n",hipGetErrorString(err));

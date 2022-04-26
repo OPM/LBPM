@@ -1,0 +1,39 @@
+## Load the desired modules
+module load PrgEnv-gcc
+module load rocm/4.3.0
+module load cray-mpich
+module load cray-hdf5-parallel
+
+## These must be set before compiling so the executable picks up GTL
+export PE_MPICH_GTL_DIR_amd_gfx908="-L${CRAY_MPICH_ROOTDIR}/gtl/lib"
+export PE_MPICH_GTL_LIBS_amd_gfx908="-lmpi_gtl_hsa"
+
+## These must be set before running
+export MPIR_CVAR_GPU_EAGER_DEVICE_MEM=0
+export MPICH_GPU_SUPPORT_ENABLED=1
+export MPICH_SMP_SINGLE_COPY_MODE=CMA
+
+#export CMAKE_DIR=/gpfs/alpine/csc380/proj-shared/LBPM/cmake-3.21.3/bin
+export CMAKE_DIR=/ccs/home/mbt/spock/cmake-3.21.3/bin
+
+# configure
+rm -rf CMake*
+${CMAKE_DIR}/cmake                              \
+    -D CMAKE_BUILD_TYPE:STRING=Release          \
+    -D CMAKE_CXX_COMPILER:PATH=CC               \
+    -D CMAKE_CXX_STANDARD=14                    \
+    -D DISABLE_GOLD:BOOL=TRUE                   \
+    -D DISABLE_LTO:BOOL=TRUE                    \
+    -D USE_HIP=1                                \
+        -D LINK_LIBRARIES="${ROCM_PATH}/lib/libamdhip64.so;${CRAY_MPICH_ROOTDIR}/gtl/lib/libmpi_gtl_hsa.so" \
+    -D USE_MPI=1                                \
+    -D MPI_SKIP_SEARCH=1                        \
+    -D MPIEXEC="srun"                           \
+    -D USE_HDF5=1                               \
+        -D HDF5_DIRECTORY="${HDF5_DIR}"         \
+    -D USE_SILO=0                               \
+    -D USE_TIMER=0			        \
+    -D USE_DOXYGEN:BOOL=false		        \
+    ~/repos/LBPM-WIA
+
+

@@ -4,11 +4,13 @@
 #include "common/Utilities.h"
 
 #include <array>
+#include <cstdint>
 #include <cmath>
 #include <complex>
 #include <cstdlib>
 #include <cstring>
 #include <initializer_list>
+#include <stdexcept>
 #include <vector>
 
 #if defined(__CUDA_ARCH__)

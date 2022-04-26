@@ -36,6 +36,7 @@ void ScaLBL_MRTModel::ReadParams(string filename) {
 
     tau = 1.0;
     timestepMax = 100000;
+    ANALYSIS_INTERVAL = 1000;
     tolerance = 1.0e-8;
     Fx = Fy = 0.0;
     Fz = 1.0e-5;
@@ -45,6 +46,9 @@ void ScaLBL_MRTModel::ReadParams(string filename) {
     // Color Model parameters
     if (mrt_db->keyExists("timestepMax")) {
         timestepMax = mrt_db->getScalar<int>("timestepMax");
+    }
+    if (mrt_db->keyExists("analysis_interval")) {
+        ANALYSIS_INTERVAL = mrt_db->getScalar<int>("analysis_interval");
     }
     if (mrt_db->keyExists("tolerance")) {
         tolerance = mrt_db->getScalar<double>("tolerance");
@@ -318,7 +322,7 @@ void ScaLBL_MRTModel::Run() {
         comm.barrier();
         //************************************************************************/
 
-        if (timestep % 1000 == 0) {
+        if (timestep % ANALYSIS_INTERVAL == 0) {
             ScaLBL_D3Q19_Momentum(fq, Velocity, Np);
             ScaLBL_DeviceBarrier();
             comm.barrier();

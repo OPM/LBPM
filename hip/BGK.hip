@@ -18,9 +18,11 @@
 #include "hip/hip_runtime.h"
 
 #define NBLOCKS 1024
-#define NTHREADS 256
+#define NTHREADS 512
 
-__global__ void dvc_ScaLBL_D3Q19_AAeven_BGK(double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz){
+
+__global__  void
+__launch_bounds__(512,1) dvc_ScaLBL_D3Q19_AAeven_BGK(double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz){
 	int n;
 	// conserved momemnts
 	double rho,ux,uy,uz,uu;
@@ -138,7 +140,8 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_BGK(double *dist, int start, int finish,
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q19_AAodd_BGK(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz){
+__global__  void
+__launch_bounds__(512,1) dvc_ScaLBL_D3Q19_AAodd_BGK(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz){
 	int n;
 	// conserved momemnts
 	double rho,ux,uy,uz,uu;

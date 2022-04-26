@@ -26,6 +26,7 @@ redistribution is prohibited.
 #include <atomic>
 #include <complex>
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>
@@ -173,10 +174,9 @@ public: // Member functions
      *
      */
     static void
-    balanceProcesses(const MPI &comm = MPI(MPI_COMM_WORLD),
-                     const int method = 1,
+    balanceProcesses(const MPI &comm = MPI(MPI_COMM_WORLD), int method = 1,
                      const std::vector<int> &procs = std::vector<int>(),
-                     const int N_min = 1, const int N_max = -1);
+                     int N_min = 1, int N_max = -1);
 
     //! Query the level of thread support
     static ThreadSupport queryThreadSupport();
@@ -420,7 +420,7 @@ public: // Member functions
      * \param x  The input/output array for the reduce
      * \param n  The number of values in the array (must match on all nodes)
      */
-    template <class type> void sumReduce(type *x, const int n = 1) const;
+    template <class type> void sumReduce(type *x, int n = 1) const;
 
     /**
      * \brief   Sum Reduce
@@ -432,7 +432,7 @@ public: // Member functions
      * \param n  The number of values in the array (must match on all nodes)
      */
     template <class type>
-    void sumReduce(const type *x, type *y, const int n = 1) const;
+    void sumReduce(const type *x, type *y, int n = 1) const;
 
     /**
      * \brief   Min Reduce
@@ -457,7 +457,7 @@ public: // Member functions
      * minimum value
      */
     template <class type>
-    void minReduce(type *x, const int n = 1, int *rank_of_min = nullptr) const;
+    void minReduce(type *x, int n = 1, int *rank_of_min = nullptr) const;
 
     /**
      * \brief   Sum Reduce
@@ -475,7 +475,7 @@ public: // Member functions
      * minimum value
      */
     template <class type>
-    void minReduce(const type *x, type *y, const int n = 1,
+    void minReduce(const type *x, type *y, int n = 1,
                    int *rank_of_min = nullptr) const;
 
     /**
@@ -501,7 +501,7 @@ public: // Member functions
      * minimum value
      */
     template <class type>
-    void maxReduce(type *x, const int n = 1, int *rank_of_max = nullptr) const;
+    void maxReduce(type *x, int n = 1, int *rank_of_max = nullptr) const;
 
     /**
      * \brief   Sum Reduce
@@ -519,7 +519,7 @@ public: // Member functions
      * minimum value
      */
     template <class type>
-    void maxReduce(const type *x, type *y, const int n = 1,
+    void maxReduce(const type *x, type *y, int n = 1,
                    int *rank_of_max = nullptr) const;
 
     /**
@@ -530,8 +530,7 @@ public: // Member functions
      * \param y         The output array for the scan
      * \param n         The number of values in the array (must match on all nodes)
      */
-    template <class type>
-    void sumScan(const type *x, type *y, const int n = 1) const;
+    template <class type> void sumScan(const type *x, type *y, int n = 1) const;
 
     /**
      * \brief    Scan Min Reduce
@@ -541,8 +540,7 @@ public: // Member functions
      * \param y         The output array for the scan
      * \param n         The number of values in the array (must match on all nodes)
      */
-    template <class type>
-    void minScan(const type *x, type *y, const int n = 1) const;
+    template <class type> void minScan(const type *x, type *y, int n = 1) const;
 
     /**
      * \brief    Scan Max Reduce
@@ -552,8 +550,7 @@ public: // Member functions
      * \param y         The output array for the scan
      * \param n     The number of values in the array (must match on all nodes)
      */
-    template <class type>
-    void maxScan(const type *x, type *y, const int n = 1) const;
+    template <class type> void maxScan(const type *x, type *y, int n = 1) const;
 
     /**
      * \brief   Broadcast
@@ -561,7 +558,7 @@ public: // Member functions
      * \param value     The input value for the broadcast.
      * \param root      The processor performing the broadcast
      */
-    template <class type> type bcast(const type &value, const int root) const;
+    template <class type> type bcast(const type &value, int root) const;
 
     /**
      * \brief   Broadcast
@@ -570,8 +567,7 @@ public: // Member functions
      * \param n         The number of values in the array (must match on all nodes)
      * \param root      The processor performing the broadcast
      */
-    template <class type>
-    void bcast(type *value, const int n, const int root) const;
+    template <class type> void bcast(type *value, int n, int root) const;
 
     /**
      * Perform a global barrier across all processors.
@@ -595,8 +591,7 @@ public: // Member functions
      *                  The matching recv must share this tag.
      */
     template <class type>
-    void send(const type *buf, const int length, const int recv,
-              int tag = 0) const;
+    void send(const type *buf, int length, int recv, int tag = 0) const;
 
     /*!
      * @brief This function sends an MPI message with an array of bytes
@@ -611,8 +606,7 @@ public: // Member functions
      *                  to be sent with this message.  Default tag is 0.
      *                  The matching recv must share this tag.
      */
-    void sendBytes(const void *buf, const int N_bytes, const int recv,
-                   int tag = 0) const;
+    void sendBytes(const void *buf, int N_bytes, int recv, int tag = 0) const;
 
     /*!
      * @brief This function sends an MPI message with an array
@@ -627,8 +621,8 @@ public: // Member functions
      *                  to be sent with this message.
      */
     template <class type>
-    MPI_Request Isend(const type *buf, const int length, const int recv_proc,
-                      const int tag) const;
+    MPI_Request Isend(const type *buf, int length, int recv_proc,
+                      int tag) const;
 
     /*!
      * @brief This function sends an MPI message with an array of bytes
@@ -642,8 +636,8 @@ public: // Member functions
      * @param tag       Integer argument specifying an integer tag
      *                  to be sent with this message.
      */
-    MPI_Request IsendBytes(const void *buf, const int N_bytes,
-                           const int recv_proc, const int tag) const;
+    MPI_Request IsendBytes(const void *buf, int N_bytes, int recv_proc,
+                           int tag) const;
 
     /*!
      * @brief This function receives an MPI message with a data
@@ -662,7 +656,7 @@ public: // Member functions
      *                   by the tag of the incoming message. Default tag is 0.
      */
     template <class type>
-    inline void recv(type *buf, int length, const int send, int tag) const {
+    inline void recv(type *buf, int length, int send, int tag) const {
         int length2 = length;
         recv(buf, length2, send, false, tag);
     }
@@ -687,7 +681,7 @@ public: // Member functions
      *                   by the tag of the incoming message. Default tag is 0.
      */
     template <class type>
-    void recv(type *buf, int &length, const int send, const bool get_length,
+    void recv(type *buf, int &length, int send, const bool get_length,
               int tag) const;
 
     /*!
@@ -703,7 +697,7 @@ public: // Member functions
      *   must be matched by the tag of the incoming message. Default
      *   tag is 0.
      */
-    void recvBytes(void *buf, int &N_bytes, const int send, int tag = 0) const;
+    void recvBytes(void *buf, int &N_bytes, int send, int tag = 0) const;
 
     /*!
      * @brief This function receives an MPI message with a data
@@ -716,8 +710,7 @@ public: // Member functions
      *                   be matched by the tag of the incoming message.
      */
     template <class type>
-    MPI_Request Irecv(type *buf, const int length, const int send_proc,
-                      const int tag) const;
+    MPI_Request Irecv(type *buf, int length, int send_proc, int tag) const;
 
     /*!
      * @brief This function receives an MPI message with an array of
@@ -731,8 +724,8 @@ public: // Member functions
      * @param tag       Integer argument specifying a tag which must
      *                  be matched by the tag of the incoming message.
      */
-    MPI_Request IrecvBytes(void *buf, const int N_bytes, const int send_proc,
-                           const int tag) const;
+    MPI_Request IrecvBytes(void *buf, int N_bytes, int send_proc,
+                           int tag) const;
 
     /*!
      * @brief This function sends and recieves data using a blocking call
@@ -740,6 +733,39 @@ public: // Member functions
     template <class type>
     void sendrecv(const type *sendbuf, int sendcount, int dest, int sendtag,
                   type *recvbuf, int recvcount, int source, int recvtag) const;
+
+    /*!
+     * @brief This function sets up an Isend call (see MPI_Send_init)
+     * @param buf       Pointer to array buffer with length integers.
+     * @param length    Number of integers in buf that we want to send.
+     * @param recv_proc Receiving processor number.
+     * @param tag       Tag to send
+     * @return          Returns an MPI_Request.
+     *                  Note this returns a unique pointer so the user does not
+     *                  need to manually free the request
+     */
+    template <class type>
+    std::shared_ptr<MPI_Request> Isend_init(const type *buf, int length, int recv_proc,
+                           int tag) const;
+
+    /*!
+     * @brief This function sets up an Irecv call (see MPI_Recv_init)
+     * @param buf        Pointer to integer array buffer with capacity of length integers.
+     * @param length     Maximum number of values that can be stored in buf.
+     * @param send_proc  Processor number of sender.
+     * @param tag        Tag to match
+     * @return          Returns an MPI_Request.
+     *                  Note this returns a unique pointer so the user does not
+     *                  need to manually free the request
+     */
+    template <class type>
+    std::shared_ptr<MPI_Request> Irecv_init(type *buf, int length, int send_proc, int tag) const;
+
+    /*!
+     * @brief Start the MPI communication
+     * @param request   Request to start
+     */
+    void Start( MPI_Request &request );
 
     /*!
      * Each processor sends every other processor a single value.
@@ -792,7 +818,7 @@ public: // Member functions
      *                      and the sizes and displacements will be returned (if desired).
      */
     template <class type>
-    int allGather(const type *send_data, const int send_cnt, type *recv_data,
+    int allGather(const type *send_data, int send_cnt, type *recv_data,
                   int *recv_cnt = nullptr, int *recv_disp = nullptr,
                   bool known_recv = false) const;
 
@@ -822,7 +848,7 @@ public: // Member functions
      * @param recv_data     Output array of received values (nxN)
      */
     template <class type>
-    void allToAll(const int n, const type *send_data, type *recv_data) const;
+    void allToAll(int n, const type *send_data, type *recv_data) const;
 
     /*!
      * Each processor sends an array of data to the different processors.
@@ -995,23 +1021,20 @@ public: // Member functions
     MPI loadBalance(double localPerformance, std::vector<double> work);
 
 private: // Private helper functions for templated MPI operations;
-    template <class type> void call_sumReduce(type *x, const int n = 1) const;
+    template <class type> void call_sumReduce(type *x, int n = 1) const;
     template <class type>
-    void call_sumReduce(const type *x, type *y, const int n = 1) const;
+    void call_sumReduce(const type *x, type *y, int n = 1) const;
     template <class type>
-    void call_minReduce(type *x, const int n = 1,
+    void call_minReduce(type *x, int n = 1, int *rank_of_min = nullptr) const;
+    template <class type>
+    void call_minReduce(const type *x, type *y, int n = 1,
                         int *rank_of_min = nullptr) const;
     template <class type>
-    void call_minReduce(const type *x, type *y, const int n = 1,
-                        int *rank_of_min = nullptr) const;
+    void call_maxReduce(type *x, int n = 1, int *rank_of_max = nullptr) const;
     template <class type>
-    void call_maxReduce(type *x, const int n = 1,
+    void call_maxReduce(const type *x, type *y, int n = 1,
                         int *rank_of_max = nullptr) const;
-    template <class type>
-    void call_maxReduce(const type *x, type *y, const int n = 1,
-                        int *rank_of_max = nullptr) const;
-    template <class type>
-    void call_bcast(type *x, const int n, const int root) const;
+    template <class type> void call_bcast(type *x, int n, int root) const;
     template <class type>
     void call_allGather(const type &x_in, type *x_out) const;
     template <class type>
