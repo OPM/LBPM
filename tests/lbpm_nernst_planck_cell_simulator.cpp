@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 
         if (rank == 0){
             printf("********************************************************\n");
-            printf("Running LBPM electrokinetic single-fluid solver \n");
+            printf("Running LBPM Nernst-Planck Membrane solver \n");
             printf("********************************************************\n");
         }
     	// Initialize compute device
@@ -49,7 +49,7 @@ int main(int argc, char **argv)
         Utilities::setErrorHandlers();
 
         auto filename = argv[1];
-        ScaLBL_StokesModel StokesModel(rank,nprocs,comm);
+        //ScaLBL_StokesModel StokesModel(rank,nprocs,comm);
         ScaLBL_IonModel IonModel(rank,nprocs,comm);
         ScaLBL_Poisson PoissonSolver(rank,nprocs,comm); 
         ScaLBL_Multiphys_Controller Study(rank,nprocs,comm);//multiphysics controller coordinating multi-model coupling
@@ -60,14 +60,14 @@ int main(int argc, char **argv)
         Study.ReadParams(filename);
 
         // Load user input database files for Navier-Stokes and Ion solvers
-        StokesModel.ReadParams(filename);
+        //StokesModel.ReadParams(filename);
 
         // Setup other model specific structures
-        StokesModel.SetDomain();    
-        StokesModel.ReadInput();    
-        StokesModel.Create();       // creating the model will create data structure to match the pore structure and allocate variables
-        comm.barrier();
-        if (rank == 0) printf("Stokes model setup complete\n");
+        //StokesModel.SetDomain();    
+        //StokesModel.ReadInput();    
+        //StokesModel.Create();       // creating the model will create data structure to match the pore structure and allocate variables
+        //comm.barrier();
+        //if (rank == 0) printf("Stokes model setup complete\n");
 	
         IonModel.ReadParams(filename);
         IonModel.SetDomain();    
@@ -82,18 +82,29 @@ int main(int argc, char **argv)
         ElectroChemistryAnalyzer Analysis(IonModel.Dm);
 
         // Get internal iteration number
-        StokesModel.timestepMax = Study.getStokesNumIter_PNP_coupling(StokesModel.time_conv,IonModel.time_conv);
-        StokesModel.Initialize();   // initializing the model will set initial conditions for variables
-        comm.barrier();
-        if (rank == 0) printf("Stokes model initialized \n");
-        fflush(stdout);
+        //StokesModel.timestepMax = Study.getStokesNumIter_PNP_coupling(StokesModel.time_conv,IonModel.time_conv);
+        //StokesModel.Initialize();   // initializing the model will set initial conditions for variables
+        //comm.barrier();
+        //if (rank == 0) printf("Stokes model initialized \n");
+        //fflush(stdout);
 	
-        IonModel.timestepMax = Study.getIonNumIter_PNP_coupling(StokesModel.time_conv,IonModel.time_conv);
+        //IonModel.timestepMax = Study.getIonNumIter_PNP_coupling(StokesModel.time_conv,IonModel.time_conv);
+        IonModel.timestepMax = Study.getIonNumIter_NernstPlanck_coupling(IonModel.time_conv);
         IonModel.Initialize();   
+        IonModel.DummyFluidVelocity();
         comm.barrier();
         if (rank == 0) printf("Ion model initialized \n");
         // Get maximal time converting factor based on Sotkes and Ion solvers
-        Study.getTimeConvMax_PNP_coupling(StokesModel.time_conv,IonModel.time_conv);
+        //Study.getTimeConvMax_PNP_coupling(StokesModel.time_conv,IonModel.time_conv);
+        Study.time_conv_MainLoop = IonModel.timestepMax[0]*IonModel.time_conv[0];
+
+        //----------------------------------- print out for debugging ------------------------------------------//
+        if (rank==0){
+            for (size_t i=0;i<IonModel.timestepMax.size();i++){
+                printf("Main loop time_conv computed from ion %i: %.5g[s/lt]\n",i+1,IonModel.timestepMax[i]*IonModel.time_conv[i]);
+            }
+        }
+        //----------------------------------- print out for debugging ------------------------------------------//
 
         // Initialize LB-Poisson model
         PoissonSolver.ReadParams(filename);
@@ -103,7 +114,7 @@ int main(int argc, char **argv)
         comm.barrier();
         if (rank == 0) printf("Poisson solver created \n");
         fflush(stdout);
-        PoissonSolver.Initialize(Study.time_conv_max);   
+        PoissonSolver.Initialize(Study.time_conv_MainLoop);   
         comm.barrier();
         if (rank == 0) printf("Poisson solver initialized \n");
         fflush(stdout);
@@ -115,25 +126,27 @@ int main(int argc, char **argv)
             PoissonSolver.Run(IonModel.ChargeDensity,SlipBC,timestep);//solve Poisson equtaion to get steady-state electrical potental
             comm.barrier();
             //if (rank == 0) printf("    Poisson step %i \n",timestep);
-            StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
+            //StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
     	    //fflush(stdout);
 
-            IonModel.RunMembrane(StokesModel.Velocity,PoissonSolver.ElectricField,PoissonSolver.Psi); //solve for ion transport with membrane
+            IonModel.RunMembrane(IonModel.FluidVelocityDummy,PoissonSolver.ElectricField,PoissonSolver.Psi); //solve for ion transport with membrane
 	        comm.barrier();
             //if (rank == 0) printf("    Membrane step %i \n",timestep);
 	        //fflush(stdout);
 
-            timestep++;//AA operations
 
             if (timestep%Study.analysis_interval==0){
 	            Analysis.Basic(IonModel,PoissonSolver,StokesModel,timestep);
             }
             if (timestep%Study.visualization_interval==0){
-            	Analysis.WriteVis(IonModel,PoissonSolver,StokesModel,Study.db,timestep);
+            	//Analysis.WriteVis(IonModel,PoissonSolver,StokesModel,Study.db,timestep);
             	// PoissonSolver.getElectricPotential(timestep);
                 //PoissonSolver.getElectricField(timestep);
                 //IonModel.getIonConcentration(timestep);
                 //StokesModel.getVelocity(timestep);
+            	PoissonSolver.getElectricPotential_debug(timestep);
+                PoissonSolver.getElectricField_debug(timestep);
+                IonModel.getIonConcentration_debug(timestep);
             	 
             }
         }
@@ -145,7 +158,7 @@ int main(int argc, char **argv)
         if (rank==0) printf("*************************************************************\n");
 
         PROFILE_STOP("Main");
-        PROFILE_SAVE("lbpm_electrokinetic_SingleFluid_simulator",1);
+        PROFILE_SAVE("lbpm_nernst_planck_membrane_simulator",1);
         // ****************************************************
 
     } // Limit scope so variables that contain communicators will free before MPI_Finialize
