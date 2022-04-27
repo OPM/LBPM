@@ -17,7 +17,6 @@ ScaLBL_IonModel::~ScaLBL_IonModel() {}
 
 void ScaLBL_IonModel::ReadParams(string filename, vector<int> &num_iter) {
 
-	USE_MEMBRANE = true;
     // read the input database
     db = std::make_shared<Database>(filename);
     domain_db = db->getDatabase("Domain");
@@ -283,7 +282,7 @@ void ScaLBL_IonModel::ReadParams(string filename, vector<int> &num_iter) {
 void ScaLBL_IonModel::ReadParams(string filename) {
     //NOTE: the maximum iteration timesteps for ions are left unspecified
     //      it relies on the multiphys controller to compute the max timestep
-
+	USE_MEMBRANE = true;
     // read the input database
     db = std::make_shared<Database>(filename);
     domain_db = db->getDatabase("Domain");
@@ -321,7 +320,9 @@ void ScaLBL_IonModel::ReadParams(string filename) {
     if (domain_db->keyExists("voxel_length")) { //default unit: um/lu
         h = domain_db->getScalar<double>("voxel_length");
     }
-
+    if (ion_db->keyExists("use_membrane")) {
+    	USE_MEMBRANE = ion_db->getScalar<bool>("use_membrane");
+    }
     // LB-Ion Model parameters
     //if (ion_db->keyExists( "timestepMax" )){
     //	timestepMax = ion_db->getScalar<int>( "timestepMax" );
@@ -423,23 +424,104 @@ void ScaLBL_IonModel::ReadParams(string filename) {
         }
     }
     
-    
-    if (ion_db->keyExists("MembraneIonConcentrationList")) {
-      if (rank == 0) printf(".... Read MembraneIonConcentrationList \n");
-    	MembraneIonConcentration.clear();
-    	MembraneIonConcentration = ion_db->getVector<double>("MembraneIonConcentrationList");
-    	if (MembraneIonConcentration.size() != number_ion_species) {
-    		ERROR("Error: number_ion_species and MembraneIonConcentrationList must be "
-    				"the same length! \n");
-    	} 
-    	else {
-    		for (size_t i = 0; i < MembraneIonConcentration.size(); i++) {
-    			MembraneIonConcentration[i] =
-    					MembraneIonConcentration[i] *
-    					(h * h * h *
-    							1.0e-18); //LB ion concentration has unit [mol/lu^3]
+    if (USE_MEMBRANE){
+        membrane_db = db->getDatabase("Membrane");
+
+    	/* get membrane permeability parameters*/
+    	if (membrane_db->keyExists("MassFractionIn")) {
+    		if (rank == 0) printf(".... Read membrane permeability (MassFractionIn) \n");
+    		MassFractionIn.clear();
+    		MassFractionIn = membrane_db->getVector<double>("MassFractionIn");
+    		if (MassFractionIn.size() != number_ion_species) {
+    			ERROR("Error: number_ion_species and membrane permeability (MassFractionIn) must be "
+    					"the same length! \n");
+    		} 
+    	}	
+    	else{
+    		MassFractionIn.resize(IonConcentration.size());
+            for (size_t i = 0; i < IonConcentration.size(); i++) {
+            	MassFractionIn[i] = 0.0;
+            }
+    	}
+    	if (membrane_db->keyExists("MassFractionOut")) {
+    		if (rank == 0) printf(".... Read membrane permeability (MassFractionOut) \n");
+    		MassFractionOut.clear();
+    		MassFractionOut = membrane_db->getVector<double>("MassFractionOut");
+    		if (MassFractionIn.size() != number_ion_species) {
+    			ERROR("Error: number_ion_species and membrane permeability (MassFractionOut) must be "
+    					"the same length! \n");
+    		} 
+    	}	
+    	else{
+    		MassFractionOut.resize(IonConcentration.size());
+            for (size_t i = 0; i < IonConcentration.size(); i++) {
+            	MassFractionOut[i] = 0.0;
+            }
+    	}
+    	if (membrane_db->keyExists("ThresholdMassFractionIn")) {
+    		if (rank == 0) printf(".... Read membrane permeability (ThresholdMassFractionIn) \n");
+    		ThresholdMassFractionIn.clear();
+    		ThresholdMassFractionIn = membrane_db->getVector<double>("ThresholdMassFractionIn");
+    		if (ThresholdMassFractionIn.size() != number_ion_species) {
+    			ERROR("Error: number_ion_species and membrane permeability (ThresholdMassFractionIn) must be "
+    					"the same length! \n");
+    		} 
+    	}	
+    	else{
+    		ThresholdMassFractionIn.resize(IonConcentration.size());
+            for (size_t i = 0; i < IonConcentration.size(); i++) {
+            	ThresholdMassFractionIn[i] = 0.0;
+            }
+    	}	
+    	if (membrane_db->keyExists("ThresholdMassFractionOut")) {
+    		if (rank == 0) printf(".... Read membrane permeability (ThresholdMassFractionOut) \n");
+    		ThresholdMassFractionOut.clear();
+    		ThresholdMassFractionOut = membrane_db->getVector<double>("ThresholdMassFractionOut");
+    		if (ThresholdMassFractionOut.size() != number_ion_species) {
+    			ERROR("Error: number_ion_species and membrane permeability (ThresholdMassFractionOut) must be "
+    					"the same length! \n");
+    		} 
+    	}	
+    	else{
+    		ThresholdMassFractionOut.resize(IonConcentration.size());
+            for (size_t i = 0; i < IonConcentration.size(); i++) {
+            	ThresholdMassFractionOut[i] = 0.0;
+            }
+    	}
+    	if (membrane_db->keyExists("ThresholdVoltage")) {
+    		if (rank == 0) printf(".... Read membrane threshold (ThresholdVoltage) \n");
+    		ThresholdVoltage.clear();
+    		ThresholdVoltage = membrane_db->getVector<double>("ThresholdVoltage");
+    		if (ThresholdVoltage.size() != number_ion_species) {
+    			ERROR("Error: number_ion_species and membrane voltage threshold (ThresholdVoltage) must be "
+    					"the same length! \n");
+    		} 
+    	}	
+    	else{
+    		ThresholdVoltage.resize(IonConcentration.size());
+            for (size_t i = 0; i < IonConcentration.size(); i++) {
+            	ThresholdVoltage[i] = 0.0;
+            }
+    	}
+    	    	
+    	if (ion_db->keyExists("MembraneIonConcentrationList")) {
+    		if (rank == 0) printf(".... Read MembraneIonConcentrationList \n");
+    		MembraneIonConcentration.clear();
+    		MembraneIonConcentration = ion_db->getVector<double>("MembraneIonConcentrationList");
+    		if (MembraneIonConcentration.size() != number_ion_species) {
+    			ERROR("Error: number_ion_species and MembraneIonConcentrationList must be "
+    					"the same length! \n");
+    		} 
+    		else {
+    			for (size_t i = 0; i < MembraneIonConcentration.size(); i++) {
+    				MembraneIonConcentration[i] =
+    						MembraneIonConcentration[i] *
+    						(h * h * h *
+    								1.0e-18); //LB ion concentration has unit [mol/lu^3]
+    			}
     		}
     	}
+
     }
     //Read solid boundary condition specific to Ion model
     BoundaryConditionSolid = 0;
@@ -1362,11 +1444,9 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
 
     for (size_t ic = 0; ic < number_ion_species; ic++) {
         /* set the mass transfer coefficients for the membrane */
-    	if (ic == 0)
-    		IonMembrane->AssignCoefficients(dvcMap, Psi, "Na+");
-    	else {
-    		IonMembrane->AssignCoefficients(dvcMap, Psi, "impermeable");
-    	}
+		IonMembrane->AssignCoefficients(dvcMap, Psi, ThresholdVoltage[ic],MassFractionIn[ic],
+				MassFractionOut[ic],ThresholdMassFractionIn[ic],ThresholdMassFractionOut[ic]);
+
         timestep = 0;
         while (timestep < timestepMax[ic]) {
             //************************************************************************/

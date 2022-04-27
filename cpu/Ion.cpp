@@ -482,7 +482,7 @@ extern "C" void ScaLBL_D3Q7_Ion_Init_FromFile(double *dist, double *Den,
 
 extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den,
                                               double *ChargeDensity,
-                                              int IonValence, int ion_component,
+                                              double IonValence, int ion_component,
                                               int start, int finish, int Np) {
 
     int n;

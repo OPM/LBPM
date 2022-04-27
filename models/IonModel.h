@@ -69,10 +69,13 @@ public:
     vector<int> IonValence;
     vector<double> IonConcentration; //unit [mol/m^3]
     vector<double> MembraneIonConcentration; //unit [mol/m^3]
-    vector<double>
-        Cin; //inlet boundary value, can be either concentration [mol/m^3] or flux [mol/m^2/sec]
-    vector<double>
-        Cout; //outlet boundary value, can be either concentration [mol/m^3] or flux [mol/m^2/sec]
+    vector<double> ThresholdVoltage;
+    vector<double> MassFractionIn;
+    vector<double> MassFractionOut;
+    vector<double> ThresholdMassFractionIn;
+    vector<double> ThresholdMassFractionOut;
+    vector<double> Cin; //inlet boundary value, can be either concentration [mol/m^3] or flux [mol/m^2/sec]
+    vector<double> Cout; //outlet boundary value, can be either concentration [mol/m^3] or flux [mol/m^2/sec]
     vector<double> tau;
     vector<double> time_conv;
 
@@ -83,7 +86,7 @@ public:
     std::shared_ptr<Domain> Dm;   // this domain is for analysis
     std::shared_ptr<Domain> Mask; // this domain is for lbm
     std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
-    // input database
+    // input databaseF
     std::shared_ptr<Database> db;
     std::shared_ptr<Database> domain_db;
     std::shared_ptr<Database> ion_db;

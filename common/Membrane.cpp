@@ -5,22 +5,17 @@
 
 Membrane::Membrane(std::shared_ptr <Domain> Dm, int *dvcNeighborList, int Nsites) {
 
+	Np = Nsites;
+	initialNeighborList = new int[18*Np];
+    ScaLBL_AllocateDeviceMemory((void **)&NeighborList, 18*Np*sizeof(int));    
+    Lock=false; // unlock the communicator
 	//......................................................................................
 	// Create a separate copy of the communicator for the device
-	MPI_COMM_SCALBL = Dm->Comm.dup();
-	Np = Nsites;
-	if (Dm->rank() == 0){
-		printf("**** Creating membrane data structure ****** \n");
-		printf("   Number of active lattice sites (rank = %i): %i \n",Dm->rank(), Np);
-	}
-
-       	initialNeighborList = new int[18*Np];
-	ScaLBL_AllocateDeviceMemory((void **)&NeighborList, 18*Np*sizeof(int));    
-	Lock=false; // unlock the communicator
+    MPI_COMM_SCALBL = Dm->Comm.dup();
     
-	ScaLBL_CopyToHost(initialNeighborList, dvcNeighborList, 18*Np*sizeof(int));
-	Dm->Comm.barrier();
-	ScaLBL_CopyToDevice(NeighborList, initialNeighborList, 18*Np*sizeof(int));
+    ScaLBL_CopyToHost(initialNeighborList, dvcNeighborList, 18*Np*sizeof(int));
+    Dm->Comm.barrier();
+    ScaLBL_CopyToDevice(NeighborList, initialNeighborList, 18*Np*sizeof(int));
     
 	/* Copy communication lists */
 	//......................................................................................
@@ -91,6 +86,11 @@ Membrane::Membrane(std::shared_ptr <Domain> Dm, int *dvcNeighborList, int Nsites
 	recvCount_YZ=Dm->recvCount("YZ");
 	recvCount_XZ=Dm->recvCount("XZ");
 	
+	if (rank == 0){
+		printf("**** Creating membrane data structure ****** \n");
+		printf("   Number of active lattice sites (rank = %i): %i \n",rank, Np);
+	}
+
 	iproc = Dm->iproc();
 	jproc = Dm->jproc();
 	kproc = Dm->kproc();
@@ -99,7 +99,7 @@ Membrane::Membrane(std::shared_ptr <Domain> Dm, int *dvcNeighborList, int Nsites
 	nprocz = Dm->nprocz();
 	//BoundaryCondition = Dm->BoundaryCondition;
 	//......................................................................................
-	if (rank==0) printf(" Create Membrane: copying communication structures...\n");
+
 	ScaLBL_AllocateZeroCopy((void **) &sendbuf_x, 2*5*sendCount_x*sizeof(double));	// Allocate device memory
 	ScaLBL_AllocateZeroCopy((void **) &sendbuf_X, 2*5*sendCount_X*sizeof(double));	// Allocate device memory
 	ScaLBL_AllocateZeroCopy((void **) &sendbuf_y, 2*5*sendCount_y*sizeof(double));	// Allocate device memory
@@ -1323,7 +1323,7 @@ void Membrane::RecvD3Q7AA(double *dist){
 	// Unpack the distributions on the device
 	//...................................................................................
 	//...Unpacking for x face(q=2)................................
-	/*     	ScaLBL_D3Q7_Membrane_Unpack(2,dvcRecvDist_x, dvcRecvLinks_x,0,linkCount_x[0],recvCount_x,recvbuf_x,dist,Np,coefficient_x);
+	ScaLBL_D3Q7_Membrane_Unpack(2,dvcRecvDist_x, dvcRecvLinks_x,0,linkCount_x[0],recvCount_x,recvbuf_x,dist,Np,coefficient_x);
 	//...................................................................................
 	//...Packing for X face(q=1)................................
 	ScaLBL_D3Q7_Membrane_Unpack(1,dvcRecvDist_X, dvcRecvLinks_X,0,linkCount_X[0],recvCount_X,recvbuf_X,dist,Np,coefficient_X);
@@ -1339,7 +1339,7 @@ void Membrane::RecvD3Q7AA(double *dist){
 	//...Packing for Z face(q=5)................................
 	ScaLBL_D3Q7_Membrane_Unpack(5,dvcRecvDist_Z, dvcRecvLinks_Z,0,linkCount_Z[0],recvCount_Z,recvbuf_Z,dist,Np,coefficient_Z);
 	//..................................................................................
-	*/
+
 	//...................................................................................
 	Lock=false; // unlock the communicator after communications complete
 	//...................................................................................
@@ -1351,46 +1351,11 @@ void Membrane::IonTransport(double *dist, double *den){
 }
 
 //	std::shared_ptr<Database> db){
-void Membrane::AssignCoefficients(int *Map, double *Psi, string method){
+void Membrane::AssignCoefficients(int *Map, double *Psi, double Threshold,
+		double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn,
+		double ThresholdMassFractionOut){
 	/* Assign mass transfer coefficients to the membrane data structure */
 	
-	double Threshold;
-	double MassFractionIn,MassFractionOut,ThresholdMassFractionIn,ThresholdMassFractionOut;
-	
-	Threshold = -55.0;
-	MassFractionIn = 0.0;
-	MassFractionOut = 0.0;
-	ThresholdMassFractionOut = 0.0;				
-	ThresholdMassFractionIn = 0.0;
-	
-	if (method == "ones"){
-		/* Initializing  */
-		//printf(".... initialize permeable membrane \n");
-		MassFractionIn = 1.0;
-		MassFractionOut = 1.0;
-		ThresholdMassFractionOut = 1.0;				
-		ThresholdMassFractionIn = 1.0;
-	}
-	if (method == "Voltage Gated Potassium"){
-		MassFractionIn = 0.0;
-		MassFractionOut = 0.0;
-		ThresholdMassFractionOut = 0.0;				
-		ThresholdMassFractionIn = 1.0;
-	}
-	if (method == "impermeable"){
-		//printf(".... impermeable membrane \n");
-		MassFractionIn = 0.001;
-		MassFractionOut = 0.001;
-		ThresholdMassFractionOut = 0.001;				
-		ThresholdMassFractionIn = 0.0001;
-	}
-	if (method == "Na+"){
-		//printf(".... Na+ permeable membrane \n");
-		MassFractionIn = 0.05;
-		MassFractionOut = 0.05;
-		ThresholdMassFractionOut = 0.05;				
-		ThresholdMassFractionIn = 0.05;
-	}
 	
 	ScaLBL_D3Q7_Membrane_AssignLinkCoef(MembraneLinks, Map, MembraneDistance, Psi, MembraneCoef,
 			Threshold, MassFractionIn, MassFractionOut, ThresholdMassFractionIn, ThresholdMassFractionOut,

@@ -71,4 +71,10 @@ Visualization {
 }
 Membrane {
     MembraneLabels = 2
+    VoltageThreshold = 0.0, 0.0
+    MassFractionIn = 1e-2, 1e-8
+    MassFractionOut = 1e-2, 1e-8
+    ThresholdMassFractionIn = 1e-2, 1e-8
+    ThresholdMassFractionOut = 1e-2, 1e-8
+
 }
