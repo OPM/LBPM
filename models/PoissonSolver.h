@@ -51,6 +51,7 @@ public:
 	double tau;
 	double tolerance;
     std::string tolerance_method;
+    std::string lattice_scheme;
     double k2_inv;
     double epsilon0, epsilon0_LB, epsilonR, epsilon_LB;
     double Vin, Vout;
@@ -108,8 +109,8 @@ private:
     void AssignSolidBoundary(double *poisson_solid, int *poisson_solid_label);
     void Potential_Init(double *psi_init);
     void ElectricField_LB_to_Phys(DoubleArray &Efield_reg);
-    void SolveElectricPotentialAAeven(int timestep_from_Study, double *ChargeDensity, bool UseSlippingVelBC);
-    void SolveElectricPotentialAAodd(int timestep_from_Study, double *ChargeDensity, bool UseSlippingVelBC);
+    void SolveElectricPotentialAAeven(int timestep_from_Study);
+    void SolveElectricPotentialAAodd(int timestep_from_Study);
     //void SolveElectricField();
     void SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVelBC);
     void SolvePoissonAAeven(double *ChargeDensity, bool UseSlippingVelBC);
