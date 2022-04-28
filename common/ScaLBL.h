@@ -373,6 +373,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(int *Map, double *d
 * @param finish - lattice node to finish loop
 * @param Np - size of local sub-domain (derived from Domain structure)
 */
+extern "C" void ScaLBL_D3Q7_Poisson_Init(int *Map, double *dist, double *Psi, int start, int finish, int Np);
 extern "C" void ScaLBL_D3Q19_Poisson_Init(int *Map, double *dist, double *Psi, int start, int finish, int Np);
 
 

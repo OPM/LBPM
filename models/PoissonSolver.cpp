@@ -686,11 +686,9 @@ void ScaLBL_Poisson::Initialize(double time_conv_from_Study){
 
 void ScaLBL_Poisson::Run(double *ChargeDensity, bool UseSlippingVelBC, int timestep_from_Study){
     
+    double error = 1.0;
     if (lattice_scheme.compare("D3Q7")==0){
-        if (rank==0) printf("LB-Poisson Solver: Use D3Q7 lattice structure.\n");
-
         timestep=0;
-        double error = 1.0;
         while (timestep < timestepMax && error > tolerance) {
             //************************************************************************/
             // *************ODD TIMESTEP*************//
@@ -762,7 +760,6 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, bool UseSlippingVelBC, int times
         host_Error = new double [Np];
 
         timestep=0;
-        double error = 1.0;
         while (timestep < timestepMax && error > tolerance) {
             //************************************************************************/
             // *************ODD TIMESTEP*************//
