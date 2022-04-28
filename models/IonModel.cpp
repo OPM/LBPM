@@ -1049,7 +1049,7 @@ void ScaLBL_IonModel::Initialize() {
 	 */
     if (rank == 0)
         printf("LB Ion Solver: initializing D3Q7 distributions\n");
-    USE_MEMBRANE = true; 
+    //USE_MEMBRANE = true; 
     if (USE_MEMBRANE){
             double *Ci_host;
             if (rank == 0)
