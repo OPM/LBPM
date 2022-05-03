@@ -90,6 +90,7 @@ int main(int argc, char **argv)
 	
         IonModel.timestepMax = Study.getIonNumIter_PNP_coupling(StokesModel.time_conv,IonModel.time_conv);
         IonModel.Initialize();   
+        IonModel.DummyFluidVelocity();
         comm.barrier();
         if (rank == 0) printf("Ion model initialized \n");
         // Get maximal time converting factor based on Sotkes and Ion solvers
@@ -115,25 +116,28 @@ int main(int argc, char **argv)
             PoissonSolver.Run(IonModel.ChargeDensity,SlipBC,timestep);//solve Poisson equtaion to get steady-state electrical potental
             comm.barrier();
             //if (rank == 0) printf("    Poisson step %i \n",timestep);
-            StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
+            //StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
     	    //fflush(stdout);
 
-            IonModel.RunMembrane(StokesModel.Velocity,PoissonSolver.ElectricField,PoissonSolver.Psi); //solve for ion transport with membrane
+            IonModel.RunMembrane(IonModel.FluidVelocityDummy,PoissonSolver.ElectricField,PoissonSolver.Psi); //solve for ion transport with membrane
 	        comm.barrier();
             //if (rank == 0) printf("    Membrane step %i \n",timestep);
 	        //fflush(stdout);
 
-            timestep++;//AA operations
+            //timestep++;//AA operations
 
             if (timestep%Study.analysis_interval==0){
-	            Analysis.Basic(IonModel,PoissonSolver,StokesModel,timestep);
+	            //Analysis.Basic(IonModel,PoissonSolver,StokesModel,timestep);
             }
             if (timestep%Study.visualization_interval==0){
-            	Analysis.WriteVis(IonModel,PoissonSolver,StokesModel,Study.db,timestep);
+            	//Analysis.WriteVis(IonModel,PoissonSolver,StokesModel,Study.db,timestep);
             	// PoissonSolver.getElectricPotential(timestep);
                 //PoissonSolver.getElectricField(timestep);
                 //IonModel.getIonConcentration(timestep);
                 //StokesModel.getVelocity(timestep);
+            	PoissonSolver.getElectricPotential_debug(timestep);
+                PoissonSolver.getElectricField_debug(timestep);
+                IonModel.getIonConcentration_debug(timestep);
             	 
             }
         }
