@@ -1296,13 +1296,13 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField) {
                                                ScaLBL_Comm->LastExterior(), Np);
 
             //LB-Ion collison
-            ScaLBL_D3Q7_AAodd_Ion(
+            ScaLBL_D3Q7_AAodd_Ion_v0(
                 NeighborList, &fq[ic * Np * 7], &Ci[ic * Np],
                 &FluxDiffusive[3 * ic * Np], &FluxAdvective[3 * ic * Np],
                 &FluxElectrical[3 * ic * Np], Velocity, ElectricField,
                 IonDiffusivity[ic], IonValence[ic], rlx[ic], Vt,
                 ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-            ScaLBL_D3Q7_AAodd_Ion(
+            ScaLBL_D3Q7_AAodd_Ion_v0(
                 NeighborList, &fq[ic * Np * 7], &Ci[ic * Np],
                 &FluxDiffusive[3 * ic * Np], &FluxAdvective[3 * ic * Np],
                 &FluxElectrical[3 * ic * Np], Velocity, ElectricField,
@@ -1380,13 +1380,13 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField) {
                                                 Np);
 
             //LB-Ion collison
-            ScaLBL_D3Q7_AAeven_Ion(
+            ScaLBL_D3Q7_AAeven_Ion_v0(
                 &fq[ic * Np * 7], &Ci[ic * Np], &FluxDiffusive[3 * ic * Np],
                 &FluxAdvective[3 * ic * Np], &FluxElectrical[3 * ic * Np],
                 Velocity, ElectricField, IonDiffusivity[ic], IonValence[ic],
                 rlx[ic], Vt, ScaLBL_Comm->FirstInterior(),
                 ScaLBL_Comm->LastInterior(), Np);
-            ScaLBL_D3Q7_AAeven_Ion(
+            ScaLBL_D3Q7_AAeven_Ion_v0(
                 &fq[ic * Np * 7], &Ci[ic * Np], &FluxDiffusive[3 * ic * Np],
                 &FluxAdvective[3 * ic * Np], &FluxElectrical[3 * ic * Np],
                 Velocity, ElectricField, IonDiffusivity[ic], IonValence[ic],
