@@ -32,6 +32,14 @@ ScaLBL_Poisson::ScaLBL_Poisson(int RANK, int NP, const Utilities::MPI& COMM):
 }
 ScaLBL_Poisson::~ScaLBL_Poisson()
 {
+	ScaLBL_FreeDeviceMemory(NeighborList);
+	ScaLBL_FreeDeviceMemory(dvcMap);
+	ScaLBL_FreeDeviceMemory(Psi);
+	ScaLBL_FreeDeviceMemory(Psi_BCLabel);
+	ScaLBL_FreeDeviceMemory(ElectricField);
+	ScaLBL_FreeDeviceMemory(ResidualError);
+	ScaLBL_FreeDeviceMemory(fq);
+
     if ( TIMELOG )
         fclose( TIMELOG );
 }
@@ -416,6 +424,7 @@ void ScaLBL_Poisson::Create(){
 	//ScaLBL_Comm->Barrier();
 	
     //Initialize solid boundary for electric potential
+	// DON'T USE WITH CELLULAR SYSTEM (NO SOLID -- NEED Membrane SOLUTION)
     ScaLBL_Comm->SetupBounceBackList(Map, Mask->id.data(), Np);
 	comm.barrier();
 }        

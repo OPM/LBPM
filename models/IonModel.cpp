@@ -13,7 +13,20 @@ ScaLBL_IonModel::ScaLBL_IonModel(int RANK, int NP, const Utilities::MPI &COMM)
       nprocy(0), nprocz(0), fluidVelx_dummy(0), fluidVely_dummy(0),
       fluidVelz_dummy(0), BoundaryConditionInlet(0), BoundaryConditionOutlet(0),
       BoundaryConditionSolid(0), Lx(0), Ly(0), Lz(0), comm(COMM) {}
-ScaLBL_IonModel::~ScaLBL_IonModel() {}
+
+ScaLBL_IonModel::~ScaLBL_IonModel() {
+    
+	ScaLBL_FreeDeviceMemory(NeighborList);
+	ScaLBL_FreeDeviceMemory(dvcMap);
+	ScaLBL_FreeDeviceMemory(fq);
+	ScaLBL_FreeDeviceMemory(Ci);
+	ScaLBL_FreeDeviceMemory(ChargeDensity);
+	ScaLBL_FreeDeviceMemory(FluxDiffusive);
+	ScaLBL_FreeDeviceMemory(FluxAdvective);
+	ScaLBL_FreeDeviceMemory(FluxElectrical);
+	ScaLBL_FreeDeviceMemory(IonSolid);
+	ScaLBL_FreeDeviceMemory(FluidVelocityDummy);	
+}
 
 void ScaLBL_IonModel::ReadParams(string filename, vector<int> &num_iter) {
 
@@ -50,6 +63,8 @@ void ScaLBL_IonModel::ReadParams(string filename, vector<int> &num_iter) {
     Ez_dummy = 0.0;        //for debugging, unit [V/m]
     //--------------------------------------------------------------------------//
 
+    BoundaryConditionSolid = 0;
+    
     // Read domain parameters
     if (domain_db->keyExists("voxel_length")) { //default unit: um/lu
         h = domain_db->getScalar<double>("voxel_length");
@@ -685,7 +700,6 @@ void ScaLBL_IonModel::SetDomain() {
 }
 
 void ScaLBL_IonModel::SetMembrane() {
-    size_t NLABELS = 0;
 
     membrane_db = db->getDatabase("Membrane");
     
@@ -693,7 +707,7 @@ void ScaLBL_IonModel::SetMembrane() {
     auto MembraneLabels = membrane_db->getVector<int>("MembraneLabels");
 
     IonMembrane = std::shared_ptr<Membrane>(new Membrane(Dm, NeighborList, Np));
-    
+    size_t NLABELS = MembraneLabels.size();
     signed char LABEL = 0;
     double *label_count;
     double *label_count_global;
@@ -1020,7 +1034,6 @@ void ScaLBL_IonModel::Create() {
     }
     ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int) * Np);
     ScaLBL_Comm->Barrier();
-    delete[] TmpMap;
     
     ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
     comm.barrier();
@@ -1042,6 +1055,13 @@ void ScaLBL_IonModel::Create() {
         ScaLBL_Comm->Barrier();
         delete[] IonSolid_host;
     }
+    else {
+    	IonSolid = NULL;
+    }
+    
+    
+    delete[] TmpMap;
+    delete[] neighborList;
 }
 
 void ScaLBL_IonModel::Initialize() {
@@ -1444,6 +1464,7 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
     //auto t1 = std::chrono::system_clock::now();
 
     for (size_t ic = 0; ic < number_ion_species; ic++) {
+    	
         /* set the mass transfer coefficients for the membrane */
 		IonMembrane->AssignCoefficients(dvcMap, Psi, ThresholdVoltage[ic],MassFractionIn[ic],
 				MassFractionOut[ic],ThresholdMassFractionIn[ic],ThresholdMassFractionOut[ic]);
@@ -1525,8 +1546,6 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
     //Compute charge density for Poisson equation
     for (size_t ic = 0; ic < number_ion_species; ic++) {
       int Valence = IonValence[ic];
-      if (rank==0) printf("compute charge density for ion %i, Valence =%i \n", ic,Valence);
-
       ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, Valence, ic,
                                       ScaLBL_Comm->FirstInterior(),
                                       ScaLBL_Comm->LastInterior(), Np);

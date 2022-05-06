@@ -23,7 +23,9 @@ using namespace std;
 int main(int argc, char **argv)
 {
     // Initialize MPI and error handlers
-    	Utilities::startup( argc, argv );
+    	//Utilities::startup( argc, argv );
+        Utilities::startup( argc, argv, true );
+
     	Utilities::MPI comm( MPI_COMM_WORLD );
     	int rank = comm.getRank();
     	int nprocs = comm.getSize();
