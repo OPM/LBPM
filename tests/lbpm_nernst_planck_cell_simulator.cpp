@@ -81,7 +81,7 @@ int main(int argc, char **argv)
         fflush(stdout);
         
         // Create analysis object
-        //ElectroChemistryAnalyzer Analysis(IonModel.Dm);
+        ElectroChemistryAnalyzer Analysis(IonModel.Dm);
 
         // Get internal iteration number
         //StokesModel.timestepMax = Study.getStokesNumIter_PNP_coupling(StokesModel.time_conv,IonModel.time_conv);
@@ -137,24 +137,22 @@ int main(int argc, char **argv)
 	        fflush(stdout);
 
 
-            //if (timestep%Study.analysis_interval==0){
-	        //    Analysis.Basic(IonModel,PoissonSolver,StokesModel,timestep);
-            //}
+            if (timestep%Study.analysis_interval==0){
+	            Analysis.Basic(IonModel,PoissonSolver,timestep);
+            }
             if (timestep%Study.visualization_interval==0){
-            	//Analysis.WriteVis(IonModel,PoissonSolver,StokesModel,Study.db,timestep);
-            	// PoissonSolver.getElectricPotential(timestep);
-                //PoissonSolver.getElectricField(timestep);
-                //IonModel.getIonConcentration(timestep);
+
+                Analysis.WriteVis(IonModel,PoissonSolver,Study.db,timestep);
                 //StokesModel.getVelocity(timestep);
-            	PoissonSolver.getElectricPotential_debug(timestep);
-                PoissonSolver.getElectricField_debug(timestep);
-                IonModel.getIonConcentration_debug(timestep);
+            	//PoissonSolver.getElectricPotential_debug(timestep);
+               // PoissonSolver.getElectricField_debug(timestep);
+                //IonModel.getIonConcentration_debug(timestep);
             	 
             }
         }
 
         if (rank==0) printf("Save simulation raw data at maximum timestep\n");
-    	//Analysis.WriteVis(IonModel,PoissonSolver,StokesModel,Study.db,timestep);
+        Analysis.WriteVis(IonModel,PoissonSolver,Study.db,timestep);
 
         if (rank==0) printf("Maximum timestep is reached and the simulation is completed\n");
         if (rank==0) printf("*************************************************************\n");

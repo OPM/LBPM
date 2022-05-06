@@ -29,6 +29,8 @@ public:
     double nu_n, nu_w;
     double gamma_wn, beta;
     double Fx, Fy, Fz;
+    
+    bool USE_MEMBRANE;
 
     //...........................................................................
     int Nx, Ny, Nz;
@@ -61,6 +63,9 @@ public:
                ScaLBL_StokesModel &Stokes, int timestep);
     void WriteVis(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poisson,
                   ScaLBL_StokesModel &Stokes,
+                  std::shared_ptr<Database> input_db, int timestep);
+    void Basic(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poisson, int timestep);
+    void WriteVis(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poisson,
                   std::shared_ptr<Database> input_db, int timestep);
 
 private:

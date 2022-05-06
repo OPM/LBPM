@@ -138,7 +138,6 @@ int main(int argc, char **argv)
             	PoissonSolver.getElectricPotential_debug(timestep);
                 PoissonSolver.getElectricField_debug(timestep);
                 IonModel.getIonConcentration_debug(timestep);
-            	 
             }
         }
 
