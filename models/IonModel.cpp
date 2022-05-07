@@ -899,7 +899,6 @@ void ScaLBL_IonModel::AssignIonConcentrationMembrane( double *Ci, int ic) {
 	if (rank == 0){
 		printf(".... Set concentration(%i): inside=%.6g [mol/m^3], outside=%.6g [mol/m^3] \n", ic,  
                 MembraneIonConcentration[ic]/(h*h*h*1.0e-18), IonConcentration[ic]/(h*h*h*1.0e-18));
-	}
 	for (int k = 0; k < Nz; k++) {
 		for (int j = 0; j < Ny; j++) {
 			for (int i = 0; i < Nx; i++) {
