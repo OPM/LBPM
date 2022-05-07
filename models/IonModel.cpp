@@ -892,13 +892,14 @@ void ScaLBL_IonModel::AssignSolidBoundary(double *ion_solid) {
 }
 
 void ScaLBL_IonModel::AssignIonConcentrationMembrane( double *Ci, int ic) {
-//    double *Ci, const vector<double> MembraneIonConcentration, const vector<double> IonConcentration, int ic) {
+	//    double *Ci, const vector<double> MembraneIonConcentration, const vector<double> IonConcentration, int ic) {
 
 	double VALUE = 0.f;
 
 	if (rank == 0){
 		printf(".... Set concentration(%i): inside=%.6g [mol/m^3], outside=%.6g [mol/m^3] \n", ic,  
-                MembraneIonConcentration[ic]/(h*h*h*1.0e-18), IonConcentration[ic]/(h*h*h*1.0e-18));
+				MembraneIonConcentration[ic]/(h*h*h*1.0e-18), IonConcentration[ic]/(h*h*h*1.0e-18));
+	}
 	for (int k = 0; k < Nz; k++) {
 		for (int j = 0; j < Ny; j++) {
 			for (int i = 0; i < Nx; i++) {
@@ -916,7 +917,6 @@ void ScaLBL_IonModel::AssignIonConcentrationMembrane( double *Ci, int ic) {
 		}
 	}
 }
-
 
 void ScaLBL_IonModel::AssignIonConcentration_FromFile(
     double *Ci, const vector<std::string> &File_ion, int ic) {
