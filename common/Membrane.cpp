@@ -1285,30 +1285,30 @@ void Membrane::SendD3Q7AA(double *dist){
 	// Pack the distributions
 	//...Packing for x face(q=2)................................
 	ScaLBL_D3Q19_Pack(2,dvcSendList_x,0,sendCount_x,sendbuf_x,dist,Np);
-	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, sendCount_x,rank_x,sendtag);
 	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, recvCount_X,rank_X,recvtag);
+	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, sendCount_x,rank_x,sendtag);
 	//...Packing for X face(q=1)................................
 	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,dist,Np);
-	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, sendCount_X,rank_X,sendtag);
 	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, recvCount_x,rank_x,recvtag);
+	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, sendCount_X,rank_X,sendtag);
 	//for (int idx=0; idx<sendCount_X; idx++) printf(" SendX(%i)=%e \n",idx,sendbuf_X[idx]);
 	//...Packing for y face(q=4).................................
 	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,dist,Np);	
-	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, sendCount_y,rank_y,sendtag);
 	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, recvCount_Y,rank_Y,recvtag);
+	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, sendCount_y,rank_y,sendtag);
 	//...Packing for Y face(q=3).................................
 	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,dist,Np);
-	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, sendCount_Y,rank_Y,sendtag);
 	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, recvCount_y,rank_y,recvtag);
+	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, sendCount_Y,rank_Y,sendtag);
 	//for (int idx=0; idx<sendCount_Y; idx++) printf(" SendY(%i)=%e \n",idx,sendbuf_Y[idx]);
 	//...Packing for z face(q=6)................................
 	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,dist,Np);
-	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, sendCount_z,rank_z,sendtag);
 	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, recvCount_Z,rank_Z,recvtag);
+	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, sendCount_z,rank_z,sendtag);
 	//...Packing for Z face(q=5)................................
 	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,dist,Np);
-	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, sendCount_Z,rank_Z,sendtag);
 	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, recvCount_z,rank_z,recvtag); 
+	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, sendCount_Z,rank_Z,sendtag);
 
 }
 
@@ -1341,6 +1341,7 @@ void Membrane::RecvD3Q7AA(double *dist){
 	ScaLBL_D3Q7_Membrane_Unpack(5,dvcRecvDist_Z, dvcRecvLinks_Z,0,linkCount_Z[0],recvCount_Z,recvbuf_Z,dist,Np,coefficient_Z);
 	//..................................................................................
 
+	MPI_COMM_SCALBL.barrier();
 	//...................................................................................
 	Lock=false; // unlock the communicator after communications complete
 	//...................................................................................
