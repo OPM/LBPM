@@ -3,8 +3,7 @@
 //#include <cuda_profiler_api.h>
 
 #define NBLOCKS 1024
-#define NTHREADS 256
-
+#define NTHREADS 512
 
 extern "C" void Membrane_D3Q19_Unpack(int q, int *list, int *links, int start, int linkCount,
                                     double *recvbuf, double *dist, int N) {
@@ -958,7 +957,9 @@ extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(
 		int *d3q7_recvlist, int *d3q7_linkList, double *coef, int start, int nlinks, int count,
 		const int N, const int Nx, const int Ny, const int Nz) {
 	
-	dvc_ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo<<<NBLOCKS,NTHREADS >>>(
+    int GRID = count / NTHREADS + 1;
+
+	dvc_ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo<<<GRID,NTHREADS >>>(
 			 Cqx,  Cqy,  Cqz, Map, Distance, Psi,  Threshold, 
 			 MassFractionIn,  MassFractionOut,  ThresholdMassFractionIn,  ThresholdMassFractionOut,
 			d3q7_recvlist, d3q7_linkList, coef,  start,  nlinks,  count, N,  Nx,  Ny,  Nz);
@@ -974,7 +975,9 @@ extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,
 		int *d3q7_recvlist, int *d3q7_linkList, int start, int nlinks, int count,
 		double *recvbuf, double *dist, int N,  double *coef) {
 	
-	dvc_ScaLBL_D3Q7_Membrane_Unpack<<<NBLOCKS,NTHREADS >>>(q, d3q7_recvlist, d3q7_linkList, start, nlinks, count,
+    int GRID = count / NTHREADS + 1;
+
+	dvc_ScaLBL_D3Q7_Membrane_Unpack<<<GRID,NTHREADS >>>(q, d3q7_recvlist, d3q7_linkList, start, nlinks, count,
 			recvbuf, dist, N,  coef) ;
 
 	cudaError_t err = cudaGetLastError();

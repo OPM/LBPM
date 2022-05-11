@@ -950,7 +950,9 @@ extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(
 		int *d3q7_recvlist, int *d3q7_linkList, double *coef, int start, int nlinks, int count,
 		const int N, const int Nx, const int Ny, const int Nz) {
 	
-	dvc_ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo<<<NBLOCKS,NTHREADS >>>(
+	int GRID = count / 1024 + 1;
+
+	dvc_ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo<<<GRID,1024 >>>(
 			 Cqx,  Cqy,  Cqz, Map, Distance, Psi,  Threshold, 
 			 MassFractionIn,  MassFractionOut,  ThresholdMassFractionIn,  ThresholdMassFractionOut,
 			d3q7_recvlist, d3q7_linkList, coef,  start,  nlinks,  count, N,  Nx,  Ny,  Nz);
@@ -966,7 +968,7 @@ extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,
 		int *d3q7_recvlist, int *d3q7_linkList, int start, int nlinks, int count,
 		double *recvbuf, double *dist, int N,  double *coef) {
 	
-        int GRID = count / 1024 + 1;
+    int GRID = count / 1024 + 1;
 
 	dvc_ScaLBL_D3Q7_Membrane_Unpack<<<GRID,1024 >>>(q, d3q7_recvlist, d3q7_linkList, start, nlinks, count,
 			recvbuf, dist, N,  coef) ;
