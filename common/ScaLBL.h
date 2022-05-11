@@ -744,6 +744,8 @@ public:
 	int LastExterior();
 	int FirstInterior();
 	int LastInterior();
+	int copySendList(const char *dir, int *buffer);
+	int copyRecvList(const char *dir, int *buffer);
 	
 	double GetPerformance(int *NeighborList, double *fq, int Np);
 	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np, int width);
@@ -830,7 +832,6 @@ private:
 	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
 	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
 	//......................................................................................
-	//......................................................................................
 	int sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z;
 	int sendCount_xy, sendCount_yz, sendCount_xz, sendCount_Xy, sendCount_Yz, sendCount_xZ;
 	int sendCount_xY, sendCount_yZ, sendCount_Xz, sendCount_XY, sendCount_YZ, sendCount_XZ;
@@ -851,6 +852,8 @@ private:
 	int *dvcRecvDist_x, *dvcRecvDist_y, *dvcRecvDist_z, *dvcRecvDist_X, *dvcRecvDist_Y, *dvcRecvDist_Z;
 	int *dvcRecvDist_xy, *dvcRecvDist_yz, *dvcRecvDist_xz, *dvcRecvDist_Xy, *dvcRecvDist_Yz, *dvcRecvDist_xZ;
 	int *dvcRecvDist_xY, *dvcRecvDist_yZ, *dvcRecvDist_Xz, *dvcRecvDist_XY, *dvcRecvDist_YZ, *dvcRecvDist_XZ;
+	//......................................................................................
+
     // MPI requests for persistent communications
     std::vector<std::shared_ptr<MPI_Request>> req_D3Q19AA;
     std::vector<std::shared_ptr<MPI_Request>> req_BiD3Q19AA;
