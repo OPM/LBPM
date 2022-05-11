@@ -1076,7 +1076,7 @@ void Membrane::SendD3Q19AA(double *dist){
 		Lock=true;
 	}
 	// assign tag of 19 to D3Q19 communication
-	sendtag = recvtag = 19;
+	sendtag = recvtag = 190;
 	ScaLBL_DeviceBarrier();
 	// Pack the distributions
 	//...Packing for x face(2,8,10,12,14)................................

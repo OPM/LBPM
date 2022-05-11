@@ -172,7 +172,10 @@ __global__  void dvc_ScaLBL_D3Q7_Membrane_Unpack(int q,
 			idx = d3q7_linkList[start+link]; 
 			// get the distribution index
 			n = d3q7_recvlist[start+idx];
-			if (!(n < 0)){
+			if (n > N){
+			   printf("      MEMBRANE ERROR: q=%i, idx=%i, n=%i, Np=%i \n",q,idx,n,N);
+			}
+			else if (!(n < 0)){
 				fp = recvbuf[start + idx];
 				dist[q * N + n] = fp;
 			}
