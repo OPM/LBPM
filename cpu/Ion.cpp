@@ -44,60 +44,59 @@ extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(
     // swap rule means that the distributions in recvbuf are OPPOSITE of q
     // dist may be even or odd distributions stored by stream layout
     //....................................................................................
-    int n, idx, link, nqm, npm, i, j, k;
+    int n, idx, link, label, nqm, npm, i, j, k;
     double distanceLocal, distanceNonlocal;
     double psiLocal, psiNonlocal, membranePotential;
     double ap,aq; // coefficient
 
-    /* second enforce custom rule for membrane links */
-    for (link = nlinks; link < count; link++) {
-    	// get the index for the recv list (deal with reordering of links)
-    	idx = d3q7_linkList[link]; // THINK start NEEDS TO BE HERE
-        // get the distribution index
-        n = d3q7_recvlist[start+idx];
-        // get the index in strided layout
-        nqm = Map[n];
-        distanceLocal = Distance[nqm];  
-		psiLocal = Psi[nqm];
-		
-		// Get the 3-D indices from the send process
-		k = nqm/(Nx*Ny); j = (nqm-Nx*Ny*k)/Nx; i = nqm-Nx*Ny*k-Nx*j;
-		// Streaming link the non-local distribution
-		i -= Cqx; j -= Cqy; k -= Cqz;
-		npm = k*Nx*Ny + j*Nx + i;
-		distanceNonlocal = Distance[npm];  
-		psiNonlocal = Psi[npm];
-		
-		membranePotential = psiLocal - psiNonlocal;
-		aq = MassFractionIn;
-		ap = MassFractionOut;
-		
-		/* link is inside membrane */
-		if (distanceLocal > 0.0){
-			if (membranePotential < Threshold*(-1.0)){
-				ap = MassFractionIn;
-				aq = MassFractionOut;
-			}
-			else {
-				ap = ThresholdMassFractionIn;
-				aq = ThresholdMassFractionOut;
-			}
-		}
-		else if (membranePotential > Threshold){
-			aq = ThresholdMassFractionIn;
-			ap = ThresholdMassFractionOut;
-		}
-		
-		// update link based on mass transfer coefficients		
-    	coef[2*(link-nlinks)] = aq;
-    	coef[2*(link-nlinks)+1] = ap;
+    
+    for (idx = 0; idx < count; idx++) {
+    	n = d3q7_recvlist[idx];
+    	label = d3q7_linkList[idx];
+		ap = 1.0;  // regular streaming rule
+		aq = 0.0;
+		if (label == 1 && !(n < 0)){
+    		nqm = Map[n];
+    		distanceLocal = Distance[nqm];  
+    		psiLocal = Psi[nqm];
+
+    		// Get the 3-D indices from the send process
+    		k = nqm/(Nx*Ny); j = (nqm-Nx*Ny*k)/Nx; i = nqm-Nx*Ny*k-Nx*j;
+    		// Streaming link the non-local distribution
+    		i -= Cqx; j -= Cqy; k -= Cqz;
+    		npm = k*Nx*Ny + j*Nx + i;
+    		distanceNonlocal = Distance[npm];  
+    		psiNonlocal = Psi[npm];
+
+    		membranePotential = psiLocal - psiNonlocal;
+    		aq = MassFractionIn;
+    		ap = MassFractionOut;
+
+    		/* link is inside membrane */
+    		if (distanceLocal > 0.0){
+    			if (membranePotential < Threshold*(-1.0)){
+    				ap = MassFractionIn;
+    				aq = MassFractionOut;
+    			}
+    			else {
+    				ap = ThresholdMassFractionIn;
+    				aq = ThresholdMassFractionOut;
+    			}
+    		}
+    		else if (membranePotential > Threshold){
+    			aq = ThresholdMassFractionIn;
+    			ap = ThresholdMassFractionOut;
+    		}
+    	}
+    	coef[2*idx]=aq;
+    	coef[2*idx+1]=ap;
     }
 }
 
 
 extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,  
-		int *d3q7_recvlist, int *d3q7_linkList, int start, int nlinks, int count,
-		double *recvbuf, double *dist, int N,  double *coef) {
+		int *d3q7_recvlist, double *recvbuf, int count,
+		double *dist, int N,  double *coef) {
     //....................................................................................
     // Unack distribution from the recv buffer
     // Distribution q matche Cqx, Cqy, Cqz
@@ -107,34 +106,18 @@ extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,
     int n, idx, link;
     double fq,fp,fqq,ap,aq; // coefficient
     /* First unpack the regular links */
-    for (link = 0; link < nlinks; link++) {
-    	// get the index for the recv list (deal with reordering of links)
-    	idx = d3q7_linkList[link]; 
-        // get the distribution index
-        n = d3q7_recvlist[start+idx];
-        if (!(n < 0)){
-        	fp = recvbuf[start + idx];
-            dist[q * N + n] = fp;
-        }
-        //printf(" site=%i, index=%i, value = %e \n",n,idx,fp);
-    }
-    /* second enforce custom rule for membrane links */
-    for (link = nlinks; link < count; link++) {
-    	// get the index for the recv list (deal with reordering of links)
-    	idx = d3q7_linkList[link]; 
-        // get the distribution index
-        n = d3q7_recvlist[start+idx];
+    for (idx = 0; idx < count; idx++) {
+    	n = d3q7_recvlist[idx];
         // update link based on mass transfer coefficients
         if (!(n < 0)){
-        	aq = coef[2*(link-nlinks)];
-        	ap = coef[2*(link-nlinks)+1];
+        	aq = coef[2*idx];
+        	ap = coef[2*idx+1];
         	fq = dist[q * N + n];
-        	fp = recvbuf[start + idx];
+        	fp = recvbuf[idx];
         	fqq = (1-aq)*fq+ap*fp;
             dist[q * N + n] = fqq;
         }
         //printf(" LINK: site=%i, index=%i \n", n, idx);
-
     } 
 }
 

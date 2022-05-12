@@ -78,6 +78,20 @@ Membrane::Membrane(std::shared_ptr <ScaLBL_Communicator> sComm, int *dvcNeighbor
 	ScaLBL_AllocateZeroCopy((void **) &dvcRecvDist_Y, recvCount_Y*sizeof(int));
 	ScaLBL_AllocateZeroCopy((void **) &dvcRecvDist_Z, recvCount_Z*sizeof(int));
 	
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_x, sendCount_x*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_y, sendCount_y*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_z, sendCount_z*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_X, sendCount_X*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Y, sendCount_Y*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Z, sendCount_Z*sizeof(double));
+	
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_x, recvCount_x*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_y, recvCount_y*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_z, recvCount_z*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_X, recvCount_X*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Y, recvCount_Y*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Z, recvCount_Z*sizeof(double));
+	
 	sendCount_x=sComm->copySendList("x", dvcSendList_x);
 	sendCount_y=sComm->copySendList("y", dvcSendList_y);
 	sendCount_z=sComm->copySendList("z", dvcSendList_z);
@@ -639,12 +653,12 @@ int Membrane::Create(DoubleArray &Distance, IntArray &Map){
 
 	//......................................................................................
 	// Allocate membrane coefficient buffers (for d3q7 recv)
-	ScaLBL_AllocateZeroCopy((void **) &coefficient_x, (recvCount_x - linkCount_x[0])*sizeof(double));
-	ScaLBL_AllocateZeroCopy((void **) &coefficient_X, (recvCount_X - linkCount_X[0])*sizeof(double));
-	ScaLBL_AllocateZeroCopy((void **) &coefficient_y, (recvCount_y - linkCount_y[0])*sizeof(double));
-	ScaLBL_AllocateZeroCopy((void **) &coefficient_Y, (recvCount_Y - linkCount_Y[0])*sizeof(double));
-	ScaLBL_AllocateZeroCopy((void **) &coefficient_z, (recvCount_z - linkCount_z[0])*sizeof(double));
-	ScaLBL_AllocateZeroCopy((void **) &coefficient_Z, (recvCount_Z - linkCount_Z[0])*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &coefficient_x, 2*(recvCount_x )*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &coefficient_X, 2*(recvCount_X)*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &coefficient_y, 2*(recvCount_y)*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &coefficient_Y, 2*(recvCount_Y)*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &coefficient_z, 2*(recvCount_z)*sizeof(double));
+	ScaLBL_AllocateZeroCopy((void **) &coefficient_Z, 2*(recvCount_Z)*sizeof(double));
 	//......................................................................................
 	
 	delete [] neighborList;
@@ -753,21 +767,21 @@ void Membrane::RecvD3Q7AA(double *dist){
 	// Unpack the distributions on the device
 	//...................................................................................
 	//...Unpacking for x face(q=2)................................
-	ScaLBL_D3Q7_Membrane_Unpack(2,dvcRecvDist_x, dvcRecvLinks_x,0,linkCount_x[0],recvCount_x,recvbuf_x,dist,Np,coefficient_x);
+	ScaLBL_D3Q7_Membrane_Unpack(2,dvcRecvDist_x, recvbuf_x,recvCount_x,dist,Np,coefficient_x);
 	//...................................................................................
 	//...Packing for X face(q=1)................................
-	ScaLBL_D3Q7_Membrane_Unpack(1,dvcRecvDist_X, dvcRecvLinks_X,0,linkCount_X[0],recvCount_X,recvbuf_X,dist,Np,coefficient_X);
+	ScaLBL_D3Q7_Membrane_Unpack(1,dvcRecvDist_X, recvbuf_X,recvCount_X,dist,Np,coefficient_X);
 	//...................................................................................
 	//...Packing for y face(q=4).................................
-	ScaLBL_D3Q7_Membrane_Unpack(4,dvcRecvDist_y, dvcRecvLinks_y,0,linkCount_y[0],recvCount_y,recvbuf_y,dist,Np,coefficient_y);
+	ScaLBL_D3Q7_Membrane_Unpack(4,dvcRecvDist_y, recvbuf_y,recvCount_y,dist,Np,coefficient_y);
 	//...................................................................................
 	//...Packing for Y face(q=3).................................
-	ScaLBL_D3Q7_Membrane_Unpack(3,dvcRecvDist_Y, dvcRecvLinks_Y,0,linkCount_Y[0],recvCount_Y,recvbuf_Y,dist,Np,coefficient_Y);
+	ScaLBL_D3Q7_Membrane_Unpack(3,dvcRecvDist_Y, recvbuf_Y,recvCount_Y,dist,Np,coefficient_Y);
 	//...................................................................................
 	//...Packing for z face(q=6)................................
-	ScaLBL_D3Q7_Membrane_Unpack(6,dvcRecvDist_z, dvcRecvLinks_z,0,linkCount_z[0],recvCount_z,recvbuf_z,dist,Np,coefficient_z);
+	ScaLBL_D3Q7_Membrane_Unpack(6,dvcRecvDist_z, recvbuf_z, recvCount_z,dist,Np,coefficient_z);
 	//...Packing for Z face(q=5)................................
-	ScaLBL_D3Q7_Membrane_Unpack(5,dvcRecvDist_Z, dvcRecvLinks_Z,0,linkCount_Z[0],recvCount_Z,recvbuf_Z,dist,Np,coefficient_Z);
+	ScaLBL_D3Q7_Membrane_Unpack(5,dvcRecvDist_Z, recvbuf_Z,recvCount_Z,dist,Np,coefficient_Z);
 	//..................................................................................
 
 	MPI_COMM_SCALBL.barrier();

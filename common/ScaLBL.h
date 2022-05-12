@@ -233,8 +233,8 @@ extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(
 		const int N, const int Nx, const int Ny, const int Nz);
 
 extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,  
-		int *d3q7_recvlist, int *d3q7_linkList, int start, int nlinks, int count,
-		double *recvbuf, double *dist, int N,  double *coef);
+		int *d3q7_recvlist, double *recvbuf, int count,
+		double *dist, int N,  double *coef);
 
 // GREYSCALE MODEL (Single-component)
 

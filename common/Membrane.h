@@ -16,15 +16,14 @@
 * \brief  Unpack D3Q19 distributions after communication using links determined based on membrane location
 * @param q  - index for distribution based on D3Q19 discrete velocity structure
 * @param list - list of distributions to communicate
-* @param links - list of active links based on the membrane location
-* @param start -  index to start parsing the list 
-* @param count -  number of values to unppack 
 * @param recvbuf - memory buffer where recieved values have been stored
+* @param count -  number of values to unppack 
 * @param dist - memory buffer to hold the distributions
 * @param N - size of the distributions (derived from Domain structure)
 */
-extern "C" void Membrane_D3Q19_Unpack(int q, int *list, int *links, int start, int count, double *recvbuf, double *dist, int N);
-
+extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,  
+		int *d3q7_recvlist, double *recvbuf, int count,
+		double *dist, int N,  double *coef);
 
 /**
 * \brief Set custom link rules for D3Q19 distribution based on membrane location
