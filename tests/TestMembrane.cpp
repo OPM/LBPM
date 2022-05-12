@@ -124,9 +124,9 @@ int main(int argc, char **argv)
 		}
 		
 		/* create a membrane data structure */
-	    Membrane M(Dm, NeighborList, Np);
+	    Membrane M(ScaLBL_Comm, NeighborList, Np);
 
-	    int MembraneCount = M.Create(Dm, Distance, Map);
+	    int MembraneCount = M.Create(Distance, Map);
 		if (rank==0)	printf (" Number of membrane links: %i \n", MembraneCount);
 
 		/* create a tagged array to show where the mebrane is*/

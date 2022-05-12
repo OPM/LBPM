@@ -481,8 +481,7 @@ int ScaLBL_Communicator::copyRecvList(const char *dir, int *buffer) {
     if (dir[0] == 'x') {
         if (dir[1] == 0){
         	int *TempBuffer = new int [recvCount_x];
-        	ScaLBL_CopyToHost(TempBuffer,dvcRecvList_x,recvCount_x*sizeof(int));
-        	ScaLBL_AllocateZeroCopy((void **) &buffer, recvCount_x*sizeof(int));
+        	ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_x,recvCount_x*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,recvCount_x*sizeof(int));
             return recvCount_x;
         }
@@ -497,8 +496,7 @@ int ScaLBL_Communicator::copyRecvList(const char *dir, int *buffer) {
     } else if (dir[0] == 'y') {
         if (dir[1] == 0){
         	int *TempBuffer = new int [recvCount_y];
-        	ScaLBL_CopyToHost(TempBuffer,dvcRecvList_y,recvCount_y*sizeof(int));
-        	ScaLBL_AllocateZeroCopy((void **) &buffer, recvCount_y*sizeof(int));
+        	ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_y,recvCount_y*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,recvCount_y*sizeof(int));
             return recvCount_y;
         }
@@ -509,16 +507,14 @@ int ScaLBL_Communicator::copyRecvList(const char *dir, int *buffer) {
     } else if (dir[0] == 'z') {
         if (dir[1] == 0){
         	int *TempBuffer = new int [recvCount_z];
-        	ScaLBL_CopyToHost(TempBuffer,dvcRecvList_z,recvCount_z*sizeof(int));
-        	ScaLBL_AllocateZeroCopy((void **) &buffer, recvCount_z*sizeof(int));
+        	ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_z,recvCount_z*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,recvCount_z*sizeof(int));
         	return recvCount_z;
         }
     } else if (dir[0] == 'X') {
     	if (dir[1] == 0){
     		int *TempBuffer = new int [recvCount_X];
-    		ScaLBL_CopyToHost(TempBuffer,dvcRecvList_X,recvCount_X*sizeof(int));
-    		ScaLBL_AllocateZeroCopy((void **) &buffer, recvCount_X*sizeof(int));
+    		ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_X,recvCount_X*sizeof(int));
     		ScaLBL_CopyToZeroCopy(buffer,TempBuffer,recvCount_X*sizeof(int));
     		return recvCount_X;
     	}
@@ -533,8 +529,7 @@ int ScaLBL_Communicator::copyRecvList(const char *dir, int *buffer) {
     } else if (dir[0] == 'Y') {
         if (dir[1] == 0){
         	int *TempBuffer = new int [recvCount_Y];
-        	ScaLBL_CopyToHost(TempBuffer,dvcRecvList_Y,recvCount_Y*sizeof(int));
-        	ScaLBL_AllocateZeroCopy((void **) &buffer, recvCount_Y*sizeof(int));
+        	ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_Y,recvCount_Y*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,recvCount_Y*sizeof(int));
             return recvCount_Y;
         }
@@ -545,8 +540,7 @@ int ScaLBL_Communicator::copyRecvList(const char *dir, int *buffer) {
     } else if (dir[0] == 'Z') {
         if (dir[1] == 0){
         	int *TempBuffer = new int [recvCount_Z];
-        	ScaLBL_CopyToHost(TempBuffer,dvcRecvList_Z,recvCount_Z*sizeof(int));
-        	ScaLBL_AllocateZeroCopy((void **) &buffer, recvCount_Z*sizeof(int));
+        	ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_Z,recvCount_Z*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,recvCount_Z*sizeof(int));
             return recvCount_Z;
         }
@@ -559,7 +553,6 @@ int ScaLBL_Communicator::copySendList(const char *dir, int *buffer) {
         if (dir[1] == 0){
         	int *TempBuffer = new int [sendCount_x];
         	ScaLBL_CopyToHost(TempBuffer,dvcSendList_x,sendCount_x*sizeof(int));
-        	ScaLBL_AllocateZeroCopy((void **) &buffer, sendCount_x*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,sendCount_x*sizeof(int));
             return sendCount_x;
         }
@@ -575,7 +568,6 @@ int ScaLBL_Communicator::copySendList(const char *dir, int *buffer) {
         if (dir[1] == 0){
         	int *TempBuffer = new int [sendCount_y];
         	ScaLBL_CopyToHost(TempBuffer,dvcSendList_y,sendCount_y*sizeof(int));
-        	ScaLBL_AllocateZeroCopy((void **) &buffer, sendCount_y*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,sendCount_y*sizeof(int));
             return sendCount_y;
         }
@@ -587,7 +579,6 @@ int ScaLBL_Communicator::copySendList(const char *dir, int *buffer) {
         if (dir[1] == 0){
         	int *TempBuffer = new int [sendCount_z];
         	ScaLBL_CopyToHost(TempBuffer,dvcSendList_z,sendCount_z*sizeof(int));
-        	ScaLBL_AllocateZeroCopy((void **) &buffer, sendCount_z*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,sendCount_z*sizeof(int));
         	return sendCount_z;
         }
@@ -595,7 +586,6 @@ int ScaLBL_Communicator::copySendList(const char *dir, int *buffer) {
     	if (dir[1] == 0){
     		int *TempBuffer = new int [sendCount_X];
     		ScaLBL_CopyToHost(TempBuffer,dvcSendList_X,sendCount_X*sizeof(int));
-    		ScaLBL_AllocateZeroCopy((void **) &buffer, sendCount_X*sizeof(int));
     		ScaLBL_CopyToZeroCopy(buffer,TempBuffer,sendCount_X*sizeof(int));
     		return sendCount_X;
     	}
@@ -611,7 +601,6 @@ int ScaLBL_Communicator::copySendList(const char *dir, int *buffer) {
         if (dir[1] == 0){
         	int *TempBuffer = new int [sendCount_Y];
         	ScaLBL_CopyToHost(TempBuffer,dvcSendList_Y,sendCount_Y*sizeof(int));
-        	ScaLBL_AllocateZeroCopy((void **) &buffer, sendCount_Y*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,sendCount_Y*sizeof(int));
             return sendCount_Y;
         }
@@ -623,7 +612,6 @@ int ScaLBL_Communicator::copySendList(const char *dir, int *buffer) {
         if (dir[1] == 0){
         	int *TempBuffer = new int [sendCount_Z];
         	ScaLBL_CopyToHost(TempBuffer,dvcSendList_Z,sendCount_Z*sizeof(int));
-        	ScaLBL_AllocateZeroCopy((void **) &buffer, sendCount_Z*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,sendCount_Z*sizeof(int));
             return sendCount_Z;
         }

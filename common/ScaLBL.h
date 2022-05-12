@@ -720,10 +720,26 @@ public:
         */
 	~ScaLBL_Communicator();
 	//......................................................................................
+	Utilities::MPI MPI_COMM_SCALBL;		// MPI Communicator for this domain
+	int rank;
+	int rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z;
+	int rank_xy,rank_XY,rank_xY,rank_Xy;
+	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
+	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
+	//......................................................................................
 	unsigned long int CommunicationCount,SendCount,RecvCount;
 	int Nx,Ny,Nz,N;
 	int n_bb_d3q7, n_bb_d3q19; 
 	int BoundaryCondition;
+	//......................................................................................
+	int sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z;
+	int sendCount_xy, sendCount_yz, sendCount_xz, sendCount_Xy, sendCount_Yz, sendCount_xZ;
+	int sendCount_xY, sendCount_yZ, sendCount_Xz, sendCount_XY, sendCount_YZ, sendCount_XZ;
+	//......................................................................................
+	int recvCount_x, recvCount_y, recvCount_z, recvCount_X, recvCount_Y, recvCount_Z;
+	int recvCount_xy, recvCount_yz, recvCount_xz, recvCount_Xy, recvCount_Yz, recvCount_xZ;
+	int recvCount_xY, recvCount_yZ, recvCount_Xz, recvCount_XY, recvCount_YZ, recvCount_XZ;
+	//......................................................................................
 	
 	int next;
 	int first_interior,last_interior;
@@ -819,27 +835,12 @@ private:
 	int sendtag,recvtag;
 	// Give the object it's own MPI communicator
 	RankInfoStruct rank_info;
-	Utilities::MPI MPI_COMM_SCALBL;		// MPI Communicator for this domain
 	MPI_Request req1[18],req2[18];
 	//......................................................................................
 	// MPI ranks for all 18 neighbors
 	//......................................................................................
 	// These variables are all private to prevent external things from modifying them!!
-	//......................................................................................
-	int rank;
-	int rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z;
-	int rank_xy,rank_XY,rank_xY,rank_Xy;
-	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
-	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
-	//......................................................................................
-	int sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z;
-	int sendCount_xy, sendCount_yz, sendCount_xz, sendCount_Xy, sendCount_Yz, sendCount_xZ;
-	int sendCount_xY, sendCount_yZ, sendCount_Xz, sendCount_XY, sendCount_YZ, sendCount_XZ;
-	//......................................................................................
-	int recvCount_x, recvCount_y, recvCount_z, recvCount_X, recvCount_Y, recvCount_Z;
-	int recvCount_xy, recvCount_yz, recvCount_xz, recvCount_Xy, recvCount_Yz, recvCount_xZ;
-	int recvCount_xY, recvCount_yZ, recvCount_Xz, recvCount_XY, recvCount_YZ, recvCount_XZ;
-	//......................................................................................
+//......................................................................................
 	// Send buffers that reside on the compute device
 	int *dvcSendList_x, *dvcSendList_y, *dvcSendList_z, *dvcSendList_X, *dvcSendList_Y, *dvcSendList_Z;
 	int *dvcSendList_xy, *dvcSendList_yz, *dvcSendList_xz, *dvcSendList_Xy, *dvcSendList_Yz, *dvcSendList_xZ;

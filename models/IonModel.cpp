@@ -706,7 +706,7 @@ void ScaLBL_IonModel::SetMembrane() {
     /* set distance based on labels inside the membrane (all other labels will be outside) */
     auto MembraneLabels = membrane_db->getVector<int>("MembraneLabels");
 
-    IonMembrane = std::shared_ptr<Membrane>(new Membrane(Dm, NeighborList, Np));
+    IonMembrane = std::shared_ptr<Membrane>(new Membrane(ScaLBL_Comm, NeighborList, Np));
     size_t NLABELS = MembraneLabels.size();
     signed char LABEL = 0;
     double *label_count;
@@ -758,7 +758,7 @@ void ScaLBL_IonModel::SetMembrane() {
     CalcDist(MembraneDistance, membrane_id, *Dm);
     /* create the membrane data structure */
     if (rank==0) printf("Creating membrane data structure...\n");
-    MembraneCount = IonMembrane->Create(Dm, MembraneDistance, Map);
+    MembraneCount = IonMembrane->Create(MembraneDistance, Map);
     
     // clean up
     delete [] label_count;
