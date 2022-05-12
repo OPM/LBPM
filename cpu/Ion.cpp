@@ -54,8 +54,8 @@ extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(
     	n = d3q7_recvlist[idx];
     	label = d3q7_linkList[idx];
 		ap = 1.0;  // regular streaming rule
-		aq = 0.0;
-		if (label == 1 && !(n < 0)){
+		aq = 1.0;
+		if (label > 0 && !(n < 0)){
     		nqm = Map[n];
     		distanceLocal = Distance[nqm];  
     		psiLocal = Psi[nqm];

@@ -702,7 +702,8 @@ int Membrane::D3Q7_MapRecv(int Cqx, int Cqy, int Cqz, int *d3q19_recvlist,
 		//printf("    Nonlocal value %i, %i, %i \n",i,j,k);
 		ReturnLabels[idx] = 0;
 		if (distanceLocal*distanceNonLocal < 0.0){
-			ReturnLabels[idx] = 1;
+			if (distanceLocal > 0.0)	ReturnLabels[idx] = 1;
+			else 						ReturnLabels[idx] = 2;
 			countMembraneLinks++;
 		}
 	}
