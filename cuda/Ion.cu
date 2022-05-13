@@ -91,7 +91,7 @@ __global__  void dvc_ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(
 	// swap rule means that the distributions in recvbuf are OPPOSITE of q
 	// dist may be even or odd distributions stored by stream layout
 	//....................................................................................
-	int n, idx, nqm, npm, i, j, k;
+	int n, idx, nqm, npm, label, i, j, k;
 	double distanceLocal, distanceNonlocal;
 	double psiLocal, psiNonlocal, membranePotential;
 	double ap,aq; // coefficient

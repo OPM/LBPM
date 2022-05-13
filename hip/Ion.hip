@@ -3,7 +3,7 @@
 #include "hip/hip_runtime.h"
 
 #define NBLOCKS 1024
-#define NTHREADS 256
+#define NTHREADS 512
 
 extern "C" void Membrane_D3Q19_Unpack(int q, int *list, int *links, int start, int linkCount,
                                     double *recvbuf, double *dist, int N) {
@@ -91,13 +91,13 @@ __global__  void dvc_ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(
 	// swap rule means that the distributions in recvbuf are OPPOSITE of q
 	// dist may be even or odd distributions stored by stream layout
 	//....................................................................................
-	int n, idx, nqm, npm, i, j, k;
+	int n, idx, nqm, npm, label, i, j, k;
 	double distanceLocal, distanceNonlocal;
 	double psiLocal, psiNonlocal, membranePotential;
 	double ap,aq; // coefficient
 
 	/* second enforce custom rule for membrane links */
-	int S = (count-nlinks)/NBLOCKS/NTHREADS + 1;
+	int S = count/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		idx =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
@@ -174,8 +174,8 @@ __global__  void dvc_ScaLBL_D3Q7_Membrane_Unpack(int q,
 	        	fp = recvbuf[idx];
 	        	fqq = (1-aq)*fq+ap*fp;
 	            dist[q * N + n] = fqq;
-	        }
-		} 
+	        } 
+	}
 	}
 }
 __global__  void dvc_ScaLBL_D3Q7_Membrane_IonTransport(int *membrane, double *coef, 
@@ -932,9 +932,7 @@ extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(
 		int *d3q7_recvlist, int *d3q7_linkList, double *coef, int start, int nlinks, int count,
 		const int N, const int Nx, const int Ny, const int Nz) {
 	
-	int GRID = count / 1024 + 1;
-
-	dvc_ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo<<<GRID,1024 >>>(
+	dvc_ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo<<<NBLOCKS,NTHREADS>>>(
 			 Cqx,  Cqy,  Cqz, Map, Distance, Psi,  Threshold, 
 			 MassFractionIn,  MassFractionOut,  ThresholdMassFractionIn,  ThresholdMassFractionOut,
 			d3q7_recvlist, d3q7_linkList, coef,  start,  nlinks,  count, N,  Nx,  Ny,  Nz);
@@ -950,9 +948,7 @@ extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,
 		int *d3q7_recvlist, double *recvbuf, int count,
 		double *dist, int N,  double *coef){
 	
-    int GRID = count / NTHREADS + 1;
-
-	dvc_ScaLBL_D3Q7_Membrane_Unpack<<<GRID,NTHREADS >>>(q, d3q7_recvlist, recvbuf,count,
+	dvc_ScaLBL_D3Q7_Membrane_Unpack<<<NBLOCKS,NTHREADS >>>(q, d3q7_recvlist, recvbuf,count,
 			 dist, N,  coef);
 
 	hipError_t err = hipGetLastError();
