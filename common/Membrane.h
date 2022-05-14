@@ -58,7 +58,7 @@ public:
     int *NeighborList;			// modified neighborlist
 
     /* host data structures */
-    int *membraneLinks;    // D3Q19 links that cross membrane
+    int *membraneLinks;    // D3Q7 links that cross membrane
     int *membraneTag;      // label each link in the membrane
     double *membraneDist;  // distance to membrane for each linked site
     double *membraneOrientation;  // distance to membrane for each linked site

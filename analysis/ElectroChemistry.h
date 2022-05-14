@@ -56,14 +56,14 @@ public:
     DoubleArray IonFluxElectrical_z;
 
     ElectroChemistryAnalyzer(std::shared_ptr<Domain> Dm);
+    ElectroChemistryAnalyzer( ScaLBL_IonModel &IonModel);
     ~ElectroChemistryAnalyzer();
 
     void SetParams();
-    void Basic(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poisson,
-               ScaLBL_StokesModel &Stokes, int timestep);
-    void WriteVis(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poisson,
-                  ScaLBL_StokesModel &Stokes,
-                  std::shared_ptr<Database> input_db, int timestep);
+    void Basic(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poisson, ScaLBL_StokesModel &Stokes, int timestep);
+    void Membrane(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poisson, int timestep);
+    void WriteVis(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poisson, 
+    		ScaLBL_StokesModel &Stokes,std::shared_ptr<Database> input_db, int timestep);
     void Basic(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poisson, int timestep);
     void WriteVis(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poisson,
                   std::shared_ptr<Database> input_db, int timestep);
