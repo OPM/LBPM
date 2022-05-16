@@ -202,6 +202,11 @@ public: // Public variables (need to create accessors instead)
      * \brief Read domain IDs from file
     */
     void ReadIDs();
+    
+    /** 
+     * \brief Read domain IDs from SWC file
+    */
+    void read_swc(const std::string &Filename);
 
     /** 
      * \brief Compute the porosity
