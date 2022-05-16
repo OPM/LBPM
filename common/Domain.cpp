@@ -53,11 +53,10 @@ void Domain::read_swc(const std::string &Filename) {
 				++number_of_lines;
 			number_of_lines -= 1;
 		}    
-		std::cout << "Number of lines in SWC file: " << number_of_lines << endl;
+		std::cout << "    Number of lines in SWC file: " << number_of_lines << endl;
 	}
 	count = Comm.sumReduce(number_of_lines); // nonzero only for rank=0 
 	number_of_lines = count;
-	printf("***rank=%i , number of lines = %i\n",rank(),number_of_lines);
 	
 	// set up structures to read
 	double *List_cx = new double [number_of_lines];
@@ -88,7 +87,7 @@ void Domain::read_swc(const std::string &Filename) {
 			List_parent[count] = int(strtod(line2, &line2));
 			count++;
 		}
-		cout << "Number of lines extracted is: " << count << endl;
+		cout << "   Number of lines extracted is: " << count << endl;
 		INSIST(count == number_of_lines, "Problem reading swc file!");
 	}
 	/* everybody gets the swc file */
@@ -107,7 +106,6 @@ void Domain::read_swc(const std::string &Filename) {
 	start_x = rank_info.ix*(Nx-2)*voxel_length;
 	start_y = rank_info.jy*(Ny-2)*voxel_length;
 	start_z = rank_info.kz*(Nz-2)*voxel_length;
-	printf(" rank = %i: %f %f %f \n",rank(),start_x,start_y,start_z);
 	finish_x = (rank_info.ix+1)*(Nx-2)*voxel_length;
 	finish_y = (rank_info.jy+1)*(Ny-2)*voxel_length;
 	finish_z = (rank_info.kz+1)*(Nz-2)*voxel_length;
@@ -129,7 +127,7 @@ void Domain::read_swc(const std::string &Filename) {
 		int cy = int((List_cy[idx] - start_y)/voxel_length) + 1;
 		int cz = int((List_cz[idx] - start_z)/voxel_length) + 1;
 		
-		if (rank()==1) printf("%i %i %i %i %i\n",label,cx,cy,cz,radius_in_voxels);
+		//if (rank()==1) printf("%i %i %i %i %i\n",label,cx,cy,cz,radius_in_voxels);
 		
 		/* get the little box to loop over*/
 		int start_idx = int((List_cx[idx] - List_rad[idx] - start_x)/voxel_length) + 1;
@@ -152,8 +150,8 @@ void Domain::read_swc(const std::string &Filename) {
 		if (finish_idy > Ny-1 )	finish_idy = Ny;
 		if (finish_idz > Nz-1 )	finish_idz = Nz;
 
-		if (rank()==1) printf( "start: %i, %i, %i \n",start_idx,start_idy,start_idz);
-		if (rank()==1) printf( "finish: %i, %i, %i \n",finish_idx,finish_idy,finish_idz);
+		//if (rank()==1) printf( "start: %i, %i, %i \n",start_idx,start_idy,start_idz);
+		//if (rank()==1) printf( "finish: %i, %i, %i \n",finish_idx,finish_idy,finish_idz);
 
 		for (int k = start_idz; k<finish_idz; k++){
 			for (int j = start_idy; j<finish_idy; j++){
@@ -166,7 +164,7 @@ void Domain::read_swc(const std::string &Filename) {
 				}
 			}
 		}
-		if (rank()==0) printf( "next line..\n");
+		//if (rank()==0) printf( "next line..\n");
 	}
 	delete[] List_cx;
 	delete[] List_cy;
