@@ -89,6 +89,26 @@ void Domain::read_swc(const std::string &Filename) {
 		}
 		cout << "   Number of lines extracted is: " << count << endl;
 		INSIST(count == number_of_lines, "Problem reading swc file!");
+		
+		double min_cx =  List_cx[0]-List_rad[0];
+		double min_cy =  List_cy[0]-List_rad[0];
+		double min_cz =  List_cz[0]-List_rad[0]; 
+		for (count=1; count<number_of_lines; count++){
+			double value_x = List_cx[count]-List_rad[count];
+			double value_y = List_cy[count]-List_rad[count];
+			double value_z = List_cz[count]-List_rad[count];
+			if (value_x < min_cx)  min_cx = value_x;
+			if (value_y < min_cy)  min_cy = value_y;
+			if (value_z < min_cz)  min_cz = value_z;
+		}
+		/* shift the swc data */
+		printf("   shift swc data by %f, %f, %f \n",min_cx,min_cy, min_cz);
+		for (count=0; count<number_of_lines; count++){
+			List_cx[count] -= min_cx;
+			List_cy[count] -= min_cy;
+			List_cz[count] -= min_cz;
+		}
+
 	}
 	/* everybody gets the swc file */
 	Comm.bcast(List_cx,number_of_lines,0);
