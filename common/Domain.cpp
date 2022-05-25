@@ -101,14 +101,14 @@ void Domain::read_swc(const std::string &Filename) {
 			if (value_y < min_cy)  min_cy = value_y;
 			if (value_z < min_cz)  min_cz = value_z;
 		}
-		/* shift the swc data */
+		/* shift the swc data 
 		printf("   shift swc data by %f, %f, %f \n",min_cx,min_cy, min_cz);
 		for (count=0; count<number_of_lines; count++){
 			List_cx[count] -= min_cx;
 			List_cy[count] -= min_cy;
 			List_cz[count] -= min_cz;
 		}
-
+	*/
 	}
 	/* everybody gets the swc file */
 	Comm.bcast(List_cx,number_of_lines,0);
@@ -121,14 +121,13 @@ void Domain::read_swc(const std::string &Filename) {
 
 	/* units of swc file are in micron */
 	double start_x, start_y, start_z;
-	double finish_x, finish_y, finish_z;
 	/* box owned by this rank */
 	start_x = rank_info.ix*(Nx-2)*voxel_length;
 	start_y = rank_info.jy*(Ny-2)*voxel_length;
 	start_z = rank_info.kz*(Nz-2)*voxel_length;
-	finish_x = (rank_info.ix+1)*(Nx-2)*voxel_length;
-	finish_y = (rank_info.jy+1)*(Ny-2)*voxel_length;
-	finish_z = (rank_info.kz+1)*(Nz-2)*voxel_length;
+	//finish_x = (rank_info.ix+1)*(Nx-2)*voxel_length;
+	//finish_y = (rank_info.jy+1)*(Ny-2)*voxel_length;
+	//finish_z = (rank_info.kz+1)*(Nz-2)*voxel_length;
 	
     for (int k = 0; k < Nz; k++) {
         for (int j = 0; j < Ny; j++) {
@@ -141,21 +140,52 @@ void Domain::read_swc(const std::string &Filename) {
 	/* Loop over SWC input and populate domain ID */
 	for (int idx=0; idx<number_of_lines; idx++){
 		/* get the object information */
-		int radius_in_voxels = List_rad[idx]/voxel_length;
+		int parent = List_parent[idx]-1;
+		if (parent < 0) parent = idx;
+		double xi = List_cx[idx];
+		double yi = List_cy[idx];
+		double zi = List_cz[idx];
+		double xp = List_cx[parent];
+		double yp = List_cy[parent];
+		double zp = List_cz[parent];
+		double ri = List_rad[idx];
+		double rp = List_rad[parent];
+		
+		int radius_in_voxels = int(List_rad[idx]/voxel_length);
 		signed char label = char(List_type[idx]);
-		int cx = int((List_cx[idx] - start_x)/voxel_length) + 1;
-		int cy = int((List_cy[idx] - start_y)/voxel_length) + 1;
-		int cz = int((List_cz[idx] - start_z)/voxel_length) + 1;
 		
-		//if (rank()==1) printf("%i %i %i %i %i\n",label,cx,cy,cz,radius_in_voxels);
+		double xmin = min(((xi - start_x - List_rad[idx])/voxel_length) ,((xp - start_x - List_rad[idx])/voxel_length) );
+		double ymin = min(((yi - start_y - List_rad[idx])/voxel_length) ,((yp - start_y - List_rad[idx])/voxel_length) );
+		double zmin = min(((zi - start_z - List_rad[idx])/voxel_length) ,((zp - start_z - List_rad[idx])/voxel_length) );
+		double xmax = max(((xi - start_x + List_rad[idx])/voxel_length) ,((xp - start_x + List_rad[idx])/voxel_length) );
+		double ymax = max(((yi - start_y + List_rad[idx])/voxel_length) ,((yp - start_y + List_rad[idx])/voxel_length) );
+		double zmax = max(((zi - start_z + List_rad[idx])/voxel_length) ,((zp - start_z + List_rad[idx])/voxel_length) );
 		
-		/* get the little box to loop over*/
+	/*	if (rank()==1){
+			printf("%i %f %f %f %f\n",label,xi,yi,zi,ri);
+			printf("parent %i %f %f %f %f\n",parent,xp,yp,zp,rp);
+		}
+		*/
+		double length = sqrt((xi-xp)*(xi-xp) + (yi-yp)*(yi-yp) + (zi-zp)*(zi-zp) );
+		if (length == 0.0) length = 1.0;
+		double alpha = (xi - xp)/length;
+		double beta =  (yi - yp)/length;
+		double gamma = (zi - zp)/length;
+				
+		int start_idx = int(xmin);
+		int start_idy = int(ymin);
+		int start_idz = int(zmin);
+		int finish_idx = int(xmax);
+		int finish_idy = int(ymax);
+		int finish_idz = int(zmax);
+		/* get the little box to loop over
 		int start_idx = int((List_cx[idx] - List_rad[idx] - start_x)/voxel_length) + 1;
 		int start_idy = int((List_cy[idx] - List_rad[idx] - start_y)/voxel_length) + 1;
 		int start_idz = int((List_cz[idx] - List_rad[idx] - start_z)/voxel_length) + 1;
 		int finish_idx = int((List_cx[idx] + List_rad[idx] - start_x)/voxel_length) + 1;
 		int finish_idy = int((List_cy[idx] + List_rad[idx] - start_y)/voxel_length) + 1;
 		int finish_idz = int((List_cz[idx] + List_rad[idx] - start_z)/voxel_length) + 1;
+		*/
 		
 		if (start_idx < 0 ) 	start_idx = 0;
 		if (start_idy < 0 ) 	start_idy = 0;
@@ -170,13 +200,36 @@ void Domain::read_swc(const std::string &Filename) {
 		if (finish_idy > Ny-1 )	finish_idy = Ny;
 		if (finish_idz > Nz-1 )	finish_idz = Nz;
 
-		//if (rank()==1) printf( "start: %i, %i, %i \n",start_idx,start_idy,start_idz);
-		//if (rank()==1) printf( "finish: %i, %i, %i \n",finish_idx,finish_idy,finish_idz);
+	/*	if (rank()==1) printf(" alpha = %f, beta = %f, gamma= %f\n",alpha, beta,gamma);
+		if (rank()==1) printf(" xi = %f, yi = %f, zi= %f, ri = %f \n",xi, yi, zi, ri);
+		if (rank()==1) printf(" xp = %f, yp = %f, zp= %f, rp = %f \n",xp, yp, zp, rp);
+
+		if (rank()==1) printf( "start: %i, %i, %i \n",start_idx,start_idy,start_idz);
+		if (rank()==1) printf( "finish: %i, %i, %i \n",finish_idx,finish_idy,finish_idz);
+		*/
 
 		for (int k = start_idz; k<finish_idz; k++){
 			for (int j = start_idy; j<finish_idy; j++){
 				for (int i = start_idx; i<finish_idx; i++){
-					if ( (i-cx)*(i-cx) +(j-cy)*(j-cy) +(k-cz)*(k-cz) < radius_in_voxels*radius_in_voxels ){
+					
+					double x = i*voxel_length + start_x;
+					double y = j*voxel_length + start_y;
+					double z = k*voxel_length + start_z;
+					
+					double distance; 
+					double s = ((x-xp)*alpha+(y-yp)*beta+(z-zp)*gamma) / (alpha*alpha + beta*beta + gamma*gamma);					
+					if (s > length){
+						distance = ri - sqrt((x-xi)*(x-xi) + (y-yi)*(y-yi) + (z-zi)*(z-zi));
+					}
+					else if (s < 0.0){
+						distance = rp - sqrt((x-xp)*(x-xp) + (y-yp)*(y-yp) + (z-zp)*(z-zp));
+					}
+					else {
+						// linear variation for radius
+						double radius = ri; // rp + (ri - rp)*s/length;
+						distance = radius - sqrt((x-xp-alpha*s)*(x-xp-alpha*s) + (y-yp-beta*s)*(y-yp-beta*s) + (z-zp-gamma*s)*(z-zp-gamma*s));
+					}
+					if ( distance > 0.0 ){
 						/* label the voxel */
 						//id[k*Nx*Ny + j*Nx + i] = label;
 						id[k*Nx*Ny + j*Nx + i] = 2;
