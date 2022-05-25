@@ -101,14 +101,13 @@ void Domain::read_swc(const std::string &Filename) {
 			if (value_y < min_cy)  min_cy = value_y;
 			if (value_z < min_cz)  min_cz = value_z;
 		}
-		/* shift the swc data 
+		/* shift the swc data */
 		printf("   shift swc data by %f, %f, %f \n",min_cx,min_cy, min_cz);
 		for (count=0; count<number_of_lines; count++){
-			List_cx[count] -= min_cx;
-			List_cy[count] -= min_cy;
-			List_cz[count] -= min_cz;
+			List_cx[count] -= offset_x*voxel_length;
+			List_cy[count] -= offset_y*voxel_length;
+			List_cz[count] -= offset_z*voxel_length;
 		}
-	*/
 	}
 	/* everybody gets the swc file */
 	Comm.bcast(List_cx,number_of_lines,0);
@@ -309,6 +308,7 @@ void Domain::initialize(std::shared_ptr<Database> db) {
     int nx = n[0];
     int ny = n[1];
     int nz = n[2];
+    offset_x = offset_y = offset_z = 0;
 
     if (d_db->keyExists("InletLayers")) {
         auto InletCount = d_db->getVector<int>("InletLayers");
@@ -510,6 +510,9 @@ void Domain::Decomp(const std::string &Filename) {
         xStart = offset[0];
         yStart = offset[1];
         zStart = offset[2];
+        offset_x = xStart;
+        offset_y = yStart;
+        offset_z = zStart;
     }
     if (database->keyExists("InletLayers")) {
         auto InletCount = database->getVector<int>("InletLayers");
