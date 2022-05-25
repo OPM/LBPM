@@ -226,7 +226,7 @@ void Domain::read_swc(const std::string &Filename) {
 					}
 					else {
 						// linear variation for radius
-						double radius = ri; // rp + (ri - rp)*s/length;
+						double radius = rp + (ri - rp)*s/length;
 						distance = radius - sqrt((x-xp-alpha*s)*(x-xp-alpha*s) + (y-yp-beta*s)*(y-yp-beta*s) + (z-zp-gamma*s)*(z-zp-gamma*s));
 					}
 					if ( distance > 0.0 ){
