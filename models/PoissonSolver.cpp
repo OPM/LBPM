@@ -769,6 +769,7 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, bool UseSlippingVelBC, int times
         host_Error = new double [Np];
 
         timestep=0;
+        auto t1 = std::chrono::system_clock::now();
         while (timestep < timestepMax && error > tolerance) {
             //************************************************************************/
             // *************ODD TIMESTEP*************//
@@ -809,7 +810,29 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, bool UseSlippingVelBC, int times
 
             }
         }
+        if (rank == 0)
+            printf("---------------------------------------------------------------"
+                   "----\n");
+        // Compute the walltime per timestep
+        auto t2 = std::chrono::system_clock::now();
+        double cputime = std::chrono::duration<double>(t2 - t1).count() / timestep;
+        // Performance obtained from each node
+        double MLUPS = double(Np) / cputime / 1000000;
+
+        if (rank == 0)
+            printf("********************************************************\n");
+        if (rank == 0)
+            printf("CPU time = %f \n", cputime);
+        if (rank == 0)
+            printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
+        MLUPS *= nprocs;
+        if (rank == 0)
+            printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
+        if (rank == 0)
+            printf("********************************************************\n");
     }
+    //************************************************************************/
+
     if(WriteLog==true){
         getConvergenceLog(timestep,error);
     }

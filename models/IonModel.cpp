@@ -1248,6 +1248,7 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField) {
     //ScaLBL_Comm->Barrier(); comm.barrier();
     //auto t1 = std::chrono::system_clock::now();
 
+    auto t1 = std::chrono::system_clock::now();
     for (size_t ic = 0; ic < number_ion_species; ic++) {
         timestep = 0;
         while (timestep < timestepMax[ic]) {
@@ -1430,19 +1431,25 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField) {
                                       ScaLBL_Comm->LastExterior(), Np);
     }
     //************************************************************************/
-    //if (rank==0) printf("-------------------------------------------------------------------\n");
-    //// Compute the walltime per timestep
-    //auto t2 = std::chrono::system_clock::now();
-    //double cputime = std::chrono::duration<double>( t2 - t1 ).count() / timestep;
-    //// Performance obtained from each node
-    //double MLUPS = double(Np)/cputime/1000000;
-
-    //if (rank==0) printf("********************************************************\n");
-    //if (rank==0) printf("CPU time = %f \n", cputime);
-    //if (rank==0) printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
-    //MLUPS *= nprocs;
-    //if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
-    //if (rank==0) printf("********************************************************\n");
+    if (rank == 0)
+        printf("---------------------------------------------------------------"
+               "----\n");
+    // Compute the walltime per timestep
+    auto t2 = std::chrono::system_clock::now();
+    double cputime = std::chrono::duration<double>(t2 - t1).count() / timestep;
+    // Performance obtained from each node
+    double MLUPS = double(Np) / cputime / 1000000;
+    if (rank == 0)
+        printf("********************************************************\n");
+    if (rank == 0)
+        printf("CPU time = %f \n", cputime);
+    if (rank == 0)
+        printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
+    MLUPS *= nprocs;
+    if (rank == 0)
+        printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
+    if (rank == 0)
+        printf("********************************************************\n");
 }
 
 void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, double *Psi) {
