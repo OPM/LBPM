@@ -153,12 +153,12 @@ void Domain::read_swc(const std::string &Filename) {
 		int radius_in_voxels = int(List_rad[idx]/voxel_length);
 		signed char label = char(List_type[idx]);
 		
-		double xmin = min(((xi - start_x - List_rad[idx])/voxel_length) ,((xp - start_x - List_rad[idx])/voxel_length) );
-		double ymin = min(((yi - start_y - List_rad[idx])/voxel_length) ,((yp - start_y - List_rad[idx])/voxel_length) );
-		double zmin = min(((zi - start_z - List_rad[idx])/voxel_length) ,((zp - start_z - List_rad[idx])/voxel_length) );
-		double xmax = max(((xi - start_x + List_rad[idx])/voxel_length) ,((xp - start_x + List_rad[idx])/voxel_length) );
-		double ymax = max(((yi - start_y + List_rad[idx])/voxel_length) ,((yp - start_y + List_rad[idx])/voxel_length) );
-		double zmax = max(((zi - start_z + List_rad[idx])/voxel_length) ,((zp - start_z + List_rad[idx])/voxel_length) );
+		double xmin = min(((xi - start_x - List_rad[idx])/voxel_length) ,((xp - start_x - List_rad[parent])/voxel_length) );
+		double ymin = min(((yi - start_y - List_rad[idx])/voxel_length) ,((yp - start_y - List_rad[parent])/voxel_length) );
+		double zmin = min(((zi - start_z - List_rad[idx])/voxel_length) ,((zp - start_z - List_rad[parent])/voxel_length) );
+		double xmax = max(((xi - start_x + List_rad[idx])/voxel_length) ,((xp - start_x + List_rad[parent])/voxel_length) );
+		double ymax = max(((yi - start_y + List_rad[idx])/voxel_length) ,((yp - start_y + List_rad[parent])/voxel_length) );
+		double zmax = max(((zi - start_z + List_rad[idx])/voxel_length) ,((zp - start_z + List_rad[parent])/voxel_length) );
 		
 	/*	if (rank()==1){
 			printf("%i %f %f %f %f\n",label,xi,yi,zi,ri);
