@@ -44,8 +44,8 @@ extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(
     // swap rule means that the distributions in recvbuf are OPPOSITE of q
     // dist may be even or odd distributions stored by stream layout
     //....................................................................................
-    int n, idx, link, label, nqm, npm, i, j, k;
-    double distanceLocal, distanceNonlocal;
+    int n, idx, label, nqm, npm, i, j, k;
+    double distanceLocal;//, distanceNonlocal;
     double psiLocal, psiNonlocal, membranePotential;
     double ap,aq; // coefficient
 
@@ -65,7 +65,7 @@ extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(
     		// Streaming link the non-local distribution
     		i -= Cqx; j -= Cqy; k -= Cqz;
     		npm = k*Nx*Ny + j*Nx + i;
-    		distanceNonlocal = Distance[npm];  
+    		//distanceNonlocal = Distance[npm];  
     		psiNonlocal = Psi[npm];
 
     		membranePotential = psiLocal - psiNonlocal;
@@ -103,7 +103,7 @@ extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,
     // swap rule means that the distributions in recvbuf are OPPOSITE of q
     // dist may be even or odd distributions stored by stream layout
     //....................................................................................
-    int n, idx, link;
+    int n, idx;
     double fq,fp,fqq,ap,aq; // coefficient
     /* First unpack the regular links */
     for (idx = 0; idx < count; idx++) {

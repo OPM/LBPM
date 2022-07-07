@@ -123,7 +123,7 @@ ElectroChemistryAnalyzer::ElectroChemistryAnalyzer(ScaLBL_IonModel &IonModel)
     
        
     if (Dm->rank() == 0) {
-    	printf("Set up analysis routines for %i ions \n",IonModel.number_ion_species);
+    	printf("Set up analysis routines for %lu ions \n",IonModel.number_ion_species);
     	
         bool WriteHeader = false;
         TIMELOG = fopen("electrokinetic.csv", "r");

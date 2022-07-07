@@ -439,7 +439,7 @@ int main(int argc, char **argv)
 
 	}
 	// ****************************************************
-	cout << fflush;
+	//cout << fflush;
 	comm.barrier();
 	Utilities::shutdown();
 	// ****************************************************

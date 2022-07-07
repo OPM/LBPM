@@ -74,7 +74,7 @@ int main(int argc, char **argv)
         //----------------------------------- print out for debugging ------------------------------------------//
         if (rank==0){
             for (size_t i=0;i<IonModel.timestepMax.size();i++){
-                printf("Main loop time_conv computed from ion %i: %.5g[s/lt]\n",i+1,IonModel.timestepMax[i]*IonModel.time_conv[i]);
+                printf("Main loop time_conv computed from ion %lu: %.5g[s/lt]\n",i+1,IonModel.timestepMax[i]*IonModel.time_conv[i]);
             }
         }
         //----------------------------------- print out for debugging ------------------------------------------//
@@ -90,7 +90,7 @@ int main(int argc, char **argv)
         if (rank == 0){
             printf("********************************************************\n");
             printf("Key Summary of LBPM electrokinetic single-fluid solver \n");
-            printf("   1. Max LB Timestep: %li [lt]\n", Study.timestepMax);
+            printf("   1. Max LB Timestep: %i [lt]\n", Study.timestepMax);
             printf("   2. Time conversion factor per LB Timestep: %.6g [sec/lt]\n",Study.time_conv_MainLoop);
             printf("   3. Max Physical Time: %.6g [sec]\n",Study.timestepMax*Study.time_conv_MainLoop);
             printf("********************************************************\n");

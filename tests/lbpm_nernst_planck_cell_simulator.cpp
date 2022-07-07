@@ -103,7 +103,7 @@ int main(int argc, char **argv)
 		//----------------------------------- print out for debugging ------------------------------------------//
 		if (rank==0){
 			for (size_t i=0;i<IonModel.timestepMax.size();i++){
-				printf("Main loop time_conv computed from ion %i: %.5g[s/lt]\n",i+1,IonModel.timestepMax[i]*IonModel.time_conv[i]);
+				printf("Main loop time_conv computed from ion %lu: %.5g[s/lt]\n",i+1,IonModel.timestepMax[i]*IonModel.time_conv[i]);
 			}
 		}
 		//----------------------------------- print out for debugging ------------------------------------------//

@@ -447,7 +447,7 @@ extern "C" void ScaLBL_D3Q7_PoissonResidualError(
 
 extern "C" void ScaLBL_D3Q19_Poisson_getElectricField(double *dist, double *ElectricField, double tau, int Np){
 	int n;
-	double f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15,
+	double f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15,
 	f16, f17, f18;
 	double Ex,Ey,Ez;
 	double rlx=1.0/tau;
@@ -492,9 +492,9 @@ ScaLBL_D3Q19_AAodd_Poisson_ElectricPotential(int *neighborList, int *Map,
                                             double epsilon_LB, bool UseSlippingVelBC,
                                             int start, int finish, int Np) {
     int n;
-    double psi,sum;        //electric potential
+    double psi;        //electric potential
     double rho_e;      //local charge density
-    double Gs;
+    //double Gs;
     double f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15,
         f16, f17, f18;
     int nr1, nr2, nr3, nr4, nr5, nr6, nr7, nr8, nr9, nr10, nr11, nr12, nr13,
@@ -590,11 +590,11 @@ ScaLBL_D3Q19_AAodd_Poisson_ElectricPotential(int *neighborList, int *Map,
 extern "C" void ScaLBL_D3Q19_AAeven_Poisson_ElectricPotential(
     int *Map, double *dist, double *Den_charge, double *Psi, double epsilon_LB, bool UseSlippingVelBC, int start, int finish, int Np) {
     int n;
-    double psi,sum;        //electric potential
+    double psi;        //electric potential
     double rho_e;      //local charge density
     double f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15,
         f16, f17, f18;
-    double Gs;
+    //double Gs;
     int idx;
 
     for (n = start; n < finish; n++) {
@@ -644,7 +644,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
         f16, f17, f18;
     int nr1, nr2, nr3, nr4, nr5, nr6, nr7, nr8, nr9, nr10, nr11, nr12, nr13,
         nr14, nr15, nr16, nr17, nr18;
-	double error,sum_q;
+	double sum_q;
     double rlx = 1.0 / tau;
     int idx;
 
@@ -734,7 +734,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
          f18 = dist[nr18];
 
          sum_q = f1+f2+f3+f4+f5+f6+f7+f8+f9+f10+f11+f12+f13+f14+f15+f16+f17+f18;
-         error = 8.0*(sum_q - f0) + rho_e; 
+         //error = 8.0*(sum_q - f0) + rho_e; 
 
          psi = 2.0*(f0*(1.0 - rlx) + rlx*(sum_q + 0.125*rho_e));
          
