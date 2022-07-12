@@ -483,6 +483,7 @@ int ScaLBL_Communicator::copyRecvList(const char *dir, int *buffer) {
         	int *TempBuffer = new int [recvCount_x];
         	ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_x,recvCount_x*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,recvCount_x*sizeof(int));
+        	delete [] TempBuffer;
             return recvCount_x;
         }
         else if (dir[1] == 'y')
@@ -498,6 +499,7 @@ int ScaLBL_Communicator::copyRecvList(const char *dir, int *buffer) {
         	int *TempBuffer = new int [recvCount_y];
         	ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_y,recvCount_y*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,recvCount_y*sizeof(int));
+        	delete [] TempBuffer;
             return recvCount_y;
         }
         else if (dir[1] == 'z')
@@ -509,6 +511,7 @@ int ScaLBL_Communicator::copyRecvList(const char *dir, int *buffer) {
         	int *TempBuffer = new int [recvCount_z];
         	ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_z,recvCount_z*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,recvCount_z*sizeof(int));
+        	delete [] TempBuffer;
         	return recvCount_z;
         }
     } else if (dir[0] == 'X') {
@@ -516,6 +519,7 @@ int ScaLBL_Communicator::copyRecvList(const char *dir, int *buffer) {
     		int *TempBuffer = new int [recvCount_X];
     		ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_X,recvCount_X*sizeof(int));
     		ScaLBL_CopyToZeroCopy(buffer,TempBuffer,recvCount_X*sizeof(int));
+        	delete [] TempBuffer;
     		return recvCount_X;
     	}
     	else if (dir[1] == 'y')
@@ -531,6 +535,7 @@ int ScaLBL_Communicator::copyRecvList(const char *dir, int *buffer) {
         	int *TempBuffer = new int [recvCount_Y];
         	ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_Y,recvCount_Y*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,recvCount_Y*sizeof(int));
+        	delete [] TempBuffer;
             return recvCount_Y;
         }
         else if (dir[1] == 'z')
@@ -542,6 +547,7 @@ int ScaLBL_Communicator::copyRecvList(const char *dir, int *buffer) {
         	int *TempBuffer = new int [recvCount_Z];
         	ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_Z,recvCount_Z*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,recvCount_Z*sizeof(int));
+        	delete [] TempBuffer;
             return recvCount_Z;
         }
     }
@@ -554,6 +560,7 @@ int ScaLBL_Communicator::copySendList(const char *dir, int *buffer) {
         	int *TempBuffer = new int [sendCount_x];
         	ScaLBL_CopyToHost(TempBuffer,dvcSendList_x,sendCount_x*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,sendCount_x*sizeof(int));
+        	delete [] TempBuffer;
             return sendCount_x;
         }
         else if (dir[1] == 'y')
@@ -569,6 +576,7 @@ int ScaLBL_Communicator::copySendList(const char *dir, int *buffer) {
         	int *TempBuffer = new int [sendCount_y];
         	ScaLBL_CopyToHost(TempBuffer,dvcSendList_y,sendCount_y*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,sendCount_y*sizeof(int));
+        	delete [] TempBuffer;
             return sendCount_y;
         }
         else if (dir[1] == 'z')
@@ -580,6 +588,7 @@ int ScaLBL_Communicator::copySendList(const char *dir, int *buffer) {
         	int *TempBuffer = new int [sendCount_z];
         	ScaLBL_CopyToHost(TempBuffer,dvcSendList_z,sendCount_z*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,sendCount_z*sizeof(int));
+        	delete [] TempBuffer;
         	return sendCount_z;
         }
     } else if (dir[0] == 'X') {
@@ -587,6 +596,7 @@ int ScaLBL_Communicator::copySendList(const char *dir, int *buffer) {
     		int *TempBuffer = new int [sendCount_X];
     		ScaLBL_CopyToHost(TempBuffer,dvcSendList_X,sendCount_X*sizeof(int));
     		ScaLBL_CopyToZeroCopy(buffer,TempBuffer,sendCount_X*sizeof(int));
+        	delete [] TempBuffer;
     		return sendCount_X;
     	}
     	else if (dir[1] == 'y')
@@ -602,6 +612,7 @@ int ScaLBL_Communicator::copySendList(const char *dir, int *buffer) {
         	int *TempBuffer = new int [sendCount_Y];
         	ScaLBL_CopyToHost(TempBuffer,dvcSendList_Y,sendCount_Y*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,sendCount_Y*sizeof(int));
+        	delete [] TempBuffer;
             return sendCount_Y;
         }
         else if (dir[1] == 'z')
@@ -613,6 +624,7 @@ int ScaLBL_Communicator::copySendList(const char *dir, int *buffer) {
         	int *TempBuffer = new int [sendCount_Z];
         	ScaLBL_CopyToHost(TempBuffer,dvcSendList_Z,sendCount_Z*sizeof(int));
         	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,sendCount_Z*sizeof(int));
+        	delete [] TempBuffer;
             return sendCount_Z;
         }
     }

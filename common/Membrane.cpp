@@ -661,7 +661,9 @@ int Membrane::Create(DoubleArray &Distance, IntArray &Map){
 	ScaLBL_AllocateZeroCopy((void **) &coefficient_Z, 2*(recvCount_Z)*sizeof(double));
 	//......................................................................................
 	
+	ScaLBL_FreeDeviceMemory (dvcTmpMap);
 	delete [] neighborList;
+	delete [] TmpMap;
 	return mlink;
 }
 
@@ -712,6 +714,8 @@ int Membrane::D3Q7_MapRecv(int Cqx, int Cqy, int Cqz, int *d3q19_recvlist,
 
 	// clean up the work arrays
 	delete [] ReturnLabels;
+	delete [] TmpMap;
+	delete [] list;
 	return countMembraneLinks;
 }
 

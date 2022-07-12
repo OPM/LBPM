@@ -830,6 +830,8 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, bool UseSlippingVelBC, int times
             printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
         if (rank == 0)
             printf("********************************************************\n");
+        delete [] host_Error;
+
     }
     //************************************************************************/
 
