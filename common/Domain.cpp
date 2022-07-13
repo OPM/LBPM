@@ -87,6 +87,7 @@ void Domain::read_swc(const std::string &Filename) {
 			List_parent[count] = int(strtod(line2, &line2));
 			count++;
 		}
+		fclose( fid );
 		cout << "   Number of lines extracted is: " << count << endl;
 		INSIST(count == number_of_lines, "Problem reading swc file!");
 		

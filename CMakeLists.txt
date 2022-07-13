@@ -175,5 +175,6 @@ IF ( NOT ONLY_BUILD_DOCS )
     ADD_SUBDIRECTORY( example )
     #ADD_SUBDIRECTORY( workflows )
     INSTALL_PROJ_LIB()
+    CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/ValgrindSuppresionFile ${CMAKE_CURRENT_BINARY_DIR}/test/ValgrindSuppresionFile COPYONLY )
 ENDIF()
 
