@@ -3699,14 +3699,14 @@ MPI MPI::loadBalance(double local, std::vector<double> work) {
 template <>
 std::shared_ptr<MPI_Request> MPI::Isend_init<double>(const double *buf, int N, int proc, int tag) const
 {
-    std::shared_ptr<MPI_Request> obj(new MPI_Request, []( MPI_Request *req ) { MPI_Request_free( req ); } );
+    std::shared_ptr<MPI_Request> obj( new MPI_Request, []( MPI_Request *req ) { MPI_Request_free( req ); delete req; } );
     MPI_Send_init( buf, N, MPI_DOUBLE, proc, tag, communicator, obj.get() );
     return obj;
 }
 template<>
 std::shared_ptr<MPI_Request> MPI::Irecv_init<double>(double *buf, int N, int proc, int tag) const
 {
-    std::shared_ptr<MPI_Request> obj(new MPI_Request, []( MPI_Request *req ) { MPI_Request_free( req ); } );
+    std::shared_ptr<MPI_Request> obj( new MPI_Request, []( MPI_Request *req ) { MPI_Request_free( req ); delete req; } );
     MPI_Recv_init( buf, N, MPI_DOUBLE, proc, tag, communicator, obj.get() );
     return obj;
 }
