@@ -61,6 +61,9 @@ void ScaLBL_IonModel::ReadParams(string filename, vector<int> &num_iter) {
     Ex_dummy = 0.0;        //for debugging, unit [V/m]
     Ey_dummy = 0.0;        //for debugging, unit [V/m]
     Ez_dummy = 0.0;        //for debugging, unit [V/m]
+    
+    sprintf(LocalRankString, "%05d", rank);
+    sprintf(LocalRestartFile, "%s%s", "Restart.", LocalRankString);
     //--------------------------------------------------------------------------//
 
     BoundaryConditionSolid = 0;
@@ -329,6 +332,9 @@ void ScaLBL_IonModel::ReadParams(string filename) {
     Ex_dummy = 0.0;        //for debugging, unit [V/m]
     Ey_dummy = 0.0;        //for debugging, unit [V/m]
     Ez_dummy = 0.0;        //for debugging, unit [V/m]
+    
+    sprintf(LocalRankString, "%05d", rank);
+    sprintf(LocalRestartFile, "%s%s", "Restart.", LocalRankString);
     //--------------------------------------------------------------------------//
 
     // Read domain parameters
@@ -344,6 +350,9 @@ void ScaLBL_IonModel::ReadParams(string filename) {
     //}
     if (ion_db->keyExists("tolerance")) {
         tolerance = ion_db->getScalar<double>("tolerance");
+    }
+    if (ion_db->keyExists("Restart")) {
+        Restart = ion_db->getScalar<bool>("Restart");
     }
     if (ion_db->keyExists("temperature")) {
         T = ion_db->getScalar<int>("temperature");
@@ -1114,6 +1123,43 @@ void ScaLBL_IonModel::Initialize() {
                                  IonConcentration[ic], Np);
         }
     }
+    /** RESTART **/
+    if (Restart == true) {
+        if (rank == 0) {
+            printf("   ION MODEL: Reading restart file! \n");
+        }
+        double*cDist;
+        double *Ci_host;
+        cDist = new double[7 * number_ion_species * Np];
+        Ci_host = new double[number_ion_species * Np];        
+        
+        ifstream File(LocalRestartFile, ios::binary);
+        int idx;
+        double value,sum;
+        // Read the distributions
+    	for (size_t ic = 0; ic < number_ion_species; ic++){
+    		for (int n = 0; n < Np; n++) {
+    			sum = 0.0;
+    			for (int q = 0; q < 7; q++) {
+        			File.read((char *)&value, sizeof(value));
+        			cDist[ic * q * Np + n] = value;
+        			sum += value;
+        		}
+        		Ci_host[ic * Np + n] = sum;
+        	}
+        }
+        File.close();
+
+        // Copy the restart data to the GPU
+        ScaLBL_CopyToDevice(Ci, Ci_host, Np * number_ion_species* sizeof(double));
+        ScaLBL_CopyToDevice(fq, cDist, 7 * Np * number_ion_species *sizeof(double));
+        ScaLBL_Comm->Barrier();
+        comm.barrier();
+        delete[] Ci_host;
+        delete[] cDist;
+    }
+    /** END RESTART **/
+    
     if (rank == 0)
         printf("LB Ion Solver: initializing charge density\n");
     for (size_t ic = 0; ic < number_ion_species; ic++) {
@@ -1594,6 +1640,32 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
     //if (rank==0) printf("********************************************************\n");
 }
 
+void ScaLBL_IonModel::Checkpoint(){
+
+	if (rank == 0) {
+		printf("   ION MODEL: Writing restart file! \n");
+	}
+	int idx;
+	double value,sum;
+	double*cDist;
+	cDist = new double[7 * number_ion_species * Np];
+	ScaLBL_CopyToHost(cDist, fq, 7 * Np * number_ion_species *sizeof(double));
+
+	ofstream File(LocalRestartFile, ios::binary);
+	for (size_t ic = 0; ic < number_ion_species; ic++){
+		for (int n = 0; n < Np; n++) {
+			// Write the distributions
+			for (int q = 0; q < 7; q++) {
+				value = cDist[ic * q * Np + n];
+				File.write((char *)&value, sizeof(value));
+			}
+		}
+	}
+	File.close();
+
+	delete[] cDist;
+
+}
 
 void ScaLBL_IonModel::getIonConcentration(DoubleArray &IonConcentration,
                                           const size_t ic) {

@@ -49,9 +49,10 @@ public:
     void getIonFluxElectrical_debug(int timestep);
     void DummyFluidVelocity();
     void DummyElectricField();
+    void Checkpoint();
     double CalIonDenConvergence(vector<double> &ci_avg_previous);
 
-    //bool Restart,pBC;
+    bool Restart;
     int timestep;
     vector<int> timestepMax;
     int BoundaryConditionSolid;

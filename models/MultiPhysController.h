@@ -38,6 +38,7 @@ public:
     vector<int> num_iter_Ion;
     int analysis_interval;
     int visualization_interval;
+    int restart_interval;
     double tolerance;
     double time_conv_max;
     double time_conv_MainLoop;

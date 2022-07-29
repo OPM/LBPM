@@ -40,9 +40,11 @@ public:
     void getElectricField(DoubleArray &Values_x, DoubleArray &Values_y,
                           DoubleArray &Values_z);
     void getElectricField_debug(int timestep);
+    void Checkpoint();
+
     void DummyChargeDensity(); //for debugging
 
-    //bool Restart,pBC;
+    bool Restart;
     int timestep, timestepMax;
     int analysis_interval;
 	int BoundaryConditionInlet;

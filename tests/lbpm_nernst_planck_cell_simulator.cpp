@@ -149,6 +149,11 @@ int main(int argc, char **argv)
 				//IonModel.getIonConcentration_debug(timestep);
 
 			}
+			
+			if (timestep%Study.restart_interval==0){
+				IonModel.Checkpoint();
+				PoissonSolver.Checkpoint();
+			}
 		}
 
 		if (rank==0) printf("Save simulation raw data at maximum timestep\n");

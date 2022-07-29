@@ -16,6 +16,7 @@ void ScaLBL_Multiphys_Controller::ReadParams(string filename) {
     // Default parameters
     timestepMax = 10000;
     Restart = false;
+    restart_interval = 100000;
     num_iter_Stokes = 1;
     num_iter_Ion.push_back(1);
     analysis_interval = 500;
@@ -34,6 +35,9 @@ void ScaLBL_Multiphys_Controller::ReadParams(string filename) {
     if (study_db->keyExists("visualization_interval")) {
         visualization_interval =
             study_db->getScalar<int>("visualization_interval");
+    }
+    if (study_db->keyExists("restart_interval")) {
+    	restart_interval = study_db->getScalar<int>("restart_interval");
     }
     if (study_db->keyExists("tolerance")) {
         tolerance = study_db->getScalar<double>("tolerance");

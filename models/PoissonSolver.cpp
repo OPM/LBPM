@@ -66,8 +66,12 @@ void ScaLBL_Poisson::ReadParams(string filename){
     TestPeriodicTime = 1.0;//unit: [sec]
     TestPeriodicTimeConv = 0.01; //unit [sec/lt]
     TestPeriodicSaveInterval = 0.1; //unit [sec]
+    Restart = "false";
 
 	// LB-Poisson Model parameters
+	if (electric_db->keyExists( "Restart" )){
+        Restart = electric_db->getScalar<bool>("Restart");
+	}
 	if (electric_db->keyExists( "timestepMax" )){
 		timestepMax = electric_db->getScalar<int>( "timestepMax" );
 	}
@@ -134,6 +138,10 @@ void ScaLBL_Poisson::ReadParams(string filename){
     //Re-calcualte model parameters if user updates input
     epsilon0_LB = epsilon0*(h*1.0e-6);//unit:[C/(V*lu)]
     epsilon_LB = epsilon0_LB*epsilonR;//electric permittivity 
+    
+    /* restart string */
+    sprintf(LocalRankString, "%05d", rank);
+    sprintf(LocalRestartFile, "%s%s", "Psi.", LocalRankString);
 
 	if (rank==0) printf("***********************************************************************************\n");
 	if (rank==0) printf("LB-Poisson Solver: steady-state MaxTimeStep = %i; steady-state tolerance = %.3g \n", timestepMax,tolerance);
@@ -203,7 +211,7 @@ void ScaLBL_Poisson::ReadInput(){
     
     sprintf(LocalRankString,"%05d",Dm->rank());
     sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
-    sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
+    sprintf(LocalRestartFile,"%s%s","Psi.",LocalRankString);
 
     
     if (domain_db->keyExists( "Filename" )){
@@ -566,6 +574,21 @@ void ScaLBL_Poisson::Potential_Init(double *psi_init){
     else{//mixed periodic and non-periodic BCs are not supported!
         ERROR("Error: check the type of inlet and outlet boundary condition! Mixed periodic and non-periodic BCs are found!\n");
     }
+    /** RESTART **/
+     if (Restart == true) {
+         if (rank == 0) {
+             printf("   POISSON MODEL: Reading restart file! \n");
+         }
+         ifstream File(LocalRestartFile, ios::binary);
+         double value;
+         // Read the distributions
+         for (int n = 0; n < Nx*Ny*Nz; n++) {
+        	 File.read((char *)&value, sizeof(value));
+        	 psi_init[ n] = value;
+         }
+         File.close();
+     }
+     /** END RESTART **/
 }
 
 double ScaLBL_Poisson::getBoundaryVoltagefromPeriodicBC(double V0, double freq, double phase_shift, int time_step){
@@ -1038,6 +1061,27 @@ void ScaLBL_Poisson::SolvePoissonAAeven(double *ChargeDensity, bool UseSlippingV
         
         //ScaLBL_Comm->SolidDirichletAndNeumannD3Q7(fq, Psi, Psi_BCLabel);
     }
+}
+
+void ScaLBL_Poisson::Checkpoint(){
+
+	if (rank == 0) {
+		printf("   POISSON MODEL: Writing restart file! \n");
+	}
+	double value;
+	double *cPsi;
+	cPsi = new double[Nx*Ny*Nz];
+	ScaLBL_CopyToHost(cPsi, Psi, Nx*Ny*Nz *sizeof(double));
+
+	ofstream File(LocalRestartFile, ios::binary);
+	for (int n = 0; n < Nx*Ny*Nz; n++) {
+		value = cPsi[n];
+		File.write((char *)&value, sizeof(value));
+	}
+
+	File.close();
+
+	delete[] cPsi;
 }
 
 void ScaLBL_Poisson::DummyChargeDensity(){
