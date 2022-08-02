@@ -1142,7 +1142,7 @@ void ScaLBL_IonModel::Initialize() {
     			sum = 0.0;
     			for (int q = 0; q < 7; q++) {
         			File.read((char *)&value, sizeof(value));
-        			cDist[ic * q * Np + n] = value;
+        			cDist[ic * 7 * Np +  q * Np + n] = value;
         			sum += value;
         		}
         		Ci_host[ic * Np + n] = sum;
@@ -1656,7 +1656,7 @@ void ScaLBL_IonModel::Checkpoint(){
 		for (int n = 0; n < Np; n++) {
 			// Write the distributions
 			for (int q = 0; q < 7; q++) {
-				value = cDist[ic * q * Np + n];
+				value = cDist[ic * Np * 7 + q * Np + n];
 				File.write((char *)&value, sizeof(value));
 			}
 		}

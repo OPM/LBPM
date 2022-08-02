@@ -584,7 +584,7 @@ void ScaLBL_Poisson::Potential_Init(double *psi_init){
          // Read the distributions
          for (int n = 0; n < Nx*Ny*Nz; n++) {
         	 File.read((char *)&value, sizeof(value));
-        	 psi_init[ n] = value;
+        	 psi_init[n] = value;
          }
          File.close();
      }
