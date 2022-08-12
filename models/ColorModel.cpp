@@ -828,209 +828,228 @@ double ScaLBL_ColorModel::Run(int returntime) {
             }
 
             if (TRIGGER_FORCE_RESCALE) {
-                RESCALE_FORCE = false;
-                TRIGGER_FORCE_RESCALE = false;
-                double RESCALE_FORCE_FACTOR = capillary_number / Ca;
-                if (RESCALE_FORCE_FACTOR > 2.0)
-                    RESCALE_FORCE_FACTOR = 2.0;
-                if (RESCALE_FORCE_FACTOR < 0.5)
-                    RESCALE_FORCE_FACTOR = 0.5;
-                Fx *= RESCALE_FORCE_FACTOR;
-                Fy *= RESCALE_FORCE_FACTOR;
-                Fz *= RESCALE_FORCE_FACTOR;
-                force_mag = sqrt(Fx * Fx + Fy * Fy + Fz * Fz);
-                if (force_mag > 1e-3) {
-                    Fx *= 1e-3 / force_mag; // impose ceiling for stability
-                    Fy *= 1e-3 / force_mag;
-                    Fz *= 1e-3 / force_mag;
-                }
-                if (rank == 0)
-                    printf("    -- adjust force by factor %f \n ",
-                           capillary_number / Ca);
-                Averages->SetParams(rhoA, rhoB, tauA, tauB, Fx, Fy, Fz, alpha,
-                                    beta);
-                color_db->putVector<double>("F", {Fx, Fy, Fz});
+            	RESCALE_FORCE = false;
+            	TRIGGER_FORCE_RESCALE = false;
+            	double RESCALE_FORCE_FACTOR = capillary_number / Ca;
+            	if (RESCALE_FORCE_FACTOR > 2.0)
+            		RESCALE_FORCE_FACTOR = 2.0;
+            	if (RESCALE_FORCE_FACTOR < 0.5)
+            		RESCALE_FORCE_FACTOR = 0.5;
+            	Fx *= RESCALE_FORCE_FACTOR;
+            	Fy *= RESCALE_FORCE_FACTOR;
+            	Fz *= RESCALE_FORCE_FACTOR;
+            	force_mag = sqrt(Fx * Fx + Fy * Fy + Fz * Fz);
+            	if (force_mag > 1e-3) {
+            		Fx *= 1e-3 / force_mag; // impose ceiling for stability
+            		Fy *= 1e-3 / force_mag;
+            		Fz *= 1e-3 / force_mag;
+            	}
+            	if (rank == 0)
+            		printf("    -- adjust force by factor %f \n ",
+            				capillary_number / Ca);
+            	Averages->SetParams(rhoA, rhoB, tauA, tauB, Fx, Fy, Fz, alpha,
+            			beta);
+            	color_db->putVector<double>("F", {Fx, Fy, Fz});
             }
             if (isSteady) {
-                Averages->Full();
-                Averages->Write(timestep);
-                analysis.WriteVisData(timestep, current_db, *Averages, Phi,
-                                      Pressure, Velocity, fq, Den);
-                analysis.finish();
+            	Averages->Full();
+            	Averages->Write(timestep);
+            	analysis.WriteVisData(timestep, current_db, *Averages, Phi,
+            			Pressure, Velocity, fq, Den);
+            	analysis.finish();
 
-                if (rank == 0) {
-                    printf("** WRITE STEADY POINT *** ");
-                    printf("Ca = %f, (previous = %f) \n", Ca, Ca_previous);
-                    double h = Dm->voxel_length;
-                    // pressures
-                    double pA = Averages->gnb.p;
-                    double pB = Averages->gwb.p;
-                    double pAc = Averages->gnc.p;
-                    double pBc = Averages->gwc.p;
-                    double pAB = (pA - pB) / (h * 6.0 * alpha);
-                    double pAB_connected = (pAc - pBc) / (h * 6.0 * alpha);
-                    // connected contribution
-                    double Vol_nc = Averages->gnc.V / Dm->Volume;
-                    double Vol_wc = Averages->gwc.V / Dm->Volume;
-                    double Vol_nd = Averages->gnd.V / Dm->Volume;
-                    double Vol_wd = Averages->gwd.V / Dm->Volume;
-                    double Mass_n = Averages->gnc.M + Averages->gnd.M;
-                    double Mass_w = Averages->gwc.M + Averages->gwd.M;
-                    double vAc_x = Averages->gnc.Px / Mass_n;
-                    double vAc_y = Averages->gnc.Py / Mass_n;
-                    double vAc_z = Averages->gnc.Pz / Mass_n;
-                    double vBc_x = Averages->gwc.Px / Mass_w;
-                    double vBc_y = Averages->gwc.Py / Mass_w;
-                    double vBc_z = Averages->gwc.Pz / Mass_w;
-                    // disconnected contribution
-                    double vAd_x = Averages->gnd.Px / Mass_n;
-                    double vAd_y = Averages->gnd.Py / Mass_n;
-                    double vAd_z = Averages->gnd.Pz / Mass_n;
-                    double vBd_x = Averages->gwd.Px / Mass_w;
-                    double vBd_y = Averages->gwd.Py / Mass_w;
-                    double vBd_z = Averages->gwd.Pz / Mass_w;
-                    
-                    /* contribution from water films */
-                    double water_film_flow_rate =
-                    		Averages->gwb.V * (Averages->giwn.Pwx * dir_x + Averages->giwn.Pwy * dir_y + Averages->giwn.Pwz * dir_z) /
-                    		Averages->gwb.M / Dm->Volume;
-                    double not_water_film_flow_rate =
-                    		Averages->gnb.V * (Averages->giwn.Pnx * dir_x + Averages->giwn.Pny * dir_y + Averages->giwn.Pnz * dir_z) /
-                    		Averages->gnb.M / Dm->Volume;
+            	if (rank == 0) {
+            		printf("** WRITE STEADY POINT *** ");
+            		printf("Ca = %f, (previous = %f) \n", Ca, Ca_previous);
+            		double h = Dm->voxel_length;
+            		// pressures
+            		double pA = Averages->gnb.p;
+            		double pB = Averages->gwb.p;
+            		double pAc = Averages->gnc.p;
+            		double pBc = Averages->gwc.p;
+            		double pAB = (pA - pB) / (h * 6.0 * alpha);
+            		double pAB_connected = (pAc - pBc) / (h * 6.0 * alpha);
+            		// connected contribution
+            		double Vol_nc = Averages->gnc.V / Dm->Volume;
+            		double Vol_wc = Averages->gwc.V / Dm->Volume;
+            		double Vol_nd = Averages->gnd.V / Dm->Volume;
+            		double Vol_wd = Averages->gwd.V / Dm->Volume;
+            		double Mass_n = Averages->gnc.M + Averages->gnd.M;
+            		double Mass_w = Averages->gwc.M + Averages->gwd.M;
+            		double vAc_x = Averages->gnc.Px / Mass_n;
+            		double vAc_y = Averages->gnc.Py / Mass_n;
+            		double vAc_z = Averages->gnc.Pz / Mass_n;
+            		double vBc_x = Averages->gwc.Px / Mass_w;
+            		double vBc_y = Averages->gwc.Py / Mass_w;
+            		double vBc_z = Averages->gwc.Pz / Mass_w;
+            		// disconnected contribution
+            		double vAd_x = Averages->gnd.Px / Mass_n;
+            		double vAd_y = Averages->gnd.Py / Mass_n;
+            		double vAd_z = Averages->gnd.Pz / Mass_n;
+            		double vBd_x = Averages->gwd.Px / Mass_w;
+            		double vBd_y = Averages->gwd.Py / Mass_w;
+            		double vBd_z = Averages->gwd.Pz / Mass_w;
 
-                    double flow_rate_A_connected =
-                        Vol_nc *
-                        (vAc_x * dir_x + vAc_y * dir_y + vAc_z * dir_z);
-                    double flow_rate_B_connected =
-                        Vol_wc *
-                        (vBc_x * dir_x + vBc_y * dir_y + vBc_z * dir_z);
-                    double flow_rate_A_disconnected =
-                        (Vol_nd) *
-                        (vAd_x * dir_x + vAd_y * dir_y + vAd_z * dir_z);
-                    double flow_rate_B_disconnected =
-                        (Vol_wd) *
-                        (vBd_x * dir_x + vBd_y * dir_y + vBd_z * dir_z);
+            		/* contribution from water films */
+            		double water_film_flow_rate =
+            				Averages->gwb.V * (Averages->giwn.Pwx * dir_x + Averages->giwn.Pwy * dir_y + Averages->giwn.Pwz * dir_z) /
+            				Averages->gwb.M / Dm->Volume;
+            		double not_water_film_flow_rate =
+            				Averages->gnb.V * (Averages->giwn.Pnx * dir_x + Averages->giwn.Pny * dir_y + Averages->giwn.Pnz * dir_z) /
+            				Averages->gnb.M / Dm->Volume;
 
-                    double kAeff_connected =
-                        h * h * muA * flow_rate_A_connected / (force_mag);
-                    double kBeff_connected =
-                        h * h * muB * flow_rate_B_connected / (force_mag);
+            		double flow_rate_A_connected =
+            				Vol_nc *
+            				(vAc_x * dir_x + vAc_y * dir_y + vAc_z * dir_z);
+            		double flow_rate_B_connected =
+            				Vol_wc *
+            				(vBc_x * dir_x + vBc_y * dir_y + vBc_z * dir_z);
+            		double flow_rate_A_disconnected =
+            				(Vol_nd) *
+            				(vAd_x * dir_x + vAd_y * dir_y + vAd_z * dir_z);
+            		double flow_rate_B_disconnected =
+            				(Vol_wd) *
+            				(vBd_x * dir_x + vBd_y * dir_y + vBd_z * dir_z);
 
-                    // Saturation normalized effective permeability to account for decoupled phases and
-                    // effective porosity.
-                    double kAeff_connected_low =
-                        (1.0 - current_saturation) * h * h * muA *
-                        flow_rate_A_connected / (force_mag);
-                    double kBeff_connected_low = current_saturation * h * h *
-                                                 muB * flow_rate_B_connected /
-                                                 (force_mag);
+            		double kAeff_connected =
+            				h * h * muA * Mask->Porosity()* flow_rate_A_connected / (force_mag);
+            		double kBeff_connected =
+            				h * h * muB * Mask->Porosity()* flow_rate_B_connected / (force_mag);
 
-                    double kAeff_disconnected =
-                        h * h * muA * flow_rate_A_disconnected / (force_mag);
-                    double kBeff_disconnected =
-                        h * h * muB * flow_rate_B_disconnected / (force_mag);
+            		// Saturation normalized effective permeability to account for decoupled phases and
+            		// effective porosity.
+            		double kAeff_connected_low =
+            				(1.0 - current_saturation) * h * h * muA* Mask->Porosity() *
+            				flow_rate_A_connected / (force_mag);
+            		double kBeff_connected_low = current_saturation * h * h *
+            				muB * Mask->Porosity()* flow_rate_B_connected /
+            				(force_mag);
 
-                    double kAeff = h * h * muA * (flow_rate_A) / (force_mag);
-                    double kBeff = h * h * muB * (flow_rate_B) / (force_mag);
+            		double kAeff_disconnected =
+            				h * h * muA * Mask->Porosity()* flow_rate_A_disconnected / (force_mag);
+            		double kBeff_disconnected =
+            				h * h * muB * Mask->Porosity()* flow_rate_B_disconnected / (force_mag);
 
-                    
-                    /* not counting films */
-                    double krnf = kAeff - h * h * muA * not_water_film_flow_rate / force_mag;
-                    double krwf = kBeff - h * h * muB * water_film_flow_rate / force_mag;
+            		double kAeff = h * h * muA* Mask->Porosity() * (flow_rate_A) / (force_mag);
+            		double kBeff = h * h * muB* Mask->Porosity() * (flow_rate_B) / (force_mag);
 
-                    // Saturation normalized effective permeability to account for decoupled phases and
-                    // effective porosity.
-                    double kAeff_low = (1.0 - current_saturation) * h * h *
-                                       muA * (flow_rate_A) / (force_mag);
-                    double kBeff_low = current_saturation * h * h * muB *
-                                       (flow_rate_B) / (force_mag);
 
-                    double viscous_pressure_drop =
-                        (rhoA * volA + rhoB * volB) * force_mag;
-                    double Mobility = muA / muB; // visc contrast
-                    double eff_pres =
-                        1.0 / (kAeff + kBeff); // effective pressure drop
+            		/* not counting films */
+            		double krnf = kAeff - h * h * muA* Mask->Porosity() * not_water_film_flow_rate / force_mag;
+            		double krwf = kBeff - h * h * muB* Mask->Porosity() * water_film_flow_rate / force_mag;
 
-                    bool WriteHeader = false;
-                    FILE *kr_log_file = fopen("relperm.csv", "r");
-                    if (kr_log_file != NULL)
-                        fclose(kr_log_file);
-                    else
-                        WriteHeader = true;
-                    kr_log_file = fopen("relperm.csv", "a");
-                    if (WriteHeader) {
-                        fprintf(kr_log_file, "timesteps sat.water ");
-                        fprintf(kr_log_file, "eff.perm.oil.upper.bound "
-                                             "eff.perm.water.upper.bound ");
-                        fprintf(kr_log_file, "eff.perm.oil.film "
-                                             "eff.perm.water.film ");
-                        fprintf(kr_log_file, "eff.perm.oil.lower.bound "
-                                             "eff.perm.water.lower.bound ");
-                        fprintf(kr_log_file,
-                                "eff.perm.oil.connected.upper.bound "
-                                "eff.perm.water.connected.upper.bound ");
-                        fprintf(kr_log_file,
-                                "eff.perm.oil.connected.lower.bound "
-                                "eff.perm.water.connected.lower.bound ");
-                        fprintf(kr_log_file, "eff.perm.oil.disconnected "
-                                             "eff.perm.water.disconnected ");
-                        fprintf(kr_log_file,
-                                "cap.pressure cap.pressure.connected "
-                                "pressure.drop Ca M eff.pressure\n");
-                    }
-                    fprintf(kr_log_file, "%i %.5g ", CURRENT_TIMESTEP,
-                            current_saturation);
-                    fprintf(kr_log_file, "%.5g %.5g ", kAeff, kBeff);
-                    fprintf(kr_log_file, "%.5g %.5g ", krnf, krwf);
-                    fprintf(kr_log_file, "%.5g %.5g ", kAeff_low, kBeff_low);
-                    fprintf(kr_log_file, "%.5g %.5g ", kAeff_connected,
-                            kBeff_connected);
-                    fprintf(kr_log_file, "%.5g %.5g ", kAeff_connected_low,
-                            kBeff_connected_low);
-                    fprintf(kr_log_file, "%.5g %.5g ", kAeff_disconnected,
-                            kBeff_disconnected);
-                    fprintf(kr_log_file, "%.5g %.5g %.5g %.5g %.5g ", pAB,
-                            pAB_connected, viscous_pressure_drop, Ca, Mobility);
-                    fprintf(kr_log_file, "%.5g\n", eff_pres);
-                    fclose(kr_log_file);
+            		/* not counting films */
+            		double krnf_low = (1.0 - current_saturation) * krnf;
+            		double krwf_low = current_saturation * krwf;
 
-                    if (WettingConvention == "SCAL"){
-                    	WriteHeader = false;
-                    	FILE *scal_log_file = fopen("SCAL.csv", "r");
-                    	if (scal_log_file != NULL)
-                    		fclose(scal_log_file);
-                    	else
-                    		WriteHeader = true;
-                    	scal_log_file = fopen("SCAL.csv", "a");
-                    	if (WriteHeader) {
-                    		fprintf(scal_log_file, "timesteps sat.water ");
-                    		fprintf(scal_log_file, "eff.perm.oil.upper.bound "
-                    				"eff.perm.water.upper.bound ");
-                    		fprintf(scal_log_file,
-                    				"eff.perm.oil.lower.bound "
-                    				"eff.perm.water.lower.bound ");
-                    		fprintf(scal_log_file, "eff.perm.oil.disconnected "
-                    				"eff.perm.water.disconnected ");
-                    		fprintf(scal_log_file,
-                    				"cap.pressure cap.pressure.connected "
-                    				"Ca eff.pressure\n");
-                    	}
-                    	fprintf(scal_log_file, "%i %.5g ", CURRENT_TIMESTEP,
-                    			current_saturation);
-                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_low, kBeff_low);
-                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_connected_low,
-                    			kBeff_connected_low);
-                    	fprintf(scal_log_file, "%.5g %.5g ", kAeff_disconnected,
-                    			kBeff_disconnected);
-                    	fprintf(scal_log_file, "%.5g %.5g %.5g ", pAB,
-                    			pAB_connected, Ca);
-                    	fprintf(scal_log_file, "%.5g\n", eff_pres);
-                    	fclose(scal_log_file);
+            		// Saturation normalized effective permeability to account for decoupled phases and
+            		// effective porosity.
+            		double kAeff_low = (1.0 - current_saturation) * h * h *
+            				muA* Mask->Porosity() * (flow_rate_A) / (force_mag);
+            		double kBeff_low = current_saturation * h * h * muB* Mask->Porosity() *
+            				(flow_rate_B) / (force_mag);
 
-                    }
+            		double viscous_pressure_drop =
+            				(rhoA * volA + rhoB * volB) * force_mag;
+            		double Mobility = muA / muB; // visc contrast
+            		double eff_pres =
+            				1.0 / (kAeff + kBeff); // effective pressure drop
 
-                    printf("  Measured capillary number %f \n ", Ca);
-                }
+            		bool WriteHeader = false;
+            		FILE *kr_log_file = fopen("relperm.csv", "r");
+            		if (kr_log_file != NULL)
+            			fclose(kr_log_file);
+            		else
+            			WriteHeader = true;
+            		kr_log_file = fopen("relperm.csv", "a");
+            		if (WriteHeader) {
+            			fprintf(kr_log_file, "timesteps sat.water ");
+            			fprintf(kr_log_file, "eff.perm.oil.upper.bound "
+            					"eff.perm.water.upper.bound ");
+            			fprintf(kr_log_file, "eff.perm.oil.film "
+            					"eff.perm.water.film ");
+            			fprintf(kr_log_file, "eff.perm.oil.film.lower.bound "
+            					"eff.perm.water.film.lower.bound ");
+            			fprintf(kr_log_file, "eff.perm.oil.lower.bound "
+            					"eff.perm.water.lower.bound ");
+            			fprintf(kr_log_file,
+            					"eff.perm.oil.connected.upper.bound "
+            					"eff.perm.water.connected.upper.bound ");
+            			fprintf(kr_log_file,
+            					"eff.perm.oil.connected.lower.bound "
+            					"eff.perm.water.connected.lower.bound ");
+            			fprintf(kr_log_file, "eff.perm.oil.disconnected "
+            					"eff.perm.water.disconnected ");
+            			fprintf(kr_log_file,
+            					"cap.pressure cap.pressure.connected "
+            					"pressure.drop Ca M eff.pressure\n");
+            		}
+            		fprintf(kr_log_file, "%i %.5g ", CURRENT_TIMESTEP,
+            				current_saturation);
+            		fprintf(kr_log_file, "%.5g %.5g ", kAeff, kBeff);
+            		fprintf(kr_log_file, "%.5g %.5g ", krnf, krwf);
+            		fprintf(kr_log_file, "%.5g %.5g ", krnf_low, krwf_low);
+            		fprintf(kr_log_file, "%.5g %.5g ", kAeff_low, kBeff_low);
+            		fprintf(kr_log_file, "%.5g %.5g ", kAeff_connected,
+            				kBeff_connected);
+            		fprintf(kr_log_file, "%.5g %.5g ", kAeff_connected_low,
+            				kBeff_connected_low);
+            		fprintf(kr_log_file, "%.5g %.5g ", kAeff_disconnected,
+            				kBeff_disconnected);
+            		fprintf(kr_log_file, "%.5g %.5g %.5g %.5g %.5g ", pAB,
+            				pAB_connected, viscous_pressure_drop, Ca, Mobility);
+            		fprintf(kr_log_file, "%.5g\n", eff_pres);
+            		fclose(kr_log_file);
+
+            		if (WettingConvention == "SCAL"){
+            			WriteHeader = false;
+            			FILE *scal_log_file = fopen("SCAL.csv", "r");
+            			if (scal_log_file != NULL)
+            				fclose(scal_log_file);
+            			else
+            				WriteHeader = true;
+            			scal_log_file = fopen("SCAL.csv", "a");
+            			if (WriteHeader) {
+            				fprintf(scal_log_file, "timesteps "
+            						"sat.water ");
+            				fprintf(scal_log_file, "eff.perm.oil.upper.bound "
+            						"eff.perm.water.upper.bound ");
+            				fprintf(scal_log_file,
+            						"eff.perm.oil.lower.bound "
+            						"eff.perm.water.lower.bound ");
+            				fprintf(scal_log_file, "eff.perm.oil.disconnected "
+            						"eff.perm.water.disconnected ");
+            				fprintf(scal_log_file,
+            						"eff.perm.oil.film.lower.bound "
+            						"eff.perm.water.film.lower.bound ");
+            				fprintf(scal_log_file,
+            						"cap.pressure "
+            						"cap.pressure.connected "
+            						"Ca " 
+            						"eff.pressure\n");
+            			}
+
+            			// Adjust the effperms with porosity term to make the nominal
+            			// values closer to measured data
+            			fprintf(scal_log_file, "%i %.5g ", CURRENT_TIMESTEP,
+            					current_saturation);
+            			fprintf(scal_log_file, "%.5g %.5g ", kAeff_low  * mDarcy_converter,
+            					kBeff_low * mDarcy_converter);
+            			fprintf(scal_log_file, "%.5g %.5g ", kAeff_connected_low  * mDarcy_converter,
+            					kBeff_connected_low  * mDarcy_converter);
+            			fprintf(scal_log_file, "%.5g %.5g ", kAeff_disconnected  * mDarcy_converter,
+            					kBeff_disconnected  * mDarcy_converter);
+            			fprintf(scal_log_file, "%.5g %.5g ", krnf_low * mDarcy_converter,
+            					krwf_low * mDarcy_converter);
+            			fprintf(scal_log_file, "%.5g %.5g %.5g ", pAB,
+            					pAB_connected, Ca);
+            			fprintf(scal_log_file, "%.5g\n", eff_pres);
+            			fclose(scal_log_file);
+
+            		}
+
+            		printf("  Measured capillary number %f \n ", Ca);
+            	}
                 if (SET_CAPILLARY_NUMBER) {
                     Fx *= capillary_number / Ca;
                     Fy *= capillary_number / Ca;
