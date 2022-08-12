@@ -411,7 +411,7 @@ void SubPhase::Basic() {
             dir_z = 1.0;
             force_mag = 1.0;
         }
-        double Porosity = (gwb.V + gnb.V)/Dm->Volume();
+        double Porosity = (gwb.V + gnb.V)/Dm->Volume;
         double saturation = gwb.V / (gwb.V + gnb.V);
         double water_flow_rate =
             gwb.V * (gwb.Px * dir_x + gwb.Py * dir_y + gwb.Pz * dir_z) / gwb.M /
