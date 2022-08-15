@@ -1,30 +1,40 @@
-module load cmake
-module load llvm-amdgpu
-module load hip
+module load PrgEnv-gnu
+module load rocm/4.2.0
+module load cray-mpich
+module load cray-hdf5-parallel
+#module load craype-accel-amd-gfx908
 
 
-export TPL_DIR=/gpfs/alpine/stf006/proj-shared/mbt/spock/install
+## These must be set before compiling so the executable picks up GTL
+export PE_MPICH_GTL_DIR_amd_gfx908="-L${CRAY_MPICH_ROOTDIR}/gtl/lib"
+
+export PE_MPICH_GTL_LIBS_amd_gfx908="-lmpi_gtl_hsa"
+
+
+# Need a new version of cmake
+export CMAKE_DIR=/gpfs/alpine/csc380/proj-shared/LBPM/cmake-3.21.0/bin
 
 
 # configure
 rm -rf CMake*
-cmake                                           \
+${CMAKE_DIR}/cmake                              \
     -D CMAKE_BUILD_TYPE:STRING=Release          \
-    -D CMAKE_C_COMPILER:PATH=cc                 \
+    -D CMAKE_C_COMPILER:PATH=cc               \
     -D CMAKE_CXX_COMPILER:PATH=CC               \
     -D CMAKE_CXX_STANDARD=14                    \
+    -D DISABLE_GOLD:BOOL=TRUE                   \
+    -D DISABLE_LTO:BOOL=TRUE                    \
+    -D LINK_LIBRARIES="${ROCM_PATH}/lib/libamdhip64.so;${CRAY_MPICH_ROOTDIR}/gtl/lib/libmpi_gtl_hsa.so" \
     -D USE_HIP=1                                \
-        -D LINK_LIBRARIES=${HIP_PATH}/lib/libamdhip64.so \
-    -D USE_CUDA=0                               \
-        -D CMAKE_CUDA_FLAGS="-arch sm_70 -Xptxas=-v -Xptxas -dlcm=cg -lineinfo" \
-        -D CMAKE_CUDA_HOST_COMPILER="gcc"       \
-    -D USE_MPI=0                                \
+        -D CMAKE_HIP_COMPILER_TOOLKIT_ROOT=$ROCM_PATH/hip \
+    -D USE_MPI=1                                \
+    -D MPI_SKIP_SEARCH=1                        \
+    -D MPIEXEC="srun"                           \
     -D USE_HDF5=1                               \
-        -D HDF5_DIRECTORY="${TPL_DIR}/hdf5"     \
-     -D USE_SILO=0                              \
-        -D SILO_DIRECTORY="${TPL_DIR}/silo"     \
-    -D USE_DOXYGEN:BOOL=false		        \
+        -D HDF5_DIRECTORY="${HDF5_DIR}"         \
+    -D USE_SILO=0                               \
     -D USE_TIMER=0			        \
-    ~/repos/LBPM-WIA
+    -D USE_DOXYGEN:BOOL=false		        \
+    ~/LBPM-WIA
 
 

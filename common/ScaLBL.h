@@ -217,6 +217,25 @@ extern "C" void ScaLBL_D3Q19_AAeven_BGK(double *dist, int start, int finish, int
 */
 extern "C" void ScaLBL_D3Q19_AAodd_BGK(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
 
+// MEMBRANE MODEL
+
+extern "C" void ScaLBL_D3Q7_Membrane_IonTransport(int *membrane, double *coef, double *dist, double *Den, int memLinks, int Np);
+
+extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef(int *membrane, int *Map, double *Distance, double *Psi, double *coef,
+		double Threshold, double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn, double ThresholdMassFractionOut,
+		int memLinks, int Nx, int Ny, int Nz, int Np);
+
+extern "C" void ScaLBL_D3Q7_Membrane_AssignLinkCoef_halo(
+		const int Cqx, const int Cqy, int const Cqz, 
+		int *Map, double *Distance, double *Psi, double Threshold, 
+		double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn, double ThresholdMassFractionOut,
+		int *d3q7_recvlist, int *d3q7_linkList, double *coef, int start, int nlinks, int count,
+		const int N, const int Nx, const int Ny, const int Nz);
+
+extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q,  
+		int *d3q7_recvlist, double *recvbuf, int count,
+		double *dist, int N,  double *coef);
+
 // GREYSCALE MODEL (Single-component)
 
 extern "C" void ScaLBL_D3Q19_GreyIMRT_Init(double *Dist, int Np, double Den);
@@ -262,12 +281,21 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *d_neighborList, int *M
 //extern "C" void ScaLBL_Update_GreyscalePotential(int *Map, double *Phi, double *Psi, double *Poro, double *Perm, double alpha, double W, 
 //		int start, int finish, int Np);
 
+extern "C" void ScaLBL_D3Q19_AAeven_Compact( double *d_dist,  int Np);
+
+extern "C" void ScaLBL_D3Q19_AAodd_Compact( int *d_neighborList, double *d_dist, int Np);
+
 // ION TRANSPORT MODEL
 
 extern "C" void ScaLBL_D3Q7_AAodd_IonConcentration(int *neighborList, double *dist, double *Den, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q7_AAeven_IonConcentration(double *dist, double *Den, int start, int finish, int Np);
 
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_v0(int *neighborList, double *dist, double *Den, double *FluxDiffusive, double *FluxAdvective, double *FluxElectrical, double *Velocity, double *ElectricField, 
+                                      double Di, int zi, double rlx, double Vt, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_v0(double *dist, double *Den, double *FluxDiffusive, double *FluxAdvective, double *FluxElectrical, double *Velocity, double *ElectricField, 
+                                       double Di, int zi, double rlx, double Vt, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *Den, double *FluxDiffusive, double *FluxAdvective, double *FluxElectrical, double *Velocity, double *ElectricField, 
                                       double Di, int zi, double rlx, double Vt, int start, int finish, int Np);
@@ -278,7 +306,8 @@ extern "C" void ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *FluxDi
 extern "C" void ScaLBL_D3Q7_Ion_Init(double *dist, double *Den, double DenInit, int Np);
 extern "C" void ScaLBL_D3Q7_Ion_Init_FromFile(double *dist, double *Den, int Np);
 
-extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity, int IonValence, int ion_component, int start, int finish, int Np);
+extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity, double IonValence, int ion_component, int start, int finish, int Np);
+
 
 // LBM Poisson solver
 
@@ -350,6 +379,22 @@ extern "C" void ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(int *Map, double *d
 * @param Np - size of local sub-domain (derived from Domain structure)
 */
 extern "C" void ScaLBL_D3Q7_Poisson_Init(int *Map, double *dist, double *Psi, int start, int finish, int Np);
+extern "C" void ScaLBL_D3Q19_Poisson_Init(int *Map, double *dist, double *Psi, int start, int finish, int Np);
+
+
+extern "C" void ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
+                                          double *dist, double *Den_charge,
+                                          double *Psi, double *ElectricField,
+                                          double tau, double epsilon_LB, bool UseSlippingVelBC,
+                                          int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
+                                           double *Den_charge, double *Psi,
+                                           double *ElectricField, double *Error, double tau,
+                                           double epsilon_LB, bool UseSlippingVelBC,
+                                           int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q19_Poisson_getElectricField(double *dist, double *ElectricField, double tau, int Np);
 
 // LBM Stokes Model (adapted from MRT model)
 extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, 
@@ -675,10 +720,26 @@ public:
         */
 	~ScaLBL_Communicator();
 	//......................................................................................
+	Utilities::MPI MPI_COMM_SCALBL;		// MPI Communicator for this domain
+	int rank;
+	int rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z;
+	int rank_xy,rank_XY,rank_xY,rank_Xy;
+	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
+	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
+	//......................................................................................
 	unsigned long int CommunicationCount,SendCount,RecvCount;
 	int Nx,Ny,Nz,N;
 	int n_bb_d3q7, n_bb_d3q19; 
 	int BoundaryCondition;
+	//......................................................................................
+	int sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z;
+	int sendCount_xy, sendCount_yz, sendCount_xz, sendCount_Xy, sendCount_Yz, sendCount_xZ;
+	int sendCount_xY, sendCount_yZ, sendCount_Xz, sendCount_XY, sendCount_YZ, sendCount_XZ;
+	//......................................................................................
+	int recvCount_x, recvCount_y, recvCount_z, recvCount_X, recvCount_Y, recvCount_Z;
+	int recvCount_xy, recvCount_yz, recvCount_xz, recvCount_Xy, recvCount_Yz, recvCount_xZ;
+	int recvCount_xY, recvCount_yZ, recvCount_Xz, recvCount_XY, recvCount_YZ, recvCount_XZ;
+	//......................................................................................
 	
 	int next;
 	int first_interior,last_interior;
@@ -699,9 +760,19 @@ public:
 	int LastExterior();
 	int FirstInterior();
 	int LastInterior();
+	int copySendList(const char *dir, int *buffer);
+	int copyRecvList(const char *dir, int *buffer);
 	
 	double GetPerformance(int *NeighborList, double *fq, int Np);
 	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np, int width);
+    /**
+    * \brief Create membrane data structure
+    *        - cut lattice links based on distance map
+    * @param Distance - signed distance to membrane
+    * @param neighborList - data structure that retains lattice links 
+    * @param Np - number of lattice sites
+    * @param width - halo width for the model
+    */
 	void Barrier(){
 		ScaLBL_DeviceBarrier();
 		MPI_COMM_SCALBL.barrier();
@@ -764,29 +835,12 @@ private:
 	int sendtag,recvtag;
 	// Give the object it's own MPI communicator
 	RankInfoStruct rank_info;
-	Utilities::MPI MPI_COMM_SCALBL;		// MPI Communicator for this domain
 	MPI_Request req1[18],req2[18];
 	//......................................................................................
 	// MPI ranks for all 18 neighbors
 	//......................................................................................
 	// These variables are all private to prevent external things from modifying them!!
-	//......................................................................................
-	int rank;
-	int rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z;
-	int rank_xy,rank_XY,rank_xY,rank_Xy;
-	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
-	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
-	//......................................................................................
-	//......................................................................................
-	int sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z;
-	int sendCount_xy, sendCount_yz, sendCount_xz, sendCount_Xy, sendCount_Yz, sendCount_xZ;
-	int sendCount_xY, sendCount_yZ, sendCount_Xz, sendCount_XY, sendCount_YZ, sendCount_XZ;
-	//......................................................................................
-
-	int recvCount_x, recvCount_y, recvCount_z, recvCount_X, recvCount_Y, recvCount_Z;
-	int recvCount_xy, recvCount_yz, recvCount_xz, recvCount_Xy, recvCount_Yz, recvCount_xZ;
-	int recvCount_xY, recvCount_yZ, recvCount_Xz, recvCount_XY, recvCount_YZ, recvCount_XZ;
-	//......................................................................................
+//......................................................................................
 	// Send buffers that reside on the compute device
 	int *dvcSendList_x, *dvcSendList_y, *dvcSendList_z, *dvcSendList_X, *dvcSendList_Y, *dvcSendList_Z;
 	int *dvcSendList_xy, *dvcSendList_yz, *dvcSendList_xz, *dvcSendList_Xy, *dvcSendList_Yz, *dvcSendList_xZ;
@@ -799,6 +853,14 @@ private:
 	int *dvcRecvDist_x, *dvcRecvDist_y, *dvcRecvDist_z, *dvcRecvDist_X, *dvcRecvDist_Y, *dvcRecvDist_Z;
 	int *dvcRecvDist_xy, *dvcRecvDist_yz, *dvcRecvDist_xz, *dvcRecvDist_Xy, *dvcRecvDist_Yz, *dvcRecvDist_xZ;
 	int *dvcRecvDist_xY, *dvcRecvDist_yZ, *dvcRecvDist_Xz, *dvcRecvDist_XY, *dvcRecvDist_YZ, *dvcRecvDist_XZ;
+	//......................................................................................
+
+    // MPI requests for persistent communications
+    std::vector<std::shared_ptr<MPI_Request>> req_D3Q19AA;
+    std::vector<std::shared_ptr<MPI_Request>> req_BiD3Q19AA;
+    std::vector<std::shared_ptr<MPI_Request>> req_TriD3Q19AA;
+    void start( std::vector<std::shared_ptr<MPI_Request>>& requests );
+    void wait( std::vector<std::shared_ptr<MPI_Request>>& requests );
 	//......................................................................................
 	int *bb_dist;
 	int *bb_interactions;

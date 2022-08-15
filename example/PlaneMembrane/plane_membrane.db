@@ -1,0 +1,117 @@
+MultiphysController {
+    timestepMax = 20000
+    visualization_interval = 1000      // Frequency to write visualization data
+    analysis_interval = 20   // Frequency to perform analysis
+}
+Stokes {
+    epsilonR = 78.5 //fluid dielectric constant [dimensionless]
+    tau = 1.0
+    F = 0, 0, 0
+    rho_phys = 998.2
+    nu_phys = 1.003e-6      //fluid kinematic viscosity; user-input unit: [m^2/sec]
+    BC = 3	// Pressure constant BC 
+    din = 1.0  // Inlet pressure
+    dout = 1.0	// Outlet pressure
+    UseElectroosmoticVelocityBC = true
+    SolidLabels = 0, -1
+    ZetaPotentialSolidList = -0.005, -0.03  // unit [v]
+}
+Ions {
+    temperature = 310.15 //unit [K]
+    //number_ion_species = 5  //number of ions
+    //tauList = 1.0, 1.0, 1.0, 1.0, 1.0  // H+, OH-, Na+, Cl-, Fe3+
+    //IonDiffusivityList = 9.3e-9, 5.3e-9, 1.3e-9, 2.0e-9, 0.604e-9 //user-input unit: [m^2/sec]
+    //IonValenceList = 1, -1, 1, -1, 3 //valence charge of ions; dimensionless; positive/negative integer
+    //IonConcentrationList = 1.0e-4, 1.0e-4, 100, 100, 0 //user-input unit: [mol/m^3]
+    number_ion_species = 2  //number of ions
+    //IonConcentrationFile = "Pseudo3D_plane_membrane_concentration_Na_z192_xy64.raw", "double", "Pseudo3D_plane_membrane_concentration_Na_z192_xy64.raw", "double"
+    tauList = 1.0,1.0 // Na+, anion
+    IonDiffusivityList = 1e-9,1e-9 //user-input unit: [m^2/sec]
+    IonValenceList = 1,-1 //valence charge of ions; dimensionless; positive/negative integer
+    IonConcentrationList = 145e-3,145e-3 //user-input unit: [mol/m^3]
+    MembraneIonConcentrationList = 15e-3, 15e-3
+    BC_InletList  = 0,0 //boundary condition for inlet; 0=periodic; 1=ion concentration; 2=ion flux
+    BC_OutletList = 0,0 //boundary condition for outlet; 0=periodic; 1=ion concentration; 2=ion flux
+    InletValueList  = 15e-3, 15e-3  //if ion concentration unit=[mol/m^3]; if flux (inward) unit=[mol/m^2/sec]
+    OutletValueList = 145e-3, 145e-3 //if ion concentration unit=[mol/m^3]; if flux (inward) unit=[mol/m^2/sec]
+    BC_Solid = 0 //solid boundary condition; 0=non-flux BC; 1=surface ion concentration
+    //SolidLabels = 0 olid labels for assigning solid boundary condition; ONLY for BC_Solid=1
+    //SolidValues = 1.0e-5 // user-input surface ion concentration unit: [mol/m^2]; ONLY for BC_Solid=1
+    FluidVelDummy = 0.0, 0.0, 0.0 // dummy fluid velocity for debugging
+}
+Poisson {
+    epsilonR = 80.4 //fluid dielectric constant [dimensionless]
+    tau = 4.5
+    BC_Inlet  = 0  // ->1: fixed electric potential; ->2: sine/cosine periodic electric potential
+    BC_Outlet = 0  // ->1: fixed electric potential; ->2: sine/cosine periodic electric potential
+    InitialValueLabels = 1,2//a list of labels of fluid nodes
+    InitialValues = 60.6e-3, 0   //unit: [V]
+    //------- Boundary Voltage for BC = 1 (Inlet & Outlet) ---------------------
+    Vin = 60.6e-3  //ONLY for BC_Inlet = 1; electrical potential at inlet
+    Vout = 0  //ONLY for BC_Outlet = 1; electrical potential at outlet
+    //--------------------------------------------------------------------------
+    //------- Boundary Voltage for BC = 2 (Inlet & Outlet) ---------------------
+    //Vin0 = 0.01 //(ONLY for BC_Inlet = 2); unit:[Volt] 
+    //freqIn = 1.0 //(ONLY for BC_Inlet = 2); unit:[Hz]
+    //t0_In = 0.0 //(ONLY for BC_Inlet = 1); unit:[sec]
+    //Vin_Type  = 1 //(ONLY for BC_Inlet = 1); 1->sin(); 2->cos()
+    //Vout0 = 0.01 //(ONLY for BC_Outlet = 1); unit:[Volt] 
+    //freqOut = 1.0 //(ONLY for BC_Outlet = 1); unit:[Hz]
+    //t0_Out = 0.0 //(ONLY for BC_Outlet = 1); unit:[sec]
+    //Vout_Type  = 1 //(ONLY for BC_Outlet = 1); 1->sin(); 2->cos()
+    //--------------------------------------------------------------------------
+    BC_SolidList = 1 //solid boundary condition; 1=surface potential; 2=surface charge density
+    SolidLabels = 0 //solid labels for assigning solid boundary condition
+    SolidValues = -0.001 //if surface potential, unit=[V]; if surface charge density, unit=[C/m^2]
+    WriteLog = true //write convergence log for LB-Poisson solver
+    // ------------------------------- Testing Utilities ----------------------------------------
+    // ONLY for code debugging; the followings test sine/cosine voltage BCs; disabled by default
+    TestPeriodic = false
+    TestPeriodicTime = 1.0 //unit:[sec]
+    TestPeriodicTimeConv = 0.01 //unit:[sec]
+    TestPeriodicSaveInterval = 0.2 //unit:[sec]
+    //------------------------------ advanced setting ------------------------------------
+    timestepMax = 10000 //max timestep for obtaining steady-state electrical potential
+    analysis_interval  = 200 //timestep checking steady-state convergence
+    tolerance = 1.0e-6  //stopping criterion for steady-state solution
+}
+Membrane {
+    MembraneLabels = 1
+    VoltageThreshold = 100.0, 100.0
+    MassFractionIn  = 1,0
+    MassFractionOut = 1,0 
+    ThresholdMassFractionIn  = 1, 0
+    ThresholdMassFractionOut = 1, 0
+
+}
+Domain {
+    Filename = "Pseudo3D_double_plane_membrane_z192_xy64_InsideLabel1_OutsideLabel2.raw"
+    nproc = 1, 1, 3    // Number of processors (Npx,Npy,Npz)
+    n = 64, 64, 64      // Size of local domain (Nx,Ny,Nz)
+    N = 64, 64, 192      // size of the input image
+    voxel_length = 0.01   //resolution; user-input unit: [um]
+    BC = 0              // Boundary condition type0
+    ReadType = "8bit"
+    ReadValues  = 2, 1
+    WriteValues = 2, 1
+    //InletLayers = 0, 0, 1
+    //OutletLayers = 0, 0, 1
+    //InletLayersPhase = 1
+    //OutletLayersPhase = 1
+    //checkerSize = 3       // size of the checker to use
+}
+Analysis {
+}
+Visualization {
+    save_electric_potential = true
+    save_concentration = true
+    #save_velocity = true
+    #save_pressure = true
+    save_8bit_raw = true
+}
+  
+
+
+
+
+

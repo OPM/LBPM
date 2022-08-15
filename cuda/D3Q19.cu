@@ -290,7 +290,7 @@ __global__  void dvc_ScaLBL_D3Q19_Swap_Compact(int *neighborList, double *distev
 //__launch_bounds__(512,4)
 
 __global__ void 
-dvc_ScaLBL_AAodd_Compact(char * ID, int *d_neighborList, double *dist, int Np) {
+dvc_ScaLBL_AAodd_Compact(int *d_neighborList, double *dist, int Np) {
 
 	int n;
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
@@ -1321,7 +1321,7 @@ dvc_ScaLBL_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_se
 
 //__launch_bounds__(512,4)
 
-__global__ void dvc_ScaLBL_AAeven_Compact(char * ID, double *dist, int Np) {
+__global__ void dvc_ScaLBL_AAeven_Compact( double *dist, int Np) {
 
 	int n;
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
@@ -2390,18 +2390,18 @@ extern "C" void ScaLBL_D3Q19_Swap_Compact(int *neighborList, double *disteven, d
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_AAeven_Compact(char * ID, double *d_dist,  int Np) {
+extern "C" void ScaLBL_D3Q19_AAeven_Compact( double *d_dist,  int Np) {
         cudaFuncSetCacheConfig(dvc_ScaLBL_AAeven_Compact, cudaFuncCachePreferL1);
-	dvc_ScaLBL_AAeven_Compact<<<NBLOCKS,NTHREADS>>>(ID, d_dist, Np);
+	dvc_ScaLBL_AAeven_Compact<<<NBLOCKS,NTHREADS>>>(d_dist, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_Init: %s \n",cudaGetErrorString(err));
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_AAodd_Compact(char * ID, int *d_neighborList, double *d_dist, int Np) {
+extern "C" void ScaLBL_D3Q19_AAodd_Compact( int *d_neighborList, double *d_dist, int Np) {
         cudaFuncSetCacheConfig(dvc_ScaLBL_AAodd_Compact, cudaFuncCachePreferL1);
-	dvc_ScaLBL_AAodd_Compact<<<NBLOCKS,NTHREADS>>>(ID,d_neighborList, d_dist,Np);
+	dvc_ScaLBL_AAodd_Compact<<<NBLOCKS,NTHREADS>>>(d_neighborList, d_dist,Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_Init: %s \n",cudaGetErrorString(err));

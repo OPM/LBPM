@@ -1,0 +1,47 @@
+#module load cmake/3.21.3
+#module load PrgEnv-gnu
+module load PrgEnv-amd
+module load rocm/4.5.0
+module load cray-mpich
+module load cray-hdf5-parallel
+#module load craype-accel-amd-gfx908
+
+## These must be set before compiling so the executable picks up GTL
+export PE_MPICH_GTL_DIR_amd_gfx90a="-L${CRAY_MPICH_ROOTDIR}/gtl/lib"
+export PE_MPICH_GTL_LIBS_amd_gfx90a="-lmpi_gtl_hsa"
+
+export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}
+
+# Need a new version of cmake
+export CMAKE_DIR=/gpfs/alpine/csc380/proj-shared/LBPM/cmake-3.21.0/bin
+
+#-I${MPICH_DIR}/include
+#-L${MPICH_DIR}/lib -lmpi -L${CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa
+
+HIPFLAGS = --amdgpu-target=gfx90a 
+
+# configure
+rm -rf CMake*
+${CMAKE_DIR}/cmake                             \
+    -D CMAKE_BUILD_TYPE:STRING=Release          \
+    -D CMAKE_C_COMPILER:PATH=cc               \
+    -D CMAKE_CXX_COMPILER:PATH=CC               \
+    -D CMAKE_CXX_STANDARD=14                    \
+    -D DISABLE_GOLD:BOOL=TRUE                   \
+    -D DISABLE_LTO:BOOL=TRUE                    \
+    -D CMAKE_C_FLAGS="-L${MPICH_DIR}/lib -lmpi -L${CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa -I${HDF5_DIR}/include"  \
+    -D CMAKE_CXX_FLAGS="-L${MPICH_DIR}/lib -lmpi -L${CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa  -I${HDF5_DIR}/include" \
+    -D LINK_LIBRARIES="${ROCM_PATH}/lib/libamdhip64.so;${CRAY_MPICH_ROOTDIR}/gtl/lib/libmpi_gtl_hsa.so" \
+    -D USE_HIP=0                                \
+        -D CMAKE_HIP_COMPILER_TOOLKIT_ROOT=$ROCM_PATH/hip \
+    -D USE_MPI=1                                \
+    -D MPI_SKIP_SEARCH=1                        \
+    -D MPIEXEC="srun"                           \
+    -D USE_HDF5=1                               \
+        -D HDF5_DIRECTORY="${HDF5_DIR}"         \
+    -D USE_SILO=0                               \
+    -D USE_TIMER=0			        \
+    -D USE_DOXYGEN:BOOL=false		        \
+    ~/LBPM-WIA
+
+

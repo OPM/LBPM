@@ -10,6 +10,7 @@
 #include "common/UnitTest.h"
 #include "common/Utilities.h"
 #include "common/Utilities.hpp"
+#include "common/ScaLBL.h"
 #include "ProfilerApp.h"
 
 
@@ -19,7 +20,6 @@
 #else
 #include <sched.h>
 #endif
-
 
 #undef MPI_CLASS
 #define MPI_CLASS Utilities::MPI
@@ -1195,6 +1195,144 @@ void testCommDup( UnitTest *ut )
 #endif
 }
 
+class gpuWrapper{
+public:
+	gpuWrapper(MPI_CLASS MPI_COMM, int MSG_SIZE);
+	~gpuWrapper();
+	void Send(double *values);
+	void Recv(double *values);
+	double *sendbuf, *recvbuf;
+private:
+	MPI_Request req1[1],req2[1];
+	MPI_CLASS comm;
+	int sendCount;
+	int recvCount;
+	int rank, rank_x, rank_X, nprocs;
+	int sendtag, recvtag;
+};
+
+gpuWrapper::gpuWrapper(MPI_CLASS MPI_COMM, int MSG_SIZE){
+    comm = MPI_COMM.dup();
+    rank = comm.getRank();
+    nprocs = comm.getSize();
+	sendCount=MSG_SIZE;
+	recvCount=MSG_SIZE;
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf, sendCount*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf, sendCount*sizeof(double));	// Allocate device memory
+	rank_X = rank+1;
+	rank_x = rank-1;
+	if (rank_x < 0)          rank_x = nprocs-1;
+	if (!(rank_X < nprocs))  rank_X = 0;
+}
+
+gpuWrapper::~gpuWrapper(){
+	ScaLBL_FreeDeviceMemory(sendbuf);
+	ScaLBL_FreeDeviceMemory(recvbuf);
+}
+
+void gpuWrapper::Send(double *values){
+	sendtag = recvtag = 130;
+    ScaLBL_CopyToDevice(sendbuf,values,sendCount*sizeof(double));
+	req1[0] = comm.Isend(sendbuf,sendCount,rank_x,sendtag+0);
+	req2[0] = comm.Irecv(recvbuf,recvCount,rank_X,recvtag+0);
+}
+
+void gpuWrapper::Recv(double *values){
+	comm.waitAll(1,req1);
+	comm.waitAll(1,req2);
+	ScaLBL_DeviceBarrier();
+    ScaLBL_CopyToHost(values,recvbuf,recvCount*sizeof(double));
+}
+
+// Test GPU aware MPI
+void test_GPU_aware( UnitTest *ut )
+{
+    constexpr size_t N = 1024*1024;
+    constexpr size_t N_msg = 64;
+    bool test = true;
+    // Get the comm to use
+    MPI_CLASS comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int size = comm.getSize();
+    try {
+        // Initialize the device
+        int device = ScaLBL_SetDevice(rank); 
+        NULL_USE( device );
+        // create wrapper for communications
+        gpuWrapper gpuComm(comm, N); 
+        // Allocate and initialize the buffers
+        size_t bytes = N*sizeof(double);
+        double *device_send[N_msg] = { nullptr };
+        double *device_recv[N_msg] = { nullptr };
+        double *host_send[N_msg] = { nullptr };
+        double *host_recv[N_msg] = { nullptr };
+        for ( size_t k=0; k<N_msg; k++ ) {
+            ScaLBL_AllocateDeviceMemory((void**)&device_send[k],bytes);
+            ScaLBL_AllocateDeviceMemory((void**)&device_recv[k],bytes);
+            host_send[k] = new double[N];
+            host_recv[k] = new double[N];
+            // Initialize the data
+            for ( size_t i=0; i<N; i++ ) {
+                host_send[k][i] = 1000 * k * rank + i;
+                host_recv[k][i] = 0;
+            }
+            ScaLBL_CopyToDevice(device_send[k],host_send[k],bytes);
+            ScaLBL_CopyToDevice(device_recv[k],host_recv[k],bytes);
+        }
+        ScaLBL_DeviceBarrier();
+        // Send/recieve the data
+        int rank_send = ( rank + 1 ) % size;
+        int rank_recv = ( rank - 1 + size ) % size;
+        MPI_Request req1[N_msg];
+        MPI_Request req2[N_msg];
+        for ( size_t k=0; k<N_msg; k++ ) {
+            req1[k] = comm.Isend( device_send[k], N, rank_send, k );
+            req2[k] = comm.Irecv( device_recv[k], N, rank_recv, k );
+        }
+        comm.waitAll(N_msg,req1);
+        comm.waitAll(N_msg,req2);
+        // Copy
+        for ( size_t k=0; k<N_msg; k++ ) {
+            ScaLBL_CopyToHost(host_send[k],device_send[k],bytes);
+            ScaLBL_CopyToHost(host_recv[k],device_recv[k],bytes);
+        }
+        ScaLBL_DeviceBarrier();
+        // Check the data
+        for ( size_t k=0; k<N_msg; k++ ) {
+            for ( size_t i=0; i<N; i++ )
+                test = test && host_recv[k][i] == 1000 * k * rank_recv + i;
+        }
+        // Check the gpu wrapper communications the same way
+        for ( size_t k=0; k<N_msg; k++ ) {
+        	gpuComm.Send(host_send[k]);
+        	gpuComm.Recv(host_recv[k]);
+        }
+        // Check the data
+        for ( size_t k=0; k<N_msg; k++ ) {
+            for ( size_t i=0; i<N; i++ )
+                test = test && host_recv[k][i] == 1000 * k * rank_recv + i;
+        }
+        
+        // Free buffers
+        for ( size_t k=0; k<N_msg; k++ ) {
+            ScaLBL_FreeDeviceMemory(device_send[k]);
+            ScaLBL_FreeDeviceMemory(device_recv[k]);
+            delete [] host_send[k];
+            delete [] host_recv[k];
+        }
+    } catch ( ... ) {
+        test = false;
+    }
+    comm.barrier();
+    if ( test ) {
+        std::cout << "MPI is GPU aware" << std::endl;
+        ut->passes("GPU aware MPI" );
+    } else {
+        std::cout << "MPI is NOT GPU aware" << std::endl;
+        ut->failure("GPU aware MPI" );
+    }
+}
+
 
 //  This test will test the MPI class
 int main( int argc, char *argv[] )
@@ -1512,6 +1650,9 @@ int main( int argc, char *argv[] )
                 ut.failure( "time and tick" );
             std::cout << std::endl;
         }
+
+        // Test GPU aware MPI
+        test_GPU_aware( &ut );
 
     } // Limit the scope so objects are destroyed
 

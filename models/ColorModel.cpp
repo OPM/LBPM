@@ -115,8 +115,7 @@ void ScaLBL_ColorModel::ReadParams(string filename) {
     inletB = 0.f;
     outletA = 0.f;
     outletB = 1.f;
-
-
+    
     BoundaryCondition = 0;
     if (color_db->keyExists("BC")) {
         BoundaryCondition = color_db->getScalar<int>("BC");
@@ -388,6 +387,10 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase) {
                    AFFINITY, volume_fraction);
         }
     }
+    
+    // clean up
+    delete [] label_count;
+    delete [] label_count_global;
 }
 
 void ScaLBL_ColorModel::Create() {
@@ -483,12 +486,22 @@ void ScaLBL_ColorModel::Create() {
 
     // copy the neighbor list
     ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
+    ScaLBL_Comm->Barrier();
     delete[] neighborList;
+
     // initialize phi based on PhaseLabel (include solid component labels)
     double *PhaseLabel;
-    PhaseLabel = new double[N];
+    PhaseLabel = new double[Nx*Ny*Nz];
+    ScaLBL_Comm->Barrier();
+
     AssignComponentLabels(PhaseLabel);
-    ScaLBL_CopyToDevice(Phi, PhaseLabel, N * sizeof(double));
+    ScaLBL_Comm->Barrier();
+
+    ScaLBL_CopyToDevice(Phi, PhaseLabel, Nx*Ny*Nz * sizeof(double));
+    ScaLBL_Comm->Barrier();
+
+    if (rank == 0)
+      printf("Model created \n");
     delete[] PhaseLabel;
 }
 
@@ -815,28 +828,28 @@ double ScaLBL_ColorModel::Run(int returntime) {
             }
 
             if (TRIGGER_FORCE_RESCALE) {
-                RESCALE_FORCE = false;
-                TRIGGER_FORCE_RESCALE = false;
-                double RESCALE_FORCE_FACTOR = capillary_number / Ca;
-                if (RESCALE_FORCE_FACTOR > 2.0)
-                    RESCALE_FORCE_FACTOR = 2.0;
-                if (RESCALE_FORCE_FACTOR < 0.5)
-                    RESCALE_FORCE_FACTOR = 0.5;
-                Fx *= RESCALE_FORCE_FACTOR;
-                Fy *= RESCALE_FORCE_FACTOR;
-                Fz *= RESCALE_FORCE_FACTOR;
-                force_mag = sqrt(Fx * Fx + Fy * Fy + Fz * Fz);
-                if (force_mag > 1e-3) {
-                    Fx *= 1e-3 / force_mag; // impose ceiling for stability
-                    Fy *= 1e-3 / force_mag;
-                    Fz *= 1e-3 / force_mag;
-                }
-                if (rank == 0)
-                    printf("    -- adjust force by factor %f \n ",
-                           capillary_number / Ca);
-                Averages->SetParams(rhoA, rhoB, tauA, tauB, Fx, Fy, Fz, alpha,
-                                    beta);
-                color_db->putVector<double>("F", {Fx, Fy, Fz});
+            	RESCALE_FORCE = false;
+            	TRIGGER_FORCE_RESCALE = false;
+            	double RESCALE_FORCE_FACTOR = capillary_number / Ca;
+            	if (RESCALE_FORCE_FACTOR > 2.0)
+            		RESCALE_FORCE_FACTOR = 2.0;
+            	if (RESCALE_FORCE_FACTOR < 0.5)
+            		RESCALE_FORCE_FACTOR = 0.5;
+            	Fx *= RESCALE_FORCE_FACTOR;
+            	Fy *= RESCALE_FORCE_FACTOR;
+            	Fz *= RESCALE_FORCE_FACTOR;
+            	force_mag = sqrt(Fx * Fx + Fy * Fy + Fz * Fz);
+            	if (force_mag > 1e-3) {
+            		Fx *= 1e-3 / force_mag; // impose ceiling for stability
+            		Fy *= 1e-3 / force_mag;
+            		Fz *= 1e-3 / force_mag;
+            	}
+            	if (rank == 0)
+            		printf("    -- adjust force by factor %f \n ",
+            				capillary_number / Ca);
+            	Averages->SetParams(rhoA, rhoB, tauA, tauB, Fx, Fy, Fz, alpha,
+            			beta);
+            	color_db->putVector<double>("F", {Fx, Fy, Fz});
             }
             if (isSteady) {
                 Averages->Full();

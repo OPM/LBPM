@@ -1,0 +1,54 @@
+MRT {
+    tau = 1.0          // relaxation time
+    F = 0, 0, 1e-4     // external body force applied to system
+    timestepMax = 1000 // max number of timesteps
+    din = 1.0
+    dout = 1.0
+    Restart = false
+    flux = 0.0
+}
+
+Color {
+    tauA   = 0.7;     // relaxation time for fluid A
+    tauB   = 0.7;     // relaxation time for fluid B
+    rhoA   = 1.0;     // mass density for fluid A
+    rhoB   = 1.0;     // mass density for fluid B
+    alpha = 1e-3;     // controls interfacial tension between fluids
+    beta  = 0.95;     // controls interface width
+    F = 0, 0, 1.0e-5  // external body force applied to the system
+    Restart = false   // restart from checkpoint file?
+    din = 1.0         // density at inlet (if external BC is applied)
+    dout = 1.0                 // density at outlet (if external BC is applied )
+    timestepMax = 10         // maximum number of timesteps to simulate
+    flux = 0.0                 // volumetric flux in voxels per timestep (if flux BC is applied)
+    ComponentLabels = 0        // comma separated list of solid mineral labels 
+    ComponentAffinity = -1.0   // comma separated list of phase indicato field value to assign for each mineral label
+}
+
+Domain {
+    nproc = 1, 1, 1        // Number of processors (Npx,Npy,Npz)
+    n = 318, 320, 320      // Size of local domain (Nx,Ny,Nz)
+    N = 320, 320, 320      
+    nspheres = 1896        // Number of spheres (only needed if using a sphere packing)
+    L = 1, 1, 1            // Length of domain (x,y,z)
+    BC = 0                 // Boundary condition type 
+                           //     BC = 0  for periodic BC
+                           //     BC = 1  for pressure BC (applied in z direction)
+                           //     BC = 4  for flux BC (applied in z direction
+    ReadType = "8bit"
+    ReadValues = 0, 1, 2           // list of labels within the binary file (read)
+    WriteValues = 0, 1, 2          // list of labels within the output files (write)
+}
+
+Analysis {
+    analysis_interval = 1000    // Frequency to perform analysis
+    restart_interval = 50000    // Frequency to write restart data
+    visualization_interval = 50000        // Frequency to write visualization data
+    restart_file = "Restart"    // Filename to use for restart file (will append rank)
+    N_threads    = 4            // Number of threads to use
+    load_balance = "independent" // Load balance method to use: "none", "default", "independent"
+}
+
+Visualization {
+
+}

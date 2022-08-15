@@ -1,51 +1,224 @@
-# ACML suppressions
+# To run valgrind:
+# mpirun -np 2 valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose --suppressions=ValgrindSuppresionFile --log-file=valgrind-out.txt ./lbpm_nernst_planck_cell_simulator test.db
+
+
+# MPI supressions
 {
-   IdentifyCPUCond
+   MPI_init_cond
    Memcheck:Cond
    ...
-   fun:acmlcpuid2
+   fun:PMPI_Init
    ...
 }
 {
-   IdentifyCPUValue
+   MPI_init_value
    Memcheck:Value8
    ...
-   fun:acmlcpuid_once
-   fun:acmlcpuid2
+   fun:PMPI_Init
    ...
 }
-
-
-# MPI suppressions
 {
-   HYD_pmci_wait_for_completion
-   Memcheck:Leak
-   ...
-   fun:HYD_pmci_wait_for_completion
-   fun:main
-}
-{
-   HYDT_dmxu_poll_wait_for_event
-   Memcheck:Leak
-   ...
-   fun:HYDT_dmxu_poll_wait_for_event
-   fun:main
-}
-{
-   PMPI_Init
-   Memcheck:Leak
+   MPI_init_addr16
+   Memcheck:Addr16
    ...
    fun:PMPI_Init
-   fun:main
+   ...
+}
+{
+   MPI_init_addr8
+   Memcheck:Addr8
+   ...
+   fun:PMPI_Init
+   ...
+}
+{
+   MPI_init_addr4
+   Memcheck:Addr4
+   ...
+   fun:PMPI_Init
+   ...
+}
+{
+   MPI_init_addr1
+   Memcheck:Addr1
+   ...
+   fun:PMPI_Init
+   ...
+}
+{
+   gethostname_cond
+   Memcheck:Cond
+   ...
+   fun:gethostbyname_r
+   fun:gethostbyname
+   ...
+}
+{
+   gethostname_value
+   Memcheck:Value8
+   ...
+   fun:gethostbyname_r
+   fun:gethostbyname
+   ...
 }
 
 
-# System suppressions
+# System errors
+{
+   map_doit_memory
+   Memcheck:Cond
+   fun:index
+   fun:expand_dynamic_string_token
+   fun:_dl_map_object
+   fun:map_doit
+   fun:_dl_catch_error
+   ...
+}
 {
    expand_dynamic_string_token
    Memcheck:Cond
    fun:index
    fun:expand_dynamic_string_token
+   ...
+   fun:dl_main
+   fun:_dl_sysdep_start
+   fun:_dl_start
+   ...
+}
+{
+   call_init
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:call_init
+   fun:_dl_init
+   ...
+}
+
+
+# pthread errors
+{
+   pthread_initialize_param
+   Memcheck:Param
+   set_robust_list(head)
+   fun:__pthread_initialize_minimal
+   fun:(below main)
+}
+{
+   pthread_initialize_cond
+   Memcheck:Cond
+   fun:__register_atfork
+   fun:__libc_pthread_init
+   fun:__pthread_initialize_minimal
+   fun:(below main)
+}
+
+
+# gfortran
+{
+   gfortran_leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   obj:/usr/lib/x86_64-linux-gnu/libgfortran.so.3.0.0
+   ...
+}
+
+
+# std
+{
+   libc_cond
+   Memcheck:Cond
+   ...
+   fun:_dl_init_paths
+   fun:_dl_non_dynamic_init
+   fun:__libc_init_first
+   fun:(below main)
+}
+{
+   libc_val8
+   Memcheck:Value8
+   ...
+   fun:_dl_init_paths
+   fun:_dl_non_dynamic_init
+   fun:__libc_init_first
+   fun:(below main)
+}
+{
+   mallinfo_cond
+   Memcheck:Cond
+   fun:int_mallinfo
+   fun:mallinfo
+   ...
+}
+{
+   mallinfo_value
+   Memcheck:Value8
+   fun:int_mallinfo
+   fun:mallinfo
+   ...
+}
+{
+   int_free_cond
+   Memcheck:Cond
+   fun:_int_free
+   ...
+}
+{
+   string_len_cond
+   Memcheck:Cond
+   fun:strlen
+   ...
+}
+{
+   int_malloc_cond
+   Memcheck:Cond
+   fun:_int_malloc
+   fun:malloc
+   ...
+}
+{
+   malloc_consolidate_malloc
+   Memcheck:Cond
+   fun:malloc_consolidate
+   fun:_int_malloc
+   ...
+}
+{
+   malloc_consolidate_free
+   Memcheck:Cond
+   fun:malloc_consolidate
+   fun:_int_free
+   ...
+}
+{
+   catch_cond
+   Memcheck:Cond
+   fun:__cxa_begin_catch
+   ...
+}
+{
+   popen
+   Memcheck:Param
+   set_robust_list(head)
+   fun:__nptl_set_robust
+   fun:__libc_fork
+   fun:_IO_proc_open
+   fun:popen
+   ...
+}
+{
+   exit
+   Memcheck:Value8
+   fun:__run_exit_handlers
+   ...
+   fun:exit
+   ...
+}
+{
+   sse42
+   Memcheck:Cond
+   fun:__strstr_sse42
    ...
 }
 

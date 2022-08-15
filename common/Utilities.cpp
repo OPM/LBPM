@@ -69,7 +69,7 @@ void Utilities::startup(int argc, char **argv, bool multiple) {
                              "thread support, thread support will be disabled"
                           << std::endl;
         }
-        StackTrace::globalCallStackInitialize(MPI_COMM_WORLD);
+        //StackTrace::globalCallStackInitialize(MPI_COMM_WORLD);
     } else {
         MPI_Init(&argc, &argv);
     }
@@ -86,7 +86,7 @@ void Utilities::shutdown() {
     int rank = 0;
 #ifdef USE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    StackTrace::globalCallStackFinalize();
+    //StackTrace::globalCallStackFinalize();
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
 #endif
