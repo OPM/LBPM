@@ -559,6 +559,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 
 			idx = Map[n];
 			Psi[idx] = psi;
+			Error[n] = error;
 
 			// q = 0
 			dist[n] =  W0*psi;//
