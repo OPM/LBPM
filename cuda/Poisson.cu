@@ -3,7 +3,7 @@
 //#include <cuda_profiler_api.h>
 
 #define NBLOCKS 1024
-#define NTHREADS 256
+#define NTHREADS 512
 
 __global__  void dvc_ScaLBL_D3Q7_AAodd_Poisson_ElectricPotential(int *neighborList,int *Map, double *dist, double *Psi, int start, int finish, int Np){
 	int n;
@@ -328,7 +328,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
 	f16, f17, f18;
 	int nr1, nr2, nr3, nr4, nr5, nr6, nr7, nr8, nr9, nr10, nr11, nr12, nr13,
 	nr14, nr15, nr16, nr17, nr18;
-	double error,sum_q;
+	double sum_q;
 	double rlx = 1.0 / tau;
 	int idx;
 
@@ -545,6 +545,12 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 			f17 = dist[18 * Np + n];
 			f18 = dist[17 * Np + n];
 
+			/* Ex = (f1 - f2) * rlx *
+	             4.0; //NOTE the unit of electric field here is V/lu
+	        Ey = (f3 - f4) * rlx *
+	             4.0; //factor 4.0 is D3Q7 lattice squared speed of sound
+	        Ez = (f5 - f6) * rlx * 4.0;
+			 */
 			Ex = (f1 - f2 + 0.5*(f7 - f8 + f9 - f10 + f11 - f12 + f13 - f14))*4.0; //NOTE the unit of electric field here is V/lu
 			Ey = (f3 - f4 + 0.5*(f7 - f8 - f9 + f10 + f15 - f16 + f17 - f18))*4.0;
 			Ez = (f5 - f6 + 0.5*(f11 - f12 - f13 + f14 + f15 - f16 - f17 + f18))*4.0;
@@ -554,13 +560,14 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 
 			sum_q = f1+f2+f3+f4+f5+f6+f7+f8+f9+f10+f11+f12+f13+f14+f15+f16+f17+f18;
 			error = 8.0*(sum_q - f0) + rho_e; 
-
-			psi = 2.0*(f0*(1.0 - rlx) + rlx*(sum_q + 0.125*rho_e));
-
-			idx = Map[n];
-			Psi[idx] = psi;
+			
 			Error[n] = error;
 
+			psi = 2.0*(f0*(1.0 - rlx) + rlx*(sum_q + 0.125*rho_e));
+	        
+	        idx = Map[n];
+	        Psi[idx] = psi;
+	        
 			// q = 0
 			dist[n] =  W0*psi;//
 
@@ -594,7 +601,6 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 			dist[16 * Np + n] = W2*psi;//f16 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 			dist[17 * Np + n] = W2*psi;//f17 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 			dist[18 * Np + n] = W2*psi;//f18 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
-
 			//........................................................................
 		}
 	}

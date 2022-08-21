@@ -301,7 +301,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
 		//........Get 1-D index for this thread....................
 		n =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
 		if (n<finish) {
-			//Load data
+				//Load data
 			//When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
 			//and thus the net space charge density is zero. 
 			rho_e = (UseSlippingVelBC==1) ? 0.0 : Den_charge[n] / epsilon_LB;
@@ -451,7 +451,8 @@ __global__  void dvc_ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
 			dist[nr18] = W2*psi; //f17 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 
 			// q = 18
-			dist[nr17] = W2*psi;
+			dist[nr17] = W2*psi; //f18 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+	
 		}
 	}
 }
@@ -479,7 +480,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 		//........Get 1-D index for this thread....................
 		n =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
 		if (n<finish) {
-				//Load data
+			//Load data
 			//When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
 			//and thus the net space charge density is zero. 
 			rho_e = (UseSlippingVelBC==1) ? 0.0 : Den_charge[n] / epsilon_LB;
@@ -505,6 +506,12 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 			f17 = dist[18 * Np + n];
 			f18 = dist[17 * Np + n];
 
+			/* Ex = (f1 - f2) * rlx *
+	             4.0; //NOTE the unit of electric field here is V/lu
+	        Ey = (f3 - f4) * rlx *
+	             4.0; //factor 4.0 is D3Q7 lattice squared speed of sound
+	        Ez = (f5 - f6) * rlx * 4.0;
+			 */
 			Ex = (f1 - f2 + 0.5*(f7 - f8 + f9 - f10 + f11 - f12 + f13 - f14))*4.0; //NOTE the unit of electric field here is V/lu
 			Ey = (f3 - f4 + 0.5*(f7 - f8 - f9 + f10 + f15 - f16 + f17 - f18))*4.0;
 			Ez = (f5 - f6 + 0.5*(f11 - f12 - f13 + f14 + f15 - f16 - f17 + f18))*4.0;
@@ -514,14 +521,14 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 
 			sum_q = f1+f2+f3+f4+f5+f6+f7+f8+f9+f10+f11+f12+f13+f14+f15+f16+f17+f18;
 			error = 8.0*(sum_q - f0) + rho_e; 
+			
+			Error[n] = error;
 
 			psi = 2.0*(f0*(1.0 - rlx) + rlx*(sum_q + 0.125*rho_e));
-
-			idx = Map[n];
-			Psi[idx] = psi;
-			Error[n] = error;
-			
-
+	        
+	        idx = Map[n];
+	        Psi[idx] = psi;
+	        
 			// q = 0
 			dist[n] =  W0*psi;//
 
@@ -555,7 +562,6 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 			dist[16 * Np + n] = W2*psi;//f16 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 			dist[17 * Np + n] = W2*psi;//f17 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 			dist[18 * Np + n] = W2*psi;//f18 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
-
 			//........................................................................
 		}
 	}
