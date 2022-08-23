@@ -421,7 +421,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
 			f18 = dist[nr18];
 
 			sum_q = f1+f2+f3+f4+f5+f6+f7+f8+f9+f10+f11+f12+f13+f14+f15+f16+f17+f18;
-			error = 8.0*(sum_q - f0) + rho_e; 
+			//error = 8.0*(sum_q - f0) + rho_e; 
 
 			psi = 2.0*(f0*(1.0 - rlx) + rlx*(sum_q + 0.125*rho_e));
 
