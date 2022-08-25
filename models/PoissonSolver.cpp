@@ -862,6 +862,145 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, bool UseSlippingVelBC, int times
     }
 }
 
+void ScaLBL_Poisson::Run(double *ChargeDensity, DoubleArray MembraneDistance, bool UseSlippingVelBC, int timestep_from_Study){
+
+	double error = 1.0;
+	double threshold = 10000000.0;
+	bool SET_THRESHOLD = false;
+	if (electric_db->keyExists( "rescale_at_distance" )){
+		SET_THRESHOLD = true;
+		threshold = electric_db->getScalar<double>( "rescale_at_distance" );
+	}
+	if (BoundaryConditionInlet > 0)    SET_THRESHOLD = false;
+	if (BoundaryConditionOutlet > 0)   SET_THRESHOLD = false;
+	
+	double *host_Error;
+	host_Error = new double [Np];
+
+	timestep=0;
+	auto t1 = std::chrono::system_clock::now();
+	while (timestep < timestepMax && error > tolerance) {
+		//************************************************************************/
+		// *************ODD TIMESTEP*************//
+		timestep++;
+		//SolveElectricPotentialAAodd(timestep_from_Study,ChargeDensity, UseSlippingVelBC);//update electric potential
+		SolvePoissonAAodd(ChargeDensity, UseSlippingVelBC);//perform collision
+		ScaLBL_Comm->Barrier(); comm.barrier();
+
+		// *************EVEN TIMESTEP*************//
+		timestep++;
+		//SolveElectricPotentialAAeven(timestep_from_Study,ChargeDensity, UseSlippingVelBC);//update electric potential
+		SolvePoissonAAeven(ChargeDensity, UseSlippingVelBC);//perform collision
+		ScaLBL_Comm->Barrier(); comm.barrier();
+		//************************************************************************/
+
+		// Check convergence of steady-state solution
+		if (timestep==2){
+			//save electric potential for convergence check
+		}
+		if (timestep%analysis_interval==0){
+			/* get the elecric potential */
+			ScaLBL_CopyToHost(Psi_host.data(),Psi,sizeof(double)*Nx*Ny*Nz);
+			if (rank==0) printf("   ... getting Poisson solver error \n");
+			double err = 0.0;
+			double max_error = 0.0;
+			ScaLBL_CopyToHost(host_Error,ResidualError,sizeof(double)*Np);
+			for (int idx=0; idx<Np; idx++){
+				err = host_Error[idx]*host_Error[idx];
+				if (err > max_error ){
+					max_error = err;
+				}
+			}
+			error=Dm->Comm.maxReduce(max_error);
+
+			if (error > tolerance & SET_THRESHOLD){
+				/* don't use this with an external BC */
+				// cpompute the far-field electric potential
+				double inside_local = 0.0;
+				double outside_local = 0.0;
+				double inside_count_local = 0.0;
+				double outside_count_local = 0.0;
+				/* global values */
+				double inside_global = 0.0;
+				double outside_global = 0.0;
+				double inside_count_global = 0.0;
+				double outside_count_global = 0.0;
+				for (int k=1; k<Nz; k++){
+					for (int j=1; j<Ny; j++){
+						for (int i=1; i<Nx; i++){
+							int n = k*Nx*Ny + j*Nx + i;
+							double distance = MembraneDistance(i,j,k);
+							if  (distance > threshold  && distance < (threshold + 1.0)){
+								outside_count_local += 1.0;
+								outside_local += Psi_host(n);
+							}
+							else if  (distance < (-1.0)*threshold && distance > (-1.0)*(threshold + 1.0)){
+								inside_count_local += 1.0;
+								inside_local += Psi_host(n);
+							}
+						}
+					}
+				}
+				inside_count_global = Dm->Comm.sumReduce(inside_count_local);
+				outside_count_global = Dm->Comm.sumReduce(outside_count_local);
+				outside_global = Dm->Comm.sumReduce(outside_local);
+				inside_global = Dm->Comm.sumReduce(inside_local);
+				outside_global /= outside_count_global;
+				inside_global  /= inside_count_global;
+				
+				if (rank==0) printf("   Rescaling far-field electric potential to value (outside): %f \n",outside_global);
+				if (rank==0) printf("   Rescaling far-field electric potential to value (inside): %f \n",inside_global);
+
+				// rescale the far-field electric potential
+				for (int k=1; k<Nz; k++){
+					for (int j=1; j<Ny; j++){
+						for (int i=1; i<Nx; i++){
+							int n = k*Nx*Ny + j*Nx + i;
+							double distance = MembraneDistance(i,j,k);
+							if  ( distance > (threshold + 1.0)){
+								Psi_host(n) = outside_global;
+							}
+							else if  ( distance < (-1.0)*(threshold + 1.0)){
+								Psi_host(n) = inside_global;
+							}
+						}
+					}
+				}				
+				ScaLBL_CopyToDevice(Psi,Psi_host.data(),sizeof(double)*Nx*Ny*Nz);
+			}
+			/* compute the eletric field */
+			//ScaLBL_D3Q19_Poisson_getElectricField(fq, ElectricField, tau, Np);
+		}
+	}
+	if (rank == 0)
+		printf("---------------------------------------------------------------"
+				"----\n");
+	// Compute the walltime per timestep
+	auto t2 = std::chrono::system_clock::now();
+	double cputime = std::chrono::duration<double>(t2 - t1).count() / timestep;
+	// Performance obtained from each node
+	double MLUPS = double(Np) / cputime / 1000000;
+
+	if (rank == 0)
+		printf("********************************************************\n");
+	if (rank == 0)
+		printf("CPU time = %f \n", cputime);
+	if (rank == 0)
+		printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
+	MLUPS *= nprocs;
+	if (rank == 0)
+		printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
+	if (rank == 0)
+		printf("********************************************************\n");
+	delete [] host_Error;
+
+	//************************************************************************/
+
+	if(WriteLog==true){
+		getConvergenceLog(timestep,error);
+	}
+}
+
 void ScaLBL_Poisson::getConvergenceLog(int timestep,double error){
     if ( rank == 0 ) {
         fprintf(TIMELOG,"%i %.5g\n",timestep,error); 

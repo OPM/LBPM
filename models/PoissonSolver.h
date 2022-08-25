@@ -35,6 +35,8 @@ public:
     void Create();
     void Initialize(double time_conv_from_Study);
     void Run(double *ChargeDensity, bool UseSlippingVelBC, int timestep_from_Study);
+    void Run(double *ChargeDensity, DoubleArray MembraneDistance, 
+    		 bool UseSlippingVelBC, int timestep_from_Study);
     void getElectricPotential(DoubleArray &ReturnValues);
     void getElectricPotential_debug(int timestep);
     void getElectricField(DoubleArray &Values_x, DoubleArray &Values_y,
