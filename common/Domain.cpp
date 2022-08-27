@@ -215,18 +215,27 @@ void Domain::read_swc(const std::string &Filename) {
 					double x = i*voxel_length + start_x;
 					double y = j*voxel_length + start_y;
 					double z = k*voxel_length + start_z;
-
+					
 					double distance; 
 					double s = ((x-xp)*alpha+(y-yp)*beta+(z-zp)*gamma) / (alpha*alpha + beta*beta + gamma*gamma);	
-
+					
 					double di = ri - sqrt((x-xi)*(x-xi) + (y-yi)*(y-yi) + (z-zi)*(z-zi));
 					double dp = rp - sqrt((x-xp)*(x-xp) + (y-yp)*(y-yp) + (z-zp)*(z-zp));
-					// linear variation for radius
-					double radius = rp + (ri - rp)*s/length;
-					distance = radius - sqrt((x-xp-alpha*s)*(x-xp-alpha*s) + (y-yp-beta*s)*(y-yp-beta*s) + (z-zp-gamma*s)*(z-zp-gamma*s));
+
+					if (s > length ){
+						distance = di;
+					}
+					else if (s < 0.0){
+						distance = dp;
+					}
+					else {
+						// linear variation for radius
+						double radius = rp + (ri - rp)*s/length;
+						distance = radius - sqrt((x-xp-alpha*s)*(x-xp-alpha*s) + (y-yp-beta*s)*(y-yp-beta*s) + (z-zp-gamma*s)*(z-zp-gamma*s));
+					}
 					if (distance < di) distance = di;
 					if (distance < dp) distance = dp;
-
+					
 					if ( distance > 0.0 ){
 						/* label the voxel */
 						//id[k*Nx*Ny + j*Nx + i] = label;
