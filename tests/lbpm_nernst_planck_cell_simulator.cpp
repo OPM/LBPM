@@ -133,7 +133,7 @@ int main(int argc, char **argv)
 
 			IonModel.RunMembrane(IonModel.FluidVelocityDummy,PoissonSolver.ElectricField,PoissonSolver.Psi); //solve for ion transport with membrane
 			//comm.barrier();
-			if (rank == 0) printf("    Membrane step %i \n",timestep);
+			//if (rank == 0) printf("    Membrane step %i \n",timestep);
 			fflush(stdout);
 
 
