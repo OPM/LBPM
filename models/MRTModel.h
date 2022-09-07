@@ -48,6 +48,7 @@ public:
 
     bool Restart, pBC;
     int timestep, timestepMax;
+    int ANALYSIS_INTERVAL;
     int BoundaryCondition;
     double tau, mu;
     double Fx, Fy, Fz, flux;

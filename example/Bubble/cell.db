@@ -1,0 +1,75 @@
+MultiphysController {
+    timestepMax = 60
+    num_iter_Ion_List = 2
+    analysis_interval  = 50
+    tolerance = 1.0e-9
+    visualization_interval = 100        // Frequency to write visualization data
+    analysis_interval = 50    // Frequency to perform analysis
+}
+Stokes {
+    tau = 1.0
+    F = 0, 0, 0
+    ElectricField = 0, 0, 0 //body electric field; user-input unit: [V/m]
+    nu_phys = 0.889e-6      //fluid kinematic viscosity; user-input unit: [m^2/sec]
+}
+Ions {
+    IonConcentrationFile = "cell_concentration_K_40x40x40.raw", "double", "cell_concentration_Na_40x40x40.raw", "double", "cell_concentration_Cl_40x40x40.raw", "double", "cell_concentration_HCO3_40x40x40.raw", "double", "cell_concentration_anion_40x40x40.raw", "double", "cell_concentration_cation_40x40x40.raw", "double"
+    temperature = 293.15 //unit [K]
+    number_ion_species = 6  //number of ions
+    tauList = 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+    IonDiffusivityList = 1.0e-9, 1.0e-9, 1.0e-9, 1.0e-9, 1.0e-9, 1.0e-9 //user-input unit: [m^2/sec]
+    IonValenceList = 1, 1, -1, -1, 1, -1 //valence charge of ions; dimensionless; positive/negative integer
+    IonConcentrationList = 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6, 1.0e-6 //user-input unit: [mol/m^3]
+    BC_Solid = 0 //solid boundary condition; 0=non-flux BC; 1=surface ion concentration
+    //SolidLabels = 0 //solid labels for assigning solid boundary condition; ONLY for BC_Solid=1
+    //SolidValues = 1.0e-5 // user-input surface ion concentration unit: [mol/m^2]; ONLY for BC_Solid=1
+    FluidVelDummy = 0.0, 0.0, 1.0e-2 // dummy fluid velocity for debugging
+}
+Poisson {
+    epsilonR = 78.5 //fluid dielectric constant [dimensionless]
+    BC_Inlet  = 0  // ->1: fixed electric potential; ->2: sine/cosine periodic electric potential
+    BC_Outlet = 0  // ->1: fixed electric potential; ->2: sine/cosine periodic electric potential
+    //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    BC_Solid = 2 //solid boundary condition; 1=surface potential; 2=surface charge density
+    SolidLabels = 0 //solid labels for assigning solid boundary condition
+    SolidValues = 0 //if surface potential, unit=[V]; if surface charge density, unit=[C/m^2]
+    WriteLog = true //write convergence log for LB-Poisson solver
+    // ------------------------------- Testing Utilities ----------------------------------------
+    // ONLY for code debugging; the followings test sine/cosine voltage BCs; disabled by default
+    TestPeriodic = false
+    TestPeriodicTime = 1.0 //unit:[sec]
+    TestPeriodicTimeConv = 0.01 //unit:[sec]
+    TestPeriodicSaveInterval = 0.2 //unit:[sec]
+    //------------------------------ advanced setting ------------------------------------
+    timestepMax = 100000 //max timestep for obtaining steady-state electrical potential
+    analysis_interval  = 200 //timestep checking steady-state convergence
+    tolerance = 1.0e-6  //stopping criterion for steady-state solution
+}
+Domain {
+    Filename = "cell_40x40x40.raw"
+    nproc = 1, 1, 1     // Number of processors (Npx,Npy,Npz)
+    n = 40, 40, 40      // Size of local domain (Nx,Ny,Nz)
+    N = 40, 40, 40         // size of the input image
+    voxel_length = 1.0   //resolution; user-input unit: [um]
+    BC = 0              // Boundary condition type
+    ReadType = "8bit"
+    ReadValues  = 0, 1, 2
+    WriteValues = 0, 1, 2
+}
+Analysis {
+    analysis_interval = 100
+    subphase_analysis_interval = 50    // Frequency to perform analysis
+    restart_interval = 5000    // Frequency to write restart data
+    restart_file = "Restart"    // Filename to use for restart file (will append rank)
+    N_threads    = 4            // Number of threads to use
+    load_balance = "independent" // Load balance method to use: "none", "default", "independent"
+}
+Visualization {
+    save_electric_potential = true
+    save_concentration = true
+    save_velocity = true
+}
+Membrane {
+    MembraneLabels = 2
+}

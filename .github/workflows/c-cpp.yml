@@ -16,8 +16,7 @@ jobs:
       LBPM_SILO_DIR: /home/runner/extlib/silo
       MPI_DIR: /home/runner/.openmpi
       
-    steps:
-      
+    steps:      
     - name: download dependencies
       run: |
         echo $LBPM_ZLIB_DIR

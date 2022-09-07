@@ -48,6 +48,7 @@ extern "C" void ScaLBL_D3Q19_Unpack(int q, int *list, int start, int count,
     }
 }
 
+
 extern "C" void ScaLBL_D3Q19_AA_Init(double *f_even, double *f_odd, int Np) {
     int n;
     for (n = 0; n < Np; n++) {
@@ -1883,7 +1884,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_MRT(int *neighborList, double *dist,
     }
 }
 
-extern "C" void ScaLBL_D3Q19_AAeven_Compact(char *ID, double *dist, int Np) {
+extern "C" void ScaLBL_D3Q19_AAeven_Compact(double *dist, int Np) {
 
     for (int n = 0; n < Np; n++) {
 
@@ -1941,7 +1942,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_Compact(char *ID, double *dist, int Np) {
     }
 }
 
-extern "C" void ScaLBL_D3Q19_AAodd_Compact(char *ID, int *neighborList,
+extern "C" void ScaLBL_D3Q19_AAodd_Compact(int *neighborList,
                                            double *dist, int Np) {
     int nread;
 

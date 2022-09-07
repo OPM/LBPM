@@ -1,7 +1,6 @@
 /*
  * Ion transporte LB Model
  */
-
 #ifndef ScaLBL_IonModel_INC
 #define ScaLBL_IonModel_INC
 
@@ -16,6 +15,7 @@
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
+#include "common/Membrane.h"
 #include "common/MPI.h"
 #include "analysis/Minkowski.h"
 #include "ProfilerApp.h"
@@ -30,10 +30,12 @@ public:
     void ReadParams(string filename);
     void ReadParams(std::shared_ptr<Database> db0);
     void SetDomain();
+    void SetMembrane();
     void ReadInput();
     void Create();
     void Initialize();
     void Run(double *Velocity, double *ElectricField);
+    void RunMembrane(double *Velocity, double *ElectricField, double *Psi);
     void getIonConcentration(DoubleArray &IonConcentration, const size_t ic);
     void getIonConcentration_debug(int timestep);
     void getIonFluxDiffusive(DoubleArray &IonFlux_x, DoubleArray &IonFlux_y,
@@ -47,9 +49,10 @@ public:
     void getIonFluxElectrical_debug(int timestep);
     void DummyFluidVelocity();
     void DummyElectricField();
+    void Checkpoint();
     double CalIonDenConvergence(vector<double> &ci_avg_previous);
 
-    //bool Restart,pBC;
+    bool Restart;
     int timestep;
     vector<int> timestepMax;
     int BoundaryConditionSolid;
@@ -66,10 +69,14 @@ public:
     vector<double> IonDiffusivity; //User input unit [m^2/sec]
     vector<int> IonValence;
     vector<double> IonConcentration; //unit [mol/m^3]
-    vector<double>
-        Cin; //inlet boundary value, can be either concentration [mol/m^3] or flux [mol/m^2/sec]
-    vector<double>
-        Cout; //outlet boundary value, can be either concentration [mol/m^3] or flux [mol/m^2/sec]
+    vector<double> MembraneIonConcentration; //unit [mol/m^3]
+    vector<double> ThresholdVoltage;
+    vector<double> MassFractionIn;
+    vector<double> MassFractionOut;
+    vector<double> ThresholdMassFractionIn;
+    vector<double> ThresholdMassFractionOut;
+    vector<double> Cin; //inlet boundary value, can be either concentration [mol/m^3] or flux [mol/m^2/sec]
+    vector<double> Cout; //outlet boundary value, can be either concentration [mol/m^3] or flux [mol/m^2/sec]
     vector<double> tau;
     vector<double> time_conv;
 
@@ -80,7 +87,7 @@ public:
     std::shared_ptr<Domain> Dm;   // this domain is for analysis
     std::shared_ptr<Domain> Mask; // this domain is for lbm
     std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
-    // input database
+    // input databaseF
     std::shared_ptr<Database> db;
     std::shared_ptr<Database> domain_db;
     std::shared_ptr<Database> ion_db;
@@ -88,6 +95,7 @@ public:
     IntArray Map;
     DoubleArray Distance;
     int *NeighborList;
+    int *dvcMap;
     double *fq;
     double *Ci;
     double *ChargeDensity;
@@ -97,7 +105,14 @@ public:
     double *FluxDiffusive;
     double *FluxAdvective;
     double *FluxElectrical;
-
+    
+    /* these support membrane capabilities      */
+    bool USE_MEMBRANE;
+    std::shared_ptr<Database> membrane_db;
+    std::shared_ptr<Membrane> IonMembrane;
+    DoubleArray MembraneDistance;
+    int MembraneCount; // number of links the cross the membrane
+    
 private:
     Utilities::MPI comm;
 
@@ -113,6 +128,8 @@ private:
     void AssignIonConcentration_FromFile(double *Ci,
                                          const vector<std::string> &File_ion,
                                          int ic);
+    void AssignIonConcentrationMembrane( double *Ci, int ic);
+
     void IonConcentration_LB_to_Phys(DoubleArray &Den_reg);
     void IonFlux_LB_to_Phys(DoubleArray &Den_reg, const size_t ic);
 };

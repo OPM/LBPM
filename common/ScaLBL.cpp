@@ -1,5 +1,5 @@
 /*
-  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright 2013--2022 James E. McClure, Virginia Polytechnic & State University
   Copyright Equnior ASA
 
   This file is part of the Open Porous Media project (OPM).
@@ -15,9 +15,7 @@
   along with OPM.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "common/ScaLBL.h"
-
 #include <chrono>
-
 
 ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	//......................................................................................
@@ -309,12 +307,12 @@ ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	MPI_COMM_SCALBL.barrier();
 	ScaLBL_DeviceBarrier();
 	//......................................................................................
-	SendCount = sendCount_x+sendCount_X+sendCount_y+sendCount_Y+sendCount_z+sendCount_Z+
+	SendCount = 5*(sendCount_x+sendCount_X+sendCount_y+sendCount_Y+sendCount_z+sendCount_Z)+
 			sendCount_xy+sendCount_Xy+sendCount_xY+sendCount_XY+
 			sendCount_xZ+sendCount_Xz+sendCount_xZ+sendCount_XZ+
 			sendCount_yz+sendCount_Yz+sendCount_yZ+sendCount_YZ;
 
-	RecvCount = recvCount_x+recvCount_X+recvCount_y+recvCount_Y+recvCount_z+recvCount_Z+
+	RecvCount = 5*(recvCount_x+recvCount_X+recvCount_y+recvCount_Y+recvCount_z+recvCount_Z)+
 			recvCount_xy+recvCount_Xy+recvCount_xY+recvCount_XY+
 			recvCount_xZ+recvCount_Xz+recvCount_xZ+recvCount_XZ+
 			recvCount_yz+recvCount_Yz+recvCount_yZ+recvCount_YZ;
@@ -322,8 +320,49 @@ ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	CommunicationCount = SendCount+RecvCount;
 	//......................................................................................
 
-}
 
+	//...................................................................................
+	// Set up the persistent communication for D3Q19AA (use tags 130-145)
+	//...................................................................................
+    req_D3Q19AA.clear();
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Isend_init( sendbuf_x, 5*sendCount_x, rank_x, 130 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_X, 5*recvCount_X, rank_X, 130 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Isend_init( sendbuf_X, 5*sendCount_X, rank_X, 131 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_x, 5*recvCount_x, rank_x, 131 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Isend_init( sendbuf_y, 5*sendCount_y, rank_y, 132 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_Y, 5*recvCount_Y, rank_Y, 132 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Isend_init( sendbuf_Y, 5*sendCount_Y, rank_Y, 133 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_y, 5*recvCount_y, rank_y, 133 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Isend_init( sendbuf_z, 5*sendCount_z, rank_z, 134 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_Z, 5*recvCount_Z, rank_Z, 134 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Isend_init( sendbuf_Z, 5*sendCount_Z, rank_Z, 135 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_z, 5*recvCount_z, rank_z, 135 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Isend_init( sendbuf_xy, sendCount_xy, rank_xy, 136 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_XY, recvCount_XY, rank_XY, 136 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Isend_init( sendbuf_XY, sendCount_XY, rank_XY, 137 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_xy, recvCount_xy, rank_xy, 137 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Isend_init( sendbuf_Xy, sendCount_Xy, rank_Xy, 138 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_xY, recvCount_xY, rank_xY, 138 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Isend_init( sendbuf_xY, sendCount_xY, rank_xY, 139 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_Xy, recvCount_Xy, rank_Xy, 139 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Isend_init( sendbuf_xz, sendCount_xz, rank_xz, 140 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_XZ, recvCount_XZ, rank_XZ, 140 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Isend_init( sendbuf_xZ, sendCount_xZ, rank_xZ, 143 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_Xz, recvCount_Xz, rank_Xz, 143 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Isend_init( sendbuf_Xz, sendCount_Xz, rank_Xz, 142 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_xZ, recvCount_xZ, rank_xZ, 142 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Isend_init( sendbuf_XZ, sendCount_XZ, rank_XZ, 141 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_xz, recvCount_xz, rank_xz, 141 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Isend_init( sendbuf_yz, sendCount_yz, rank_yz, 144 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_YZ, recvCount_YZ, rank_YZ, 144 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Isend_init( sendbuf_yZ, sendCount_yZ, rank_yZ, 147 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_Yz, recvCount_Yz, rank_Yz, 147 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Isend_init( sendbuf_Yz, sendCount_Yz, rank_Yz, 146 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_yZ, recvCount_yZ, rank_yZ, 146 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Isend_init( sendbuf_YZ, sendCount_YZ, rank_YZ, 145 ) );
+	req_D3Q19AA.push_back( MPI_COMM_SCALBL.Irecv_init( recvbuf_yz, recvCount_yz, rank_yz, 145 ) );
+
+}
 
 ScaLBL_Communicator::~ScaLBL_Communicator()
 {
@@ -419,6 +458,180 @@ ScaLBL_Communicator::~ScaLBL_Communicator()
 	ScaLBL_FreeDeviceMemory( dvcRecvDist_Yz );
 	ScaLBL_FreeDeviceMemory( dvcRecvDist_YZ );
 }
+
+
+void ScaLBL_Communicator::start( std::vector<std::shared_ptr<MPI_Request>>& requests )
+{
+    for ( auto& req : requests )
+        MPI_COMM_SCALBL.Start( *req );
+}
+void ScaLBL_Communicator::wait( std::vector<std::shared_ptr<MPI_Request>>& requests )
+{
+    std::vector<MPI_Request> request2;
+    for ( auto& req : requests )
+        request2.push_back( *req );
+    MPI_COMM_SCALBL.waitAll( request2.size(), request2.data() );
+}
+
+
+/********************************************************
+ * Get send/recv lists                                   *
+ ********************************************************/
+int ScaLBL_Communicator::copyRecvList(const char *dir, int *buffer) {
+    if (dir[0] == 'x') {
+        if (dir[1] == 0){
+        	int *TempBuffer = new int [recvCount_x];
+        	ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_x,recvCount_x*sizeof(int));
+        	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,recvCount_x*sizeof(int));
+        	delete [] TempBuffer;
+            return recvCount_x;
+        }
+        else if (dir[1] == 'y')
+            return recvCount_xy;
+        else if (dir[1] == 'Y')
+            return recvCount_xY;
+        else if (dir[1] == 'z')
+            return recvCount_xz;
+        else if (dir[1] == 'Z')
+            return recvCount_xZ;
+    } else if (dir[0] == 'y') {
+        if (dir[1] == 0){
+        	int *TempBuffer = new int [recvCount_y];
+        	ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_y,recvCount_y*sizeof(int));
+        	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,recvCount_y*sizeof(int));
+        	delete [] TempBuffer;
+            return recvCount_y;
+        }
+        else if (dir[1] == 'z')
+            return recvCount_yz;
+        else if (dir[1] == 'Z')
+            return recvCount_yZ;
+    } else if (dir[0] == 'z') {
+        if (dir[1] == 0){
+        	int *TempBuffer = new int [recvCount_z];
+        	ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_z,recvCount_z*sizeof(int));
+        	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,recvCount_z*sizeof(int));
+        	delete [] TempBuffer;
+        	return recvCount_z;
+        }
+    } else if (dir[0] == 'X') {
+    	if (dir[1] == 0){
+    		int *TempBuffer = new int [recvCount_X];
+    		ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_X,recvCount_X*sizeof(int));
+    		ScaLBL_CopyToZeroCopy(buffer,TempBuffer,recvCount_X*sizeof(int));
+        	delete [] TempBuffer;
+    		return recvCount_X;
+    	}
+    	else if (dir[1] == 'y')
+            return recvCount_Xy;
+        else if (dir[1] == 'Y')
+            return recvCount_XY;
+        else if (dir[1] == 'z')
+            return recvCount_Xz;
+        else if (dir[1] == 'Z')
+            return recvCount_XZ;
+    } else if (dir[0] == 'Y') {
+        if (dir[1] == 0){
+        	int *TempBuffer = new int [recvCount_Y];
+        	ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_Y,recvCount_Y*sizeof(int));
+        	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,recvCount_Y*sizeof(int));
+        	delete [] TempBuffer;
+            return recvCount_Y;
+        }
+        else if (dir[1] == 'z')
+            return recvCount_Yz;
+        else if (dir[1] == 'Z')
+            return recvCount_YZ;
+    } else if (dir[0] == 'Z') {
+        if (dir[1] == 0){
+        	int *TempBuffer = new int [recvCount_Z];
+        	ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_Z,recvCount_Z*sizeof(int));
+        	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,recvCount_Z*sizeof(int));
+        	delete [] TempBuffer;
+            return recvCount_Z;
+        }
+    }
+    throw std::logic_error("Internal error");
+}
+
+int ScaLBL_Communicator::copySendList(const char *dir, int *buffer) { 
+    if (dir[0] == 'x') {
+        if (dir[1] == 0){
+        	int *TempBuffer = new int [sendCount_x];
+        	ScaLBL_CopyToHost(TempBuffer,dvcSendList_x,sendCount_x*sizeof(int));
+        	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,sendCount_x*sizeof(int));
+        	delete [] TempBuffer;
+            return sendCount_x;
+        }
+        else if (dir[1] == 'y')
+            return sendCount_xy;
+        else if (dir[1] == 'Y')
+            return sendCount_xY;
+        else if (dir[1] == 'z')
+            return sendCount_xz;
+        else if (dir[1] == 'Z')
+            return sendCount_xZ;
+    } else if (dir[0] == 'y') {
+        if (dir[1] == 0){
+        	int *TempBuffer = new int [sendCount_y];
+        	ScaLBL_CopyToHost(TempBuffer,dvcSendList_y,sendCount_y*sizeof(int));
+        	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,sendCount_y*sizeof(int));
+        	delete [] TempBuffer;
+            return sendCount_y;
+        }
+        else if (dir[1] == 'z')
+            return sendCount_yz;
+        else if (dir[1] == 'Z')
+            return sendCount_yZ;
+    } else if (dir[0] == 'z') {
+        if (dir[1] == 0){
+        	int *TempBuffer = new int [sendCount_z];
+        	ScaLBL_CopyToHost(TempBuffer,dvcSendList_z,sendCount_z*sizeof(int));
+        	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,sendCount_z*sizeof(int));
+        	delete [] TempBuffer;
+        	return sendCount_z;
+        }
+    } else if (dir[0] == 'X') {
+    	if (dir[1] == 0){
+    		int *TempBuffer = new int [sendCount_X];
+    		ScaLBL_CopyToHost(TempBuffer,dvcSendList_X,sendCount_X*sizeof(int));
+    		ScaLBL_CopyToZeroCopy(buffer,TempBuffer,sendCount_X*sizeof(int));
+        	delete [] TempBuffer;
+    		return sendCount_X;
+    	}
+    	else if (dir[1] == 'y')
+            return sendCount_Xy;
+        else if (dir[1] == 'Y')
+            return sendCount_XY;
+        else if (dir[1] == 'z')
+            return sendCount_Xz;
+        else if (dir[1] == 'Z')
+            return sendCount_XZ;
+    } else if (dir[0] == 'Y') {
+        if (dir[1] == 0){
+        	int *TempBuffer = new int [sendCount_Y];
+        	ScaLBL_CopyToHost(TempBuffer,dvcSendList_Y,sendCount_Y*sizeof(int));
+        	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,sendCount_Y*sizeof(int));
+        	delete [] TempBuffer;
+            return sendCount_Y;
+        }
+        else if (dir[1] == 'z')
+            return sendCount_Yz;
+        else if (dir[1] == 'Z')
+            return sendCount_YZ;
+    } else if (dir[0] == 'Z') {
+        if (dir[1] == 0){
+        	int *TempBuffer = new int [sendCount_Z];
+        	ScaLBL_CopyToHost(TempBuffer,dvcSendList_Z,sendCount_Z*sizeof(int));
+        	ScaLBL_CopyToZeroCopy(buffer,TempBuffer,sendCount_Z*sizeof(int));
+        	delete [] TempBuffer;
+            return sendCount_Z;
+        }
+    }
+    throw std::logic_error("Internal error");
+}
+
+
 double ScaLBL_Communicator::GetPerformance(int *NeighborList, double *fq, int Np){
 	/* EACH MPI PROCESS GETS ITS OWN MEASUREMENT*/
 	/* use MRT kernels to check performance without communication / synchronization */
@@ -830,8 +1043,6 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 		idx=Map(n);
 		//if (rank == 0) printf("r: mapped n=%d\n",idx);
 		TempBuffer[i]=idx;
-
-
 	}
 	ScaLBL_CopyToDevice(dvcRecvDist_x,TempBuffer,5*recvCount_x*sizeof(int));
 
@@ -988,7 +1199,6 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 	return(Np);
 }
 
-
 void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, int Np, bool SlippingVelBC)
 {
 
@@ -1062,302 +1272,313 @@ void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, in
 			}
 		}
 	}
+	if (local_count > 0){
 
-	int *bb_dist_tmp = new int [local_count];	
-	int *bb_interactions_tmp = new int [local_count];	
-	ScaLBL_AllocateDeviceMemory((void **) &bb_dist, sizeof(int)*local_count);
-	ScaLBL_AllocateDeviceMemory((void **) &bb_interactions, sizeof(int)*local_count);
-	int *fluid_boundary_tmp;
-	double *lattice_weight_tmp;
-	float *lattice_cx_tmp;
-	float *lattice_cy_tmp;
-	float *lattice_cz_tmp;
-	/* allocate memory for bounce-back sites */
-	fluid_boundary_tmp = new int [local_count];
-	lattice_weight_tmp = new double [local_count];
-	lattice_cx_tmp = new float [local_count];
-	lattice_cy_tmp = new float [local_count];
-	lattice_cz_tmp = new float [local_count];
-	ScaLBL_AllocateDeviceMemory((void **) &fluid_boundary, sizeof(int)*local_count);
-	ScaLBL_AllocateDeviceMemory((void **) &lattice_weight, sizeof(double)*local_count);
-	ScaLBL_AllocateDeviceMemory((void **) &lattice_cx, sizeof(float)*local_count);
-	ScaLBL_AllocateDeviceMemory((void **) &lattice_cy, sizeof(float)*local_count);
-	ScaLBL_AllocateDeviceMemory((void **) &lattice_cz, sizeof(float)*local_count);
+		int *bb_dist_tmp = new int [local_count];	
+		int *bb_interactions_tmp = new int [local_count];	
+		ScaLBL_AllocateDeviceMemory((void **) &bb_dist, sizeof(int)*local_count);
+		ScaLBL_AllocateDeviceMemory((void **) &bb_interactions, sizeof(int)*local_count);
+		int *fluid_boundary_tmp;
+		double *lattice_weight_tmp;
+		float *lattice_cx_tmp;
+		float *lattice_cy_tmp;
+		float *lattice_cz_tmp;
+		/* allocate memory for bounce-back sites */
+		fluid_boundary_tmp = new int [local_count];
+		lattice_weight_tmp = new double [local_count];
+		lattice_cx_tmp = new float [local_count];
+		lattice_cy_tmp = new float [local_count];
+		lattice_cz_tmp = new float [local_count];
+		ScaLBL_AllocateDeviceMemory((void **) &fluid_boundary, sizeof(int)*local_count);
+		ScaLBL_AllocateDeviceMemory((void **) &lattice_weight, sizeof(double)*local_count);
+		ScaLBL_AllocateDeviceMemory((void **) &lattice_cx, sizeof(float)*local_count);
+		ScaLBL_AllocateDeviceMemory((void **) &lattice_cy, sizeof(float)*local_count);
+		ScaLBL_AllocateDeviceMemory((void **) &lattice_cz, sizeof(float)*local_count);
 
-	local_count=0;
-	for (k=1;k<Nz-1;k++){
-		for (j=1;j<Ny-1;j++){
-			for (i=1;i<Nx-1;i++){
-				n=k*Nx*Ny+j*Nx+i;
-				idx=Map(i,j,k);
-				if (!(idx<0)){
+		local_count=0;
+		for (k=1;k<Nz-1;k++){
+			for (j=1;j<Ny-1;j++){
+				for (i=1;i<Nx-1;i++){
+					n=k*Nx*Ny+j*Nx+i;
+					idx=Map(i,j,k);
+					if (!(idx<0)){
 
-					int neighbor;    // cycle through the neighbors of lattice site idx
-					neighbor=Map(i-1,j,k);
-					if (neighbor==-1){
-						bb_interactions_tmp[local_count] = (i-1) + (j)*Nx + (k)*Nx*Ny;
-                        //if(SlippingVelBC==true){
-                            fluid_boundary_tmp[local_count] = idx;
-                            lattice_weight_tmp[local_count] = 1.0/18.0;
-                            lattice_cx_tmp[local_count] = -1.0;
-                            lattice_cy_tmp[local_count] =  0.0;
-                            lattice_cz_tmp[local_count] =  0.0;
-                        //} 
+						int neighbor;    // cycle through the neighbors of lattice site idx
+						neighbor=Map(i-1,j,k);
+						if (neighbor==-1){
+							bb_interactions_tmp[local_count] = (i-1) + (j)*Nx + (k)*Nx*Ny;
+							//if(SlippingVelBC==true){
+							fluid_boundary_tmp[local_count] = idx;
+							lattice_weight_tmp[local_count] = 1.0/18.0;
+							lattice_cx_tmp[local_count] = -1.0;
+							lattice_cy_tmp[local_count] =  0.0;
+							lattice_cz_tmp[local_count] =  0.0;
+							//} 
 						bb_dist_tmp[local_count++]=idx + 2*Np;
-					}
+						}
 
-					neighbor=Map(i+1,j,k);
-					if (neighbor==-1){
-						bb_interactions_tmp[local_count] = (i+1) + (j)*Nx + (k)*Nx*Ny;
-                        //if(SlippingVelBC==true){
-                            fluid_boundary_tmp[local_count] = idx;
-                            lattice_weight_tmp[local_count] = 1.0/18.0;
-                            lattice_cx_tmp[local_count] =  1.0;
-                            lattice_cy_tmp[local_count] =  0.0;
-                            lattice_cz_tmp[local_count] =  0.0;
-                        //} 
+						neighbor=Map(i+1,j,k);
+						if (neighbor==-1){
+							bb_interactions_tmp[local_count] = (i+1) + (j)*Nx + (k)*Nx*Ny;
+							//if(SlippingVelBC==true){
+							fluid_boundary_tmp[local_count] = idx;
+							lattice_weight_tmp[local_count] = 1.0/18.0;
+							lattice_cx_tmp[local_count] =  1.0;
+							lattice_cy_tmp[local_count] =  0.0;
+							lattice_cz_tmp[local_count] =  0.0;
+							//} 
 						bb_dist_tmp[local_count++] = idx + 1*Np;
-					}
+						}
 
-					neighbor=Map(i,j-1,k);
-					if (neighbor==-1){
-						bb_interactions_tmp[local_count] = (i) + (j-1)*Nx + (k)*Nx*Ny;
-                        //if(SlippingVelBC==true){
-                            fluid_boundary_tmp[local_count] = idx;
-                            lattice_weight_tmp[local_count] = 1.0/18.0;
-                            lattice_cx_tmp[local_count] =  0.0;
-                            lattice_cy_tmp[local_count] = -1.0;
-                            lattice_cz_tmp[local_count] =  0.0;
-                        //} 
+						neighbor=Map(i,j-1,k);
+						if (neighbor==-1){
+							bb_interactions_tmp[local_count] = (i) + (j-1)*Nx + (k)*Nx*Ny;
+							//if(SlippingVelBC==true){
+							fluid_boundary_tmp[local_count] = idx;
+							lattice_weight_tmp[local_count] = 1.0/18.0;
+							lattice_cx_tmp[local_count] =  0.0;
+							lattice_cy_tmp[local_count] = -1.0;
+							lattice_cz_tmp[local_count] =  0.0;
+							//} 
 						bb_dist_tmp[local_count++]=idx + 4*Np;
-					}
+						}
 
-					neighbor=Map(i,j+1,k);
-					if (neighbor==-1){
-						bb_interactions_tmp[local_count] = (i) + (j+1)*Nx + (k)*Nx*Ny;
-                        //if(SlippingVelBC==true){
-                            fluid_boundary_tmp[local_count] = idx;
-                            lattice_weight_tmp[local_count] = 1.0/18.0;
-                            lattice_cx_tmp[local_count] =  0.0;
-                            lattice_cy_tmp[local_count] =  1.0;
-                            lattice_cz_tmp[local_count] =  0.0;
-                        //} 
+						neighbor=Map(i,j+1,k);
+						if (neighbor==-1){
+							bb_interactions_tmp[local_count] = (i) + (j+1)*Nx + (k)*Nx*Ny;
+							//if(SlippingVelBC==true){
+							fluid_boundary_tmp[local_count] = idx;
+							lattice_weight_tmp[local_count] = 1.0/18.0;
+							lattice_cx_tmp[local_count] =  0.0;
+							lattice_cy_tmp[local_count] =  1.0;
+							lattice_cz_tmp[local_count] =  0.0;
+							//} 
 						bb_dist_tmp[local_count++]=idx + 3*Np;
-					}
+						}
 
-					neighbor=Map(i,j,k-1);
-					if (neighbor==-1){
-						bb_interactions_tmp[local_count] = (i) + (j)*Nx + (k-1)*Nx*Ny;
-                        //if(SlippingVelBC==true){
-                            fluid_boundary_tmp[local_count] = idx;
-                            lattice_weight_tmp[local_count] = 1.0/18.0;
-                            lattice_cx_tmp[local_count] =  0.0;
-                            lattice_cy_tmp[local_count] =  0.0;
-                            lattice_cz_tmp[local_count] = -1.0;
-                        //} 
+						neighbor=Map(i,j,k-1);
+						if (neighbor==-1){
+							bb_interactions_tmp[local_count] = (i) + (j)*Nx + (k-1)*Nx*Ny;
+							//if(SlippingVelBC==true){
+							fluid_boundary_tmp[local_count] = idx;
+							lattice_weight_tmp[local_count] = 1.0/18.0;
+							lattice_cx_tmp[local_count] =  0.0;
+							lattice_cy_tmp[local_count] =  0.0;
+							lattice_cz_tmp[local_count] = -1.0;
+							//} 
 						bb_dist_tmp[local_count++]=idx + 6*Np;
-					}
+						}
 
-					neighbor=Map(i,j,k+1);
-					if (neighbor==-1){
-						bb_interactions_tmp[local_count] = (i) + (j)*Nx + (k+1)*Nx*Ny;
-                        //if(SlippingVelBC==true){
-                            fluid_boundary_tmp[local_count] = idx;
-                            lattice_weight_tmp[local_count] = 1.0/18.0;
-                            lattice_cx_tmp[local_count] =  0.0;
-                            lattice_cy_tmp[local_count] =  0.0;
-                            lattice_cz_tmp[local_count] =  1.0;
-                        //} 
+						neighbor=Map(i,j,k+1);
+						if (neighbor==-1){
+							bb_interactions_tmp[local_count] = (i) + (j)*Nx + (k+1)*Nx*Ny;
+							//if(SlippingVelBC==true){
+							fluid_boundary_tmp[local_count] = idx;
+							lattice_weight_tmp[local_count] = 1.0/18.0;
+							lattice_cx_tmp[local_count] =  0.0;
+							lattice_cy_tmp[local_count] =  0.0;
+							lattice_cz_tmp[local_count] =  1.0;
+							//} 
 						bb_dist_tmp[local_count++]=idx + 5*Np;
+						}
 					}
 				}
 			}
 		}
-	}
-	n_bb_d3q7 = local_count;
-	for (k=1;k<Nz-1;k++){
-		for (j=1;j<Ny-1;j++){
-			for (i=1;i<Nx-1;i++){
-				n=k*Nx*Ny+j*Nx+i;
-				idx=Map(i,j,k);
-				if (!(idx<0)){
+		n_bb_d3q7 = local_count;
+		for (k=1;k<Nz-1;k++){
+			for (j=1;j<Ny-1;j++){
+				for (i=1;i<Nx-1;i++){
+					n=k*Nx*Ny+j*Nx+i;
+					idx=Map(i,j,k);
+					if (!(idx<0)){
 
-					neighbor=Map(i-1,j-1,k);
-					if (neighbor==-1){
-						bb_interactions_tmp[local_count] = (i-1) + (j-1)*Nx + (k)*Nx*Ny;
-                        //if(SlippingVelBC==true){
-                            fluid_boundary_tmp[local_count] = idx;
-                            lattice_weight_tmp[local_count] = 1.0/36.0;
-                            lattice_cx_tmp[local_count] = -1.0;
-                            lattice_cy_tmp[local_count] = -1.0;
-                            lattice_cz_tmp[local_count] =  0.0;
-                        //} 
+						neighbor=Map(i-1,j-1,k);
+						if (neighbor==-1){
+							bb_interactions_tmp[local_count] = (i-1) + (j-1)*Nx + (k)*Nx*Ny;
+							//if(SlippingVelBC==true){
+							fluid_boundary_tmp[local_count] = idx;
+							lattice_weight_tmp[local_count] = 1.0/36.0;
+							lattice_cx_tmp[local_count] = -1.0;
+							lattice_cy_tmp[local_count] = -1.0;
+							lattice_cz_tmp[local_count] =  0.0;
+							//} 
 						bb_dist_tmp[local_count++]=idx + 8*Np;
-					}
+						}
 
-					neighbor=Map(i+1,j+1,k);
-					if (neighbor==-1)	{
-						bb_interactions_tmp[local_count] = (i+1) + (j+1)*Nx + (k)*Nx*Ny;
-                        //if(SlippingVelBC==true){
-                            fluid_boundary_tmp[local_count] = idx;
-                            lattice_weight_tmp[local_count] = 1.0/36.0;
-                            lattice_cx_tmp[local_count] =  1.0;
-                            lattice_cy_tmp[local_count] =  1.0;
-                            lattice_cz_tmp[local_count] =  0.0;
-                        //} 
+						neighbor=Map(i+1,j+1,k);
+						if (neighbor==-1)	{
+							bb_interactions_tmp[local_count] = (i+1) + (j+1)*Nx + (k)*Nx*Ny;
+							//if(SlippingVelBC==true){
+							fluid_boundary_tmp[local_count] = idx;
+							lattice_weight_tmp[local_count] = 1.0/36.0;
+							lattice_cx_tmp[local_count] =  1.0;
+							lattice_cy_tmp[local_count] =  1.0;
+							lattice_cz_tmp[local_count] =  0.0;
+							//} 
 						bb_dist_tmp[local_count++]=idx + 7*Np;
-					}
+						}
 
-					neighbor=Map(i-1,j+1,k);
-					if (neighbor==-1){
-						bb_interactions_tmp[local_count] = (i-1) + (j+1)*Nx + (k)*Nx*Ny;
-                        //if(SlippingVelBC==true){
-                            fluid_boundary_tmp[local_count] = idx;
-                            lattice_weight_tmp[local_count] = 1.0/36.0;
-                            lattice_cx_tmp[local_count] = -1.0;
-                            lattice_cy_tmp[local_count] =  1.0;
-                            lattice_cz_tmp[local_count] =  0.0;
-                        //} 
+						neighbor=Map(i-1,j+1,k);
+						if (neighbor==-1){
+							bb_interactions_tmp[local_count] = (i-1) + (j+1)*Nx + (k)*Nx*Ny;
+							//if(SlippingVelBC==true){
+							fluid_boundary_tmp[local_count] = idx;
+							lattice_weight_tmp[local_count] = 1.0/36.0;
+							lattice_cx_tmp[local_count] = -1.0;
+							lattice_cy_tmp[local_count] =  1.0;
+							lattice_cz_tmp[local_count] =  0.0;
+							//} 
 						bb_dist_tmp[local_count++]=idx + 10*Np;
-					}
+						}
 
-					neighbor=Map(i+1,j-1,k);
-					if (neighbor==-1){
-						bb_interactions_tmp[local_count] = (i+1) + (j-1)*Nx + (k)*Nx*Ny;
-                        //if(SlippingVelBC==true){
-                            fluid_boundary_tmp[local_count] = idx;
-                            lattice_weight_tmp[local_count] = 1.0/36.0;
-                            lattice_cx_tmp[local_count] =  1.0;
-                            lattice_cy_tmp[local_count] = -1.0;
-                            lattice_cz_tmp[local_count] =  0.0;
-                        //} 
+						neighbor=Map(i+1,j-1,k);
+						if (neighbor==-1){
+							bb_interactions_tmp[local_count] = (i+1) + (j-1)*Nx + (k)*Nx*Ny;
+							//if(SlippingVelBC==true){
+							fluid_boundary_tmp[local_count] = idx;
+							lattice_weight_tmp[local_count] = 1.0/36.0;
+							lattice_cx_tmp[local_count] =  1.0;
+							lattice_cy_tmp[local_count] = -1.0;
+							lattice_cz_tmp[local_count] =  0.0;
+							//} 
 						bb_dist_tmp[local_count++]=idx + 9*Np;
-					}
+						}
 
-					neighbor=Map(i-1,j,k-1);
-					if (neighbor==-1) {
-						bb_interactions_tmp[local_count] = (i-1) + (j)*Nx + (k-1)*Nx*Ny;
-                        //if(SlippingVelBC==true){
-                            fluid_boundary_tmp[local_count] = idx;
-                            lattice_weight_tmp[local_count] = 1.0/36.0;
-                            lattice_cx_tmp[local_count] = -1.0;
-                            lattice_cy_tmp[local_count] =  0.0;
-                            lattice_cz_tmp[local_count] = -1.0;
-                        //} 
+						neighbor=Map(i-1,j,k-1);
+						if (neighbor==-1) {
+							bb_interactions_tmp[local_count] = (i-1) + (j)*Nx + (k-1)*Nx*Ny;
+							//if(SlippingVelBC==true){
+							fluid_boundary_tmp[local_count] = idx;
+							lattice_weight_tmp[local_count] = 1.0/36.0;
+							lattice_cx_tmp[local_count] = -1.0;
+							lattice_cy_tmp[local_count] =  0.0;
+							lattice_cz_tmp[local_count] = -1.0;
+							//} 
 						bb_dist_tmp[local_count++]=idx + 12*Np;
-					}
+						}
 
-					neighbor=Map(i+1,j,k+1);
-					if (neighbor==-1){
-						bb_interactions_tmp[local_count] = (i+1) + (j)*Nx + (k+1)*Nx*Ny;
-                        //if(SlippingVelBC==true){
-                            fluid_boundary_tmp[local_count] = idx;
-                            lattice_weight_tmp[local_count] = 1.0/36.0;
-                            lattice_cx_tmp[local_count] =  1.0;
-                            lattice_cy_tmp[local_count] =  0.0;
-                            lattice_cz_tmp[local_count] =  1.0;
-                        //} 
+						neighbor=Map(i+1,j,k+1);
+						if (neighbor==-1){
+							bb_interactions_tmp[local_count] = (i+1) + (j)*Nx + (k+1)*Nx*Ny;
+							//if(SlippingVelBC==true){
+							fluid_boundary_tmp[local_count] = idx;
+							lattice_weight_tmp[local_count] = 1.0/36.0;
+							lattice_cx_tmp[local_count] =  1.0;
+							lattice_cy_tmp[local_count] =  0.0;
+							lattice_cz_tmp[local_count] =  1.0;
+							//} 
 						bb_dist_tmp[local_count++]=idx + 11*Np;
-					}
+						}
 
-					neighbor=Map(i-1,j,k+1);
-					if (neighbor==-1) {
-						bb_interactions_tmp[local_count] = (i-1) + (j)*Nx + (k+1)*Nx*Ny;
-                        //if(SlippingVelBC==true){
-                            fluid_boundary_tmp[local_count] = idx;
-                            lattice_weight_tmp[local_count] = 1.0/36.0;
-                            lattice_cx_tmp[local_count] = -1.0;
-                            lattice_cy_tmp[local_count] =  0.0;
-                            lattice_cz_tmp[local_count] =  1.0;
-                        //} 
+						neighbor=Map(i-1,j,k+1);
+						if (neighbor==-1) {
+							bb_interactions_tmp[local_count] = (i-1) + (j)*Nx + (k+1)*Nx*Ny;
+							//if(SlippingVelBC==true){
+							fluid_boundary_tmp[local_count] = idx;
+							lattice_weight_tmp[local_count] = 1.0/36.0;
+							lattice_cx_tmp[local_count] = -1.0;
+							lattice_cy_tmp[local_count] =  0.0;
+							lattice_cz_tmp[local_count] =  1.0;
+							//} 
 						bb_dist_tmp[local_count++]=idx + 14*Np;
-					}
+						}
 
-					neighbor=Map(i+1,j,k-1);
-					if (neighbor==-1) {
-						bb_interactions_tmp[local_count] = (i+1) + (j)*Nx + (k-1)*Nx*Ny;
-                        //if(SlippingVelBC==true){
-                            fluid_boundary_tmp[local_count] = idx;
-                            lattice_weight_tmp[local_count] = 1.0/36.0;
-                            lattice_cx_tmp[local_count] =  1.0;
-                            lattice_cy_tmp[local_count] =  0.0;
-                            lattice_cz_tmp[local_count] = -1.0;
-                        //} 
+						neighbor=Map(i+1,j,k-1);
+						if (neighbor==-1) {
+							bb_interactions_tmp[local_count] = (i+1) + (j)*Nx + (k-1)*Nx*Ny;
+							//if(SlippingVelBC==true){
+							fluid_boundary_tmp[local_count] = idx;
+							lattice_weight_tmp[local_count] = 1.0/36.0;
+							lattice_cx_tmp[local_count] =  1.0;
+							lattice_cy_tmp[local_count] =  0.0;
+							lattice_cz_tmp[local_count] = -1.0;
+							//} 
 						bb_dist_tmp[local_count++]=idx + 13*Np;
-					}
+						}
 
-					neighbor=Map(i,j-1,k-1);
-					if (neighbor==-1){
-						bb_interactions_tmp[local_count] = (i) + (j-1)*Nx + (k-1)*Nx*Ny;
-                        //if(SlippingVelBC==true){
-                            fluid_boundary_tmp[local_count] = idx;
-                            lattice_weight_tmp[local_count] = 1.0/36.0;
-                            lattice_cx_tmp[local_count] =  0.0;
-                            lattice_cy_tmp[local_count] = -1.0;
-                            lattice_cz_tmp[local_count] = -1.0;
-                        //} 
+						neighbor=Map(i,j-1,k-1);
+						if (neighbor==-1){
+							bb_interactions_tmp[local_count] = (i) + (j-1)*Nx + (k-1)*Nx*Ny;
+							//if(SlippingVelBC==true){
+							fluid_boundary_tmp[local_count] = idx;
+							lattice_weight_tmp[local_count] = 1.0/36.0;
+							lattice_cx_tmp[local_count] =  0.0;
+							lattice_cy_tmp[local_count] = -1.0;
+							lattice_cz_tmp[local_count] = -1.0;
+							//} 
 						bb_dist_tmp[local_count++]=idx + 16*Np;
-					}
+						}
 
-					neighbor=Map(i,j+1,k+1);
-					if (neighbor==-1){
-						bb_interactions_tmp[local_count] = (i) + (j+1)*Nx + (k+1)*Nx*Ny;
-                        //if(SlippingVelBC==true){
-                            fluid_boundary_tmp[local_count] = idx;
-                            lattice_weight_tmp[local_count] = 1.0/36.0;
-                            lattice_cx_tmp[local_count] =  0.0;
-                            lattice_cy_tmp[local_count] =  1.0;
-                            lattice_cz_tmp[local_count] =  1.0;
-                        //} 
+						neighbor=Map(i,j+1,k+1);
+						if (neighbor==-1){
+							bb_interactions_tmp[local_count] = (i) + (j+1)*Nx + (k+1)*Nx*Ny;
+							//if(SlippingVelBC==true){
+							fluid_boundary_tmp[local_count] = idx;
+							lattice_weight_tmp[local_count] = 1.0/36.0;
+							lattice_cx_tmp[local_count] =  0.0;
+							lattice_cy_tmp[local_count] =  1.0;
+							lattice_cz_tmp[local_count] =  1.0;
+							//} 
 						bb_dist_tmp[local_count++]=idx + 15*Np;
-					}
+						}
 
-					neighbor=Map(i,j-1,k+1);
-					if (neighbor==-1){
-						bb_interactions_tmp[local_count] = (i) + (j-1)*Nx + (k+1)*Nx*Ny;
-                        //if(SlippingVelBC==true){
-                            fluid_boundary_tmp[local_count] = idx;
-                            lattice_weight_tmp[local_count] = 1.0/36.0;
-                            lattice_cx_tmp[local_count] =  0.0;
-                            lattice_cy_tmp[local_count] = -1.0;
-                            lattice_cz_tmp[local_count] =  1.0;
-                        //} 
+						neighbor=Map(i,j-1,k+1);
+						if (neighbor==-1){
+							bb_interactions_tmp[local_count] = (i) + (j-1)*Nx + (k+1)*Nx*Ny;
+							//if(SlippingVelBC==true){
+							fluid_boundary_tmp[local_count] = idx;
+							lattice_weight_tmp[local_count] = 1.0/36.0;
+							lattice_cx_tmp[local_count] =  0.0;
+							lattice_cy_tmp[local_count] = -1.0;
+							lattice_cz_tmp[local_count] =  1.0;
+							//} 
 						bb_dist_tmp[local_count++]=idx + 18*Np;
-					}
+						}
 
-					neighbor=Map(i,j+1,k-1);
-					if (neighbor==-1){
-						bb_interactions_tmp[local_count] = (i) + (j+1)*Nx + (k-1)*Nx*Ny;
-                        //if(SlippingVelBC==true){
-                            fluid_boundary_tmp[local_count] = idx;
-                            lattice_weight_tmp[local_count] = 1.0/36.0;
-                            lattice_cx_tmp[local_count] =  0.0;
-                            lattice_cy_tmp[local_count] =  1.0;
-                            lattice_cz_tmp[local_count] = -1.0;
-                        //} 
+						neighbor=Map(i,j+1,k-1);
+						if (neighbor==-1){
+							bb_interactions_tmp[local_count] = (i) + (j+1)*Nx + (k-1)*Nx*Ny;
+							//if(SlippingVelBC==true){
+							fluid_boundary_tmp[local_count] = idx;
+							lattice_weight_tmp[local_count] = 1.0/36.0;
+							lattice_cx_tmp[local_count] =  0.0;
+							lattice_cy_tmp[local_count] =  1.0;
+							lattice_cz_tmp[local_count] = -1.0;
+							//} 
 						bb_dist_tmp[local_count++]=idx + 17*Np;
+						}
 					}
 				}
 			}
 		}
-	}
-	n_bb_d3q19 = local_count; // this gives the d3q19 distributions not part of d3q7 model
-	ScaLBL_CopyToDevice(bb_dist, bb_dist_tmp, local_count*sizeof(int));
-	ScaLBL_CopyToDevice(bb_interactions, bb_interactions_tmp, local_count*sizeof(int));
-	ScaLBL_CopyToDevice(fluid_boundary, fluid_boundary_tmp, local_count*sizeof(int));
-	ScaLBL_CopyToDevice(lattice_weight, lattice_weight_tmp, local_count*sizeof(double));
-	ScaLBL_CopyToDevice(lattice_cx, lattice_cx_tmp, local_count*sizeof(float));
-	ScaLBL_CopyToDevice(lattice_cy, lattice_cy_tmp, local_count*sizeof(float));
-	ScaLBL_CopyToDevice(lattice_cz, lattice_cz_tmp, local_count*sizeof(float));
-	ScaLBL_DeviceBarrier();
+		n_bb_d3q19 = local_count; // this gives the d3q19 distributions not part of d3q7 model
+		ScaLBL_CopyToDevice(bb_dist, bb_dist_tmp, local_count*sizeof(int));
+		ScaLBL_CopyToDevice(bb_interactions, bb_interactions_tmp, local_count*sizeof(int));
+		ScaLBL_CopyToDevice(fluid_boundary, fluid_boundary_tmp, local_count*sizeof(int));
+		ScaLBL_CopyToDevice(lattice_weight, lattice_weight_tmp, local_count*sizeof(double));
+		ScaLBL_CopyToDevice(lattice_cx, lattice_cx_tmp, local_count*sizeof(float));
+		ScaLBL_CopyToDevice(lattice_cy, lattice_cy_tmp, local_count*sizeof(float));
+		ScaLBL_CopyToDevice(lattice_cz, lattice_cz_tmp, local_count*sizeof(float));
+		ScaLBL_DeviceBarrier();
 
-	delete [] bb_dist_tmp;
-	delete [] bb_interactions_tmp;
-	delete [] fluid_boundary_tmp;
-	delete [] lattice_weight_tmp;
-	delete [] lattice_cx_tmp;
-	delete [] lattice_cy_tmp;
-	delete [] lattice_cz_tmp;
+		delete [] bb_dist_tmp;
+		delete [] bb_interactions_tmp;
+		delete [] fluid_boundary_tmp;
+		delete [] lattice_weight_tmp;
+		delete [] lattice_cx_tmp;
+		delete [] lattice_cy_tmp;
+		delete [] lattice_cz_tmp;
+	}
+	else {
+		bb_dist = NULL;
+		bb_interactions = NULL;
+		fluid_boundary = NULL;
+		lattice_weight = NULL;
+		lattice_cx = NULL;
+		lattice_cy = NULL;
+		lattice_cz = NULL;
+	}
 }
 
 void ScaLBL_Communicator::SolidDirichletD3Q7(double *fq, double *BoundaryValue){
@@ -1390,15 +1611,12 @@ void ScaLBL_Communicator::SolidSlippingVelocityBCD3Q19(double *fq, double *zeta_
 
 void ScaLBL_Communicator::SendD3Q19AA(double *dist){
 
-	// NOTE: the center distribution f0 must NOT be at the start of feven, provide offset to start of f2
 	if (Lock==true){
 		ERROR("ScaLBL Error (SendD3Q19): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
 	}
 	else{
 		Lock=true;
 	}
-	// assign tag of 19 to D3Q19 communication
-	sendtag = recvtag = 19;
 	ScaLBL_DeviceBarrier();
 	// Pack the distributions
 	//...Packing for x face(2,8,10,12,14)................................
@@ -1408,8 +1626,6 @@ void ScaLBL_Communicator::SendD3Q19AA(double *dist){
 	ScaLBL_D3Q19_Pack(12,dvcSendList_x,3*sendCount_x,sendCount_x,sendbuf_x,dist,N);
 	ScaLBL_D3Q19_Pack(14,dvcSendList_x,4*sendCount_x,sendCount_x,sendbuf_x,dist,N);
 	
-	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, 5*sendCount_x,rank_x,sendtag);
-	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, 5*recvCount_X,rank_X,recvtag);
 	//...Packing for X face(1,7,9,11,13)................................
 	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,dist,N);
 	ScaLBL_D3Q19_Pack(7,dvcSendList_X,sendCount_X,sendCount_X,sendbuf_X,dist,N);
@@ -1417,8 +1633,6 @@ void ScaLBL_Communicator::SendD3Q19AA(double *dist){
 	ScaLBL_D3Q19_Pack(11,dvcSendList_X,3*sendCount_X,sendCount_X,sendbuf_X,dist,N);
 	ScaLBL_D3Q19_Pack(13,dvcSendList_X,4*sendCount_X,sendCount_X,sendbuf_X,dist,N);
 	
-	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, 5*sendCount_X,rank_X,sendtag);
-	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, 5*recvCount_x,rank_x,recvtag);
 	//...Packing for y face(4,8,9,16,18).................................
 	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,dist,N);
 	ScaLBL_D3Q19_Pack(8,dvcSendList_y,sendCount_y,sendCount_y,sendbuf_y,dist,N);
@@ -1426,8 +1640,6 @@ void ScaLBL_Communicator::SendD3Q19AA(double *dist){
 	ScaLBL_D3Q19_Pack(16,dvcSendList_y,3*sendCount_y,sendCount_y,sendbuf_y,dist,N);
 	ScaLBL_D3Q19_Pack(18,dvcSendList_y,4*sendCount_y,sendCount_y,sendbuf_y,dist,N);
 	
-	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, 5*sendCount_y,rank_y,sendtag);
-	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, 5*recvCount_Y,rank_Y,recvtag);
 	//...Packing for Y face(3,7,10,15,17).................................
 	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,dist,N);
 	ScaLBL_D3Q19_Pack(7,dvcSendList_Y,sendCount_Y,sendCount_Y,sendbuf_Y,dist,N);
@@ -1435,77 +1647,51 @@ void ScaLBL_Communicator::SendD3Q19AA(double *dist){
 	ScaLBL_D3Q19_Pack(15,dvcSendList_Y,3*sendCount_Y,sendCount_Y,sendbuf_Y,dist,N);
 	ScaLBL_D3Q19_Pack(17,dvcSendList_Y,4*sendCount_Y,sendCount_Y,sendbuf_Y,dist,N);
 	
-	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, 5*sendCount_Y,rank_Y,sendtag);
-	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, 5*recvCount_y,rank_y,recvtag);
 	//...Packing for z face(6,12,13,16,17)................................
 	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,dist,N);
 	ScaLBL_D3Q19_Pack(12,dvcSendList_z,sendCount_z,sendCount_z,sendbuf_z,dist,N);
 	ScaLBL_D3Q19_Pack(13,dvcSendList_z,2*sendCount_z,sendCount_z,sendbuf_z,dist,N);
 	ScaLBL_D3Q19_Pack(16,dvcSendList_z,3*sendCount_z,sendCount_z,sendbuf_z,dist,N);
 	ScaLBL_D3Q19_Pack(17,dvcSendList_z,4*sendCount_z,sendCount_z,sendbuf_z,dist,N);
-	
-	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, 5*sendCount_z,rank_z,sendtag);
-	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, 5*recvCount_Z,rank_Z,recvtag);
-	
+		
 	//...Packing for Z face(5,11,14,15,18)................................
 	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,dist,N);
 	ScaLBL_D3Q19_Pack(11,dvcSendList_Z,sendCount_Z,sendCount_Z,sendbuf_Z,dist,N);
 	ScaLBL_D3Q19_Pack(14,dvcSendList_Z,2*sendCount_Z,sendCount_Z,sendbuf_Z,dist,N);
 	ScaLBL_D3Q19_Pack(15,dvcSendList_Z,3*sendCount_Z,sendCount_Z,sendbuf_Z,dist,N);
 	ScaLBL_D3Q19_Pack(18,dvcSendList_Z,4*sendCount_Z,sendCount_Z,sendbuf_Z,dist,N);
-	
-	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, 5*sendCount_Z,rank_Z,sendtag);
-	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, 5*recvCount_z,rank_z,recvtag);
-	
-	//...Pack the xy edge (8)................................
+
+      	//...Pack the xy edge (8)................................
 	ScaLBL_D3Q19_Pack(8,dvcSendList_xy,0,sendCount_xy,sendbuf_xy,dist,N);
-	req1[6] = MPI_COMM_SCALBL.Isend(sendbuf_xy, sendCount_xy,rank_xy,sendtag);
-	req2[6] = MPI_COMM_SCALBL.Irecv(recvbuf_XY, recvCount_XY,rank_XY,recvtag);
 	//...Pack the Xy edge (9)................................
 	ScaLBL_D3Q19_Pack(9,dvcSendList_Xy,0,sendCount_Xy,sendbuf_Xy,dist,N);
-	req1[8] = MPI_COMM_SCALBL.Isend(sendbuf_Xy, sendCount_Xy,rank_Xy,sendtag);
-	req2[8] = MPI_COMM_SCALBL.Irecv(recvbuf_xY, recvCount_xY,rank_xY,recvtag);
 	//...Pack the xY edge (10)................................
 	ScaLBL_D3Q19_Pack(10,dvcSendList_xY,0,sendCount_xY,sendbuf_xY,dist,N);
-	req1[9] = MPI_COMM_SCALBL.Isend(sendbuf_xY, sendCount_xY,rank_xY,sendtag);
-	req2[9] = MPI_COMM_SCALBL.Irecv(recvbuf_Xy, recvCount_Xy,rank_Xy,recvtag);
 	//...Pack the XY edge (7)................................
 	ScaLBL_D3Q19_Pack(7,dvcSendList_XY,0,sendCount_XY,sendbuf_XY,dist,N);
-	req1[7] = MPI_COMM_SCALBL.Isend(sendbuf_XY, sendCount_XY,rank_XY,sendtag);
-	req2[7] = MPI_COMM_SCALBL.Irecv(recvbuf_xy, recvCount_xy,rank_xy,recvtag);
 	//...Pack the xz edge (12)................................
 	ScaLBL_D3Q19_Pack(12,dvcSendList_xz,0,sendCount_xz,sendbuf_xz,dist,N);
-	req1[10] = MPI_COMM_SCALBL.Isend(sendbuf_xz, sendCount_xz,rank_xz,sendtag);
-	req2[10] = MPI_COMM_SCALBL.Irecv(recvbuf_XZ, recvCount_XZ,rank_XZ,recvtag);
+	
 	//...Pack the xZ edge (14)................................
 	ScaLBL_D3Q19_Pack(14,dvcSendList_xZ,0,sendCount_xZ,sendbuf_xZ,dist,N);
-	req1[13] = MPI_COMM_SCALBL.Isend(sendbuf_xZ, sendCount_xZ,rank_xZ,sendtag);
-	req2[13] = MPI_COMM_SCALBL.Irecv(recvbuf_Xz, recvCount_Xz,rank_Xz,recvtag);
 	//...Pack the Xz edge (13)................................
 	ScaLBL_D3Q19_Pack(13,dvcSendList_Xz,0,sendCount_Xz,sendbuf_Xz,dist,N);
-	req1[12] = MPI_COMM_SCALBL.Isend(sendbuf_Xz, sendCount_Xz,rank_Xz,sendtag);
-	req2[12] = MPI_COMM_SCALBL.Irecv(recvbuf_xZ, recvCount_xZ,rank_xZ,recvtag);
+
 	//...Pack the XZ edge (11)................................
 	ScaLBL_D3Q19_Pack(11,dvcSendList_XZ,0,sendCount_XZ,sendbuf_XZ,dist,N);
-	req1[11] = MPI_COMM_SCALBL.Isend(sendbuf_XZ, sendCount_XZ,rank_XZ,sendtag);
-	req2[11] = MPI_COMM_SCALBL.Irecv(recvbuf_xz, recvCount_xz,rank_xz,recvtag);
 	//...Pack the yz edge (16)................................
 	ScaLBL_D3Q19_Pack(16,dvcSendList_yz,0,sendCount_yz,sendbuf_yz,dist,N);
-	req1[14] = MPI_COMM_SCALBL.Isend(sendbuf_yz, sendCount_yz,rank_yz,sendtag);
-	req2[14] = MPI_COMM_SCALBL.Irecv(recvbuf_YZ, recvCount_YZ,rank_YZ,recvtag);
 	//...Pack the yZ edge (18)................................
 	ScaLBL_D3Q19_Pack(18,dvcSendList_yZ,0,sendCount_yZ,sendbuf_yZ,dist,N);
-	req1[17] = MPI_COMM_SCALBL.Isend(sendbuf_yZ, sendCount_yZ,rank_yZ,sendtag);
-	req2[17] = MPI_COMM_SCALBL.Irecv(recvbuf_Yz, recvCount_Yz,rank_Yz,recvtag);
 	//...Pack the Yz edge (17)................................
 	ScaLBL_D3Q19_Pack(17,dvcSendList_Yz,0,sendCount_Yz,sendbuf_Yz,dist,N);
-	req1[16] = MPI_COMM_SCALBL.Isend(sendbuf_Yz, sendCount_Yz,rank_Yz,sendtag);
-	req2[16] = MPI_COMM_SCALBL.Irecv(recvbuf_yZ, recvCount_yZ,rank_yZ,recvtag);
 	//...Pack the YZ edge (15)................................
 	ScaLBL_D3Q19_Pack(15,dvcSendList_YZ,0,sendCount_YZ,sendbuf_YZ,dist,N);
-	req1[15] = MPI_COMM_SCALBL.Isend(sendbuf_YZ, sendCount_YZ,rank_YZ,sendtag);
-	req2[15] = MPI_COMM_SCALBL.Irecv(recvbuf_yz, recvCount_yz,rank_yz,recvtag);
+
 	//...................................................................................
+
+	ScaLBL_DeviceBarrier();
+    start( req_D3Q19AA );
 
 }
 
@@ -1514,8 +1700,7 @@ void ScaLBL_Communicator::RecvD3Q19AA(double *dist){
 	// NOTE: the center distribution f0 must NOT be at the start of feven, provide offset to start of f2
 	//...................................................................................
 	// Wait for completion of D3Q19 communication
-	MPI_COMM_SCALBL.waitAll(18,req1);
-	MPI_COMM_SCALBL.waitAll(18,req2);
+    wait( req_D3Q19AA );
 	ScaLBL_DeviceBarrier();
 
 	//...................................................................................
@@ -1685,43 +1870,43 @@ void ScaLBL_Communicator::BiSendD3Q7AA(double *Aq, double *Bq){
 		Lock=true;
 	}
 	// assign tag of 19 to D3Q19 communication
-	sendtag = recvtag = 14;
+	sendtag = recvtag = 148;
 	ScaLBL_DeviceBarrier();
 	// Pack the distributions
 	//...Packing for x face(2,8,10,12,14)................................
 	ScaLBL_D3Q19_Pack(2,dvcSendList_x,0,sendCount_x,sendbuf_x,Aq,N);
 	ScaLBL_D3Q19_Pack(2,dvcSendList_x,sendCount_x,sendCount_x,sendbuf_x,Bq,N);
 
-	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, 2*sendCount_x,rank_x,sendtag);
-	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, 2*recvCount_X,rank_X,recvtag);
+	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, 2*sendCount_x, rank_x,sendtag+0);
+	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, 2*recvCount_X, rank_X,recvtag+0);
 	
 	//...Packing for X face(1,7,9,11,13)................................
 	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,Aq,N);
 	ScaLBL_D3Q19_Pack(1,dvcSendList_X,sendCount_X,sendCount_X,sendbuf_X,Bq,N);
 	
-	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, 2*sendCount_X,rank_X,sendtag);
-	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, 2*recvCount_x,rank_x,recvtag);
+	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, 2*sendCount_X, rank_X,sendtag+1);
+	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, 2*recvCount_x, rank_x,recvtag+1);
 
 	//...Packing for y face(4,8,9,16,18).................................
 	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,Aq,N);
 	ScaLBL_D3Q19_Pack(4,dvcSendList_y,sendCount_y,sendCount_y,sendbuf_y,Bq,N);
 
-	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, 2*sendCount_y,rank_y,sendtag);
-	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, 2*recvCount_Y,rank_Y,recvtag);
+	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, 2*sendCount_y, rank_y,sendtag+2);
+	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, 2*recvCount_Y, rank_Y,recvtag+2);
 	
 	//...Packing for Y face(3,7,10,15,17).................................
 	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,Aq,N);
 	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,sendCount_Y,sendCount_Y,sendbuf_Y,Bq,N);
 
-	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, 2*sendCount_Y,rank_Y,sendtag);
-	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, 2*recvCount_y,rank_y,recvtag);
+	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, 2*sendCount_Y, rank_Y,sendtag+3);
+	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, 2*recvCount_y, rank_y,recvtag+3);
 	
 	//...Packing for z face(6,12,13,16,17)................................
 	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,Aq,N);
 	ScaLBL_D3Q19_Pack(6,dvcSendList_z,sendCount_z,sendCount_z,sendbuf_z,Bq,N);
 	
-	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, 2*sendCount_z,rank_z,sendtag);
-	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, 2*recvCount_Z,rank_Z,recvtag);
+	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, 2*sendCount_z, rank_z,sendtag+4);
+	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, 2*recvCount_Z, rank_Z,recvtag+4);
 	
 	//...Packing for Z face(5,11,14,15,18)................................
 	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,Aq,N);
@@ -1729,8 +1914,8 @@ void ScaLBL_Communicator::BiSendD3Q7AA(double *Aq, double *Bq){
 
 	//...................................................................................
 	// Send all the distributions
-	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, 2*sendCount_Z,rank_Z,sendtag);
-	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, 2*recvCount_z,rank_z,recvtag);
+	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, 2*sendCount_Z, rank_Z,sendtag+5);
+	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, 2*recvCount_z, rank_z,recvtag+5);
 
 }
 
@@ -1801,39 +1986,39 @@ void ScaLBL_Communicator::SendD3Q7AA(double *Aq, int Component){
 	else{
 		Lock=true;
 	}
-	// assign tag of 19 to D3Q19 communication
-	sendtag = recvtag = 7;
+	// assign tag of 154 to D3Q19 communication
+	sendtag = recvtag = 154;
 	ScaLBL_DeviceBarrier();
 	// Pack the distributions
 	//...Packing for x face(2,8,10,12,14)................................
 	ScaLBL_D3Q19_Pack(2,dvcSendList_x,0,sendCount_x,sendbuf_x,&Aq[Component*7*N],N);
-	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, sendCount_x,rank_x,sendtag);
-	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, recvCount_X,rank_X,recvtag);
+	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, sendCount_x, rank_x,sendtag+0);
+	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, recvCount_X, rank_X,recvtag+0);
 	
 	//...Packing for X face(1,7,9,11,13)................................
 	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,&Aq[Component*7*N],N);
-	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, sendCount_X,rank_X,sendtag);
-	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, recvCount_x,rank_x,recvtag);
+	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, sendCount_X, rank_X,sendtag+1);
+	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, recvCount_x, rank_x,recvtag+1);
 	
 	//...Packing for y face(4,8,9,16,18).................................
 	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,&Aq[Component*7*N],N);
-	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, sendCount_y,rank_y,sendtag);
-	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, recvCount_Y,rank_Y,recvtag);
+	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, sendCount_y, rank_y,sendtag+2);
+	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, recvCount_Y, rank_Y,recvtag+2);
 	
 	//...Packing for Y face(3,7,10,15,17).................................
 	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,&Aq[Component*7*N],N);
-	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, sendCount_Y,rank_Y,sendtag);
-	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, recvCount_y,rank_y,recvtag);
+	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, sendCount_Y, rank_Y,sendtag+3);
+	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, recvCount_y, rank_y,recvtag+3);
 	
 	//...Packing for z face(6,12,13,16,17)................................
 	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,&Aq[Component*7*N],N);
-	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, sendCount_z,rank_z,sendtag);
-	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, recvCount_Z,rank_Z,recvtag);
+	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, sendCount_z, rank_z,sendtag+4);
+	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, recvCount_Z, rank_Z,recvtag+4);
 	
 	//...Packing for Z face(5,11,14,15,18)................................
 	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,&Aq[Component*7*N],N);
-	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, sendCount_Z,rank_Z,sendtag);
-	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, recvCount_z,rank_z,recvtag);
+	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, sendCount_Z, rank_Z,sendtag+5);
+	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, recvCount_z, rank_z,recvtag+5);
 }
 
 
@@ -1896,7 +2081,7 @@ void ScaLBL_Communicator::TriSendD3Q7AA(double *Aq, double *Bq, double *Cq){
 		Lock=true;
 	}
 	// assign tag of 19 to D3Q19 communication
-	sendtag = recvtag = 15;
+	sendtag = recvtag = 162;
 	ScaLBL_DeviceBarrier();
 	// Pack the distributions
 	//...Packing for x face(2,8,10,12,14)................................
@@ -1926,18 +2111,18 @@ void ScaLBL_Communicator::TriSendD3Q7AA(double *Aq, double *Bq, double *Cq){
 
 	//...................................................................................
 	// Send all the distributions
-	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, 3*sendCount_x,rank_x,sendtag);
-	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, 3*recvCount_X,rank_X,recvtag);
-	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, 3*sendCount_X,rank_X,sendtag);
-	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, 3*recvCount_x,rank_x,recvtag);
-	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, 3*sendCount_y,rank_y,sendtag);
-	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, 3*recvCount_Y,rank_Y,recvtag);
-	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, 3*sendCount_Y,rank_Y,sendtag);
-	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, 3*recvCount_y,rank_y,recvtag);
-	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, 3*sendCount_z,rank_z,sendtag);
-	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, 3*recvCount_Z,rank_Z,recvtag);
-	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, 3*sendCount_Z,rank_Z,sendtag);
-	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, 3*recvCount_z,rank_z,recvtag);
+	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, 3*sendCount_x, rank_x,sendtag+0);
+	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, 3*recvCount_X, rank_X,recvtag+0);
+	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, 3*sendCount_X, rank_X,sendtag+1);
+	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, 3*recvCount_x, rank_x,recvtag+1);
+	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, 3*sendCount_y, rank_y,sendtag+2);
+	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, 3*recvCount_Y, rank_Y,recvtag+2);
+	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, 3*sendCount_Y, rank_Y,sendtag+3);
+	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, 3*recvCount_y, rank_y,recvtag+3);
+	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, 3*sendCount_z, rank_z,sendtag+4);
+	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, 3*recvCount_Z, rank_Z,recvtag+4);
+	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, 3*sendCount_Z, rank_Z,sendtag+5);
+	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, 3*recvCount_z, rank_z,recvtag+5);
 
 }
 
@@ -2018,7 +2203,7 @@ void ScaLBL_Communicator::SendHalo(double *data){
 	}
 	ScaLBL_DeviceBarrier();
 	//...................................................................................
-	sendtag = recvtag = 1;
+	sendtag = recvtag = 168;
 	//...................................................................................
 	ScaLBL_Scalar_Pack(dvcSendList_x, sendCount_x,sendbuf_x, data, N);
 	ScaLBL_Scalar_Pack(dvcSendList_y, sendCount_y,sendbuf_y, data, N);
@@ -2042,42 +2227,42 @@ void ScaLBL_Communicator::SendHalo(double *data){
 	// Send / Recv all the phase indcator field values
 	//...................................................................................
 
-	req1[0]  = MPI_COMM_SCALBL.Isend(sendbuf_x, sendCount_x,rank_x,sendtag);
-	req2[0]  = MPI_COMM_SCALBL.Irecv(recvbuf_X, recvCount_X,rank_X,recvtag);
-	req1[1]  = MPI_COMM_SCALBL.Isend(sendbuf_X, sendCount_X,rank_X,sendtag);
-	req2[1]  = MPI_COMM_SCALBL.Irecv(recvbuf_x, recvCount_x,rank_x,recvtag);
-	req1[2]  = MPI_COMM_SCALBL.Isend(sendbuf_y, sendCount_y,rank_y,sendtag);
-	req2[2]  = MPI_COMM_SCALBL.Irecv(recvbuf_Y, recvCount_Y,rank_Y,recvtag);
-	req1[3]  = MPI_COMM_SCALBL.Isend(sendbuf_Y, sendCount_Y,rank_Y,sendtag);
-	req2[3]  = MPI_COMM_SCALBL.Irecv(recvbuf_y, recvCount_y,rank_y,recvtag);
-	req1[4]  = MPI_COMM_SCALBL.Isend(sendbuf_z, sendCount_z,rank_z,sendtag);
-	req2[4]  = MPI_COMM_SCALBL.Irecv(recvbuf_Z, recvCount_Z,rank_Z,recvtag);
-	req1[5]  = MPI_COMM_SCALBL.Isend(sendbuf_Z, sendCount_Z,rank_Z,sendtag);
-	req2[5]  = MPI_COMM_SCALBL.Irecv(recvbuf_z, recvCount_z,rank_z,recvtag);
-	req1[6]  = MPI_COMM_SCALBL.Isend(sendbuf_xy, sendCount_xy,rank_xy,sendtag);
-	req2[6]  = MPI_COMM_SCALBL.Irecv(recvbuf_XY, recvCount_XY,rank_XY,recvtag);
-	req1[7]  = MPI_COMM_SCALBL.Isend(sendbuf_XY, sendCount_XY,rank_XY,sendtag);
-	req2[7]  = MPI_COMM_SCALBL.Irecv(recvbuf_xy, recvCount_xy,rank_xy,recvtag);
-	req1[8]  = MPI_COMM_SCALBL.Isend(sendbuf_Xy, sendCount_Xy,rank_Xy,sendtag);
-	req2[8]  = MPI_COMM_SCALBL.Irecv(recvbuf_xY, recvCount_xY,rank_xY,recvtag);
-	req1[9]  = MPI_COMM_SCALBL.Isend(sendbuf_xY, sendCount_xY,rank_xY,sendtag);
-	req2[9]  = MPI_COMM_SCALBL.Irecv(recvbuf_Xy, recvCount_Xy,rank_Xy,recvtag);
-	req1[10] = MPI_COMM_SCALBL.Isend(sendbuf_xz, sendCount_xz,rank_xz,sendtag);
-	req2[10] = MPI_COMM_SCALBL.Irecv(recvbuf_XZ, recvCount_XZ,rank_XZ,recvtag);
-	req1[11] = MPI_COMM_SCALBL.Isend(sendbuf_XZ, sendCount_XZ,rank_XZ,sendtag);
-	req2[11] = MPI_COMM_SCALBL.Irecv(recvbuf_xz, recvCount_xz,rank_xz,recvtag);
-	req1[12] = MPI_COMM_SCALBL.Isend(sendbuf_Xz, sendCount_Xz,rank_Xz,sendtag);
-	req2[12] = MPI_COMM_SCALBL.Irecv(recvbuf_xZ, recvCount_xZ,rank_xZ,recvtag);
-	req1[13] = MPI_COMM_SCALBL.Isend(sendbuf_xZ, sendCount_xZ,rank_xZ,sendtag);
-	req2[13] = MPI_COMM_SCALBL.Irecv(recvbuf_Xz, recvCount_Xz,rank_Xz,recvtag);
-	req1[14] = MPI_COMM_SCALBL.Isend(sendbuf_yz, sendCount_yz,rank_yz,sendtag);
-	req2[14] = MPI_COMM_SCALBL.Irecv(recvbuf_YZ, recvCount_YZ,rank_YZ,recvtag);
-	req1[15] = MPI_COMM_SCALBL.Isend(sendbuf_YZ, sendCount_YZ,rank_YZ,sendtag);
-	req2[15] = MPI_COMM_SCALBL.Irecv(recvbuf_yz, recvCount_yz,rank_yz,recvtag);
-	req1[16] = MPI_COMM_SCALBL.Isend(sendbuf_Yz, sendCount_Yz,rank_Yz,sendtag);
-	req2[16] = MPI_COMM_SCALBL.Irecv(recvbuf_yZ, recvCount_yZ,rank_yZ,recvtag);
-	req1[17] = MPI_COMM_SCALBL.Isend(sendbuf_yZ, sendCount_yZ,rank_yZ,sendtag);
-	req2[17] = MPI_COMM_SCALBL.Irecv(recvbuf_Yz, recvCount_Yz,rank_Yz,recvtag);
+	req1[0]  = MPI_COMM_SCALBL.Isend(sendbuf_x, sendCount_x, rank_x,sendtag+0);
+	req2[0]  = MPI_COMM_SCALBL.Irecv(recvbuf_X, recvCount_X, rank_X,recvtag+0);
+	req1[1]  = MPI_COMM_SCALBL.Isend(sendbuf_X, sendCount_X, rank_X,sendtag+1);
+	req2[1]  = MPI_COMM_SCALBL.Irecv(recvbuf_x, recvCount_x, rank_x,recvtag+1);
+	req1[2]  = MPI_COMM_SCALBL.Isend(sendbuf_y, sendCount_y, rank_y,sendtag+2);
+	req2[2]  = MPI_COMM_SCALBL.Irecv(recvbuf_Y, recvCount_Y, rank_Y,recvtag+2);
+	req1[3]  = MPI_COMM_SCALBL.Isend(sendbuf_Y, sendCount_Y, rank_Y,sendtag+3);
+	req2[3]  = MPI_COMM_SCALBL.Irecv(recvbuf_y, recvCount_y, rank_y,recvtag+3);
+	req1[4]  = MPI_COMM_SCALBL.Isend(sendbuf_z, sendCount_z, rank_z,sendtag+4);
+	req2[4]  = MPI_COMM_SCALBL.Irecv(recvbuf_Z, recvCount_Z, rank_Z,recvtag+4);
+	req1[5]  = MPI_COMM_SCALBL.Isend(sendbuf_Z, sendCount_Z, rank_Z,sendtag+5);
+	req2[5]  = MPI_COMM_SCALBL.Irecv(recvbuf_z, recvCount_z, rank_z,recvtag+5);
+	req1[6]  = MPI_COMM_SCALBL.Isend(sendbuf_xy, sendCount_xy, rank_xy,sendtag+6);
+	req2[6]  = MPI_COMM_SCALBL.Irecv(recvbuf_XY, recvCount_XY, rank_XY,recvtag+6);
+	req1[7]  = MPI_COMM_SCALBL.Isend(sendbuf_XY, sendCount_XY, rank_XY,sendtag+7);
+	req2[7]  = MPI_COMM_SCALBL.Irecv(recvbuf_xy, recvCount_xy, rank_xy,recvtag+7);
+	req1[8]  = MPI_COMM_SCALBL.Isend(sendbuf_Xy, sendCount_Xy, rank_Xy,sendtag+8);
+	req2[8]  = MPI_COMM_SCALBL.Irecv(recvbuf_xY, recvCount_xY, rank_xY,recvtag+8);
+	req1[9]  = MPI_COMM_SCALBL.Isend(sendbuf_xY, sendCount_xY, rank_xY,sendtag+9);
+	req2[9]  = MPI_COMM_SCALBL.Irecv(recvbuf_Xy, recvCount_Xy, rank_Xy,recvtag+9);
+	req1[10] = MPI_COMM_SCALBL.Isend(sendbuf_xz, sendCount_xz, rank_xz,sendtag+10);
+	req2[10] = MPI_COMM_SCALBL.Irecv(recvbuf_XZ, recvCount_XZ, rank_XZ,recvtag+10);
+	req1[11] = MPI_COMM_SCALBL.Isend(sendbuf_XZ, sendCount_XZ, rank_XZ,sendtag+11);
+	req2[11] = MPI_COMM_SCALBL.Irecv(recvbuf_xz, recvCount_xz, rank_xz,recvtag+11);
+	req1[12] = MPI_COMM_SCALBL.Isend(sendbuf_Xz, sendCount_Xz, rank_Xz,sendtag+12);
+	req2[12] = MPI_COMM_SCALBL.Irecv(recvbuf_xZ, recvCount_xZ, rank_xZ,recvtag+12);
+	req1[13] = MPI_COMM_SCALBL.Isend(sendbuf_xZ, sendCount_xZ, rank_xZ,sendtag+13);
+	req2[13] = MPI_COMM_SCALBL.Irecv(recvbuf_Xz, recvCount_Xz, rank_Xz,recvtag+13);
+	req1[14] = MPI_COMM_SCALBL.Isend(sendbuf_yz, sendCount_yz, rank_yz,sendtag+14);
+	req2[14] = MPI_COMM_SCALBL.Irecv(recvbuf_YZ, recvCount_YZ, rank_YZ,recvtag+14);
+	req1[15] = MPI_COMM_SCALBL.Isend(sendbuf_YZ, sendCount_YZ, rank_YZ,sendtag+15);
+	req2[15] = MPI_COMM_SCALBL.Irecv(recvbuf_yz, recvCount_yz, rank_yz,recvtag+15);
+	req1[16] = MPI_COMM_SCALBL.Isend(sendbuf_Yz, sendCount_Yz, rank_Yz,sendtag+16);
+	req2[16] = MPI_COMM_SCALBL.Irecv(recvbuf_yZ, recvCount_yZ, rank_yZ,recvtag+16);
+	req1[17] = MPI_COMM_SCALBL.Isend(sendbuf_yZ, sendCount_yZ, rank_yZ,sendtag+17);
+	req2[17] = MPI_COMM_SCALBL.Irecv(recvbuf_Yz, recvCount_Yz, rank_Yz,recvtag+17);
 	//...................................................................................
 }
 void ScaLBL_Communicator::RecvHalo(double *data){

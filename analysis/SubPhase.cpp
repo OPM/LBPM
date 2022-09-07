@@ -411,6 +411,7 @@ void SubPhase::Basic() {
             dir_z = 1.0;
             force_mag = 1.0;
         }
+        double Porosity = (gwb.V + gnb.V)/Dm->Volume;
         double saturation = gwb.V / (gwb.V + gnb.V);
         double water_flow_rate =
             gwb.V * (gwb.Px * dir_x + gwb.Py * dir_y + gwb.Pz * dir_z) / gwb.M /
@@ -429,11 +430,11 @@ void SubPhase::Basic() {
         //double total_flow_rate = water_flow_rate + not_water_flow_rate;
         //double fractional_flow = water_flow_rate / total_flow_rate;
         double h = Dm->voxel_length;
-        double krn = h * h * nu_n * not_water_flow_rate / force_mag;
-        double krw = h * h * nu_w * water_flow_rate / force_mag;
+        double krn = h * h * nu_n * Porosity * not_water_flow_rate / force_mag;
+        double krw = h * h * nu_w * Porosity* water_flow_rate / force_mag;
         /* not counting films */
-        double krnf = krn - h * h * nu_n * not_water_film_flow_rate / force_mag;
-        double krwf = krw - h * h * nu_w * water_film_flow_rate / force_mag;
+        double krnf = krn - h * h * nu_n * Porosity * not_water_film_flow_rate / force_mag;
+        double krwf = krw - h * h * nu_w * Porosity * water_film_flow_rate / force_mag;
         double eff_pressure = 1.0 / (krn + krw); // effective pressure drop
 
         fprintf(TIMELOG,
@@ -595,7 +596,7 @@ void SubPhase::Full() {
         for (j = 0; j < Ny; j++) {
             for (i = 0; i < Nx; i++) {
                 n = k * Nx * Ny + j * Nx + i;
-                if (!(Dm->id[n] > 0)) {
+                if (SDs(n) <= 0.0) {
                     // Solid phase
                     morph_n->id(i, j, k) = 1;
 
@@ -642,7 +643,7 @@ void SubPhase::Full() {
         for (j = 0; j < Ny; j++) {
             for (i = 0; i < Nx; i++) {
                 n = k * Nx * Ny + j * Nx + i;
-                if (!(Dm->id[n] > 0)) {
+                if (SDs(n) <= 0.0) {
                     // Solid phase
                     morph_w->id(i, j, k) = 1;
 
@@ -688,7 +689,7 @@ void SubPhase::Full() {
         for (j = 0; j < Ny; j++) {
             for (i = 0; i < Nx; i++) {
                 n = k * Nx * Ny + j * Nx + i;
-                if (!(Dm->id[n] > 0)) {
+                if (SDs(n) <= 0.0) {
                     // Solid phase
                     morph_i->id(i, j, k) = 1;
                 } else if (DelPhi(n) > 1e-4) {
@@ -731,7 +732,7 @@ void SubPhase::Full() {
             for (i = imin; i < Nx - 1; i++) {
                 n = k * Nx * Ny + j * Nx + i;
                 // Compute volume averages
-                if (Dm->id[n] > 0) {
+                if (SDs(n) > 0.0) {
                     // compute density
                     double nA = Rho_n(n);
                     double nB = Rho_w(n);
