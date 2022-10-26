@@ -22,6 +22,7 @@
 #ifndef ScaLBL_POISSON_INC
 #define ScaLBL_POISSON_INC
 
+
 class ScaLBL_Poisson {
 public:
     ScaLBL_Poisson(int RANK, int NP, const Utilities::MPI &COMM);
@@ -43,6 +44,7 @@ public:
                           DoubleArray &Values_z);
     void getElectricField_debug(int timestep);
     void Checkpoint();
+    void WriteVis( int timestep);
 
     void DummyChargeDensity(); //for debugging
 

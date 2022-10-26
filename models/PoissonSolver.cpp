@@ -86,7 +86,7 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	}
     //'tolerance_method' can be {"MSE","MSE_max"}
 	tolerance_method = electric_db->getWithDefault<std::string>( "tolerance_method", "MSE" );
-	lattice_scheme = electric_db->getWithDefault<std::string>( "lattice_scheme", "D3Q7" );
+	lattice_scheme = electric_db->getWithDefault<std::string>( "lattice_scheme", "D3Q19" );
 	if (electric_db->keyExists( "epsilonR" )){
 		epsilonR = electric_db->getScalar<double>( "epsilonR" );
 	}
@@ -1318,6 +1318,54 @@ void ScaLBL_Poisson::ElectricField_LB_to_Phys(DoubleArray &Efield_reg){
             }
         }
     }
+}
+
+void ScaLBL_Poisson::WriteVis( int timestep) {
+
+    auto vis_db = db->getDatabase("Visualization");
+    char VisName[40];
+    auto format = vis_db->getWithDefault<string>( "format", "hdf5" );
+
+    DoubleArray ElectricalPotential(Nx, Ny, Nz);
+    std::vector<IO::MeshDataStruct> visData;
+    fillHalo<double> fillData(Dm->Comm, Dm->rank_info,
+                              {Dm->Nx - 2, Dm->Ny - 2, Dm->Nz - 2}, {1, 1, 1},
+                              0, 1);
+
+    IO::initialize("",format,"false");
+    // Create the MeshDataStruct    
+    visData.resize(1);
+
+    visData[0].meshName = "domain";
+    visData[0].mesh =
+        std::make_shared<IO::DomainMesh>(Dm->rank_info, Dm->Nx - 2, Dm->Ny - 2,
+                                         Dm->Nz - 2, Dm->Lx, Dm->Ly, Dm->Lz);
+    //electric potential
+    auto ElectricPotentialVar = std::make_shared<IO::Variable>();
+
+    //--------------------------------------------------------------------------------------------------------------------
+
+    //-------------------------------------Create Names for Variables------------------------------------------------------
+    if (vis_db->getWithDefault<bool>("save_electric_potential", true)) {
+        ElectricPotentialVar->name = "ElectricPotential";
+        ElectricPotentialVar->type = IO::VariableType::VolumeVariable;
+        ElectricPotentialVar->dim = 1;
+        ElectricPotentialVar->data.resize(Dm->Nx - 2, Dm->Ny - 2, Dm->Nz - 2);
+        visData[0].vars.push_back(ElectricPotentialVar);
+    }
+    //--------------------------------------------------------------------------------------------------------------------
+
+    //------------------------------------Save All Variables--------------------------------------------------------------
+    if (vis_db->getWithDefault<bool>("save_electric_potential", true)) {
+        ASSERT(visData[0].vars[0]->name == "ElectricPotential");
+        getElectricPotential(ElectricalPotential);
+        Array<double> &ElectricPotentialData = visData[0].vars[0]->data;
+        fillData.copy(ElectricalPotential, ElectricPotentialData);
+    }
+
+    if (vis_db->getWithDefault<bool>("write_silo", true))
+        IO::writeData(timestep, visData, Dm->Comm);
+    //--------------------------------------------------------------------------------------------------------------------
 }
 
 //void ScaLBL_Poisson::SolveElectricField(){

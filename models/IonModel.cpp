@@ -1549,7 +1549,6 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
 
 			IonMembrane->IonTransport(&fq[ic * Np * 7],&Ci[ic * Np]);
 
-
 			/*           if (BoundaryConditionSolid == 1) {
                 //TODO IonSolid may also be species-dependent
                 ScaLBL_Comm->SolidDirichletD3Q7(&fq[ic * Np * 7], IonSolid);
