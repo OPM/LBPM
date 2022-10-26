@@ -667,6 +667,74 @@ int Membrane::Create(DoubleArray &Distance, IntArray &Map){
 	return mlink;
 }
 
+void Membrane::Write(string filename){
+	
+	int mlink = membraneLinkCount;
+	std::ofstream ofs (filename, std::ofstream::out);
+	/* Create local copies of membrane data structures */
+    double *tmpMembraneCoef;  // mass transport coefficient for the membrane 
+    tmpMembraneCoef = new double [2*mlink*sizeof(double)];
+    ScaLBL_CopyToHost(tmpMembraneCoef, MembraneCoef, 2*mlink*sizeof(double));
+    int i,j,k;
+    for (int m=0; m<mlink; m++){
+    	double a1 = tmpMembraneCoef[2*m];
+    	double a2 = tmpMembraneCoef[2*m+1];
+    	int m1 = membraneLinks[2*m]%Np;
+    	int m2 = membraneLinks[2*m+1]%Np;
+    	// map index to global i,j,k
+		k = m1/(Nx*Ny); j = (m1-Nx*Ny*k)/Nx; i = m1-Nx*Ny*k-Nx*j;
+		ofs << i << " " << j  << " " << k << " "<<  a1 ;
+		k = m2/(Nx*Ny); j = (m2-Nx*Ny*k)/Nx; i = m2-Nx*Ny*k-Nx*j;
+		ofs << i << " " << j  << " " << k  << " "<<  a2 << endl;	
+
+    }
+    ofs.close();
+
+    /*FILE *VELX_FILE;
+    sprintf(LocalRankFilename, "Velocity_X.%05i.raw", rank);
+    VELX_FILE = fopen(LocalRankFilename, "wb");
+    fwrite(PhaseField.data(), 8, N, VELX_FILE);
+    fclose(VELX_FILE);
+    */
+    delete [] tmpMembraneCoef;
+}
+
+void Membrane::Read(string filename){
+	
+	int mlink = membraneLinkCount;
+	/* Create local copies of membrane data structures */
+    double *tmpMembraneCoef;  // mass transport coefficient for the membrane 
+    tmpMembraneCoef = new double [2*mlink*sizeof(double)];
+    
+    FILE *fid = fopen(filename.c_str(), "r");
+    INSIST(fid != NULL, "Error opening membrane file \n");
+    //........read the spheres..................
+    // We will read until a blank like or end-of-file is reached
+    int count = 0;
+    int i,j,k;
+    int ii,jj,kk;
+    double a1, a2;
+
+    while (fscanf(fid, "%i,%i,%i,%lf,%i,%i,%i,%lf,\n", &i, &j, &k, &a1, &ii, &jj, &kk, &a2) == 8){
+      printf("%i, %i, %i, %lf \n", i,j,k, a2);
+      count++;
+    }
+    if (count != mlink){
+    	printf("WARNING (Membrane::Read): number of file lines does not match number of links \n");
+    }
+    fclose(fid);
+    
+    ScaLBL_CopyToDevice(MembraneCoef, tmpMembraneCoef, 2*mlink*sizeof(double));
+
+    /*FILE *VELX_FILE;
+    sprintf(LocalRankFilename, "Velocity_X.%05i.raw", rank);
+    VELX_FILE = fopen(LocalRankFilename, "wb");
+    fwrite(PhaseField.data(), 8, N, VELX_FILE);
+    fclose(VELX_FILE);
+    */
+    delete [] tmpMembraneCoef;
+}
+
 int Membrane::D3Q7_MapRecv(int Cqx, int Cqy, int Cqz, int *d3q19_recvlist, 
 		int count, int *membraneRecvLabels, DoubleArray &Distance,  int  *dvcMap){
 	

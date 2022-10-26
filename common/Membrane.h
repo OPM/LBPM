@@ -92,6 +92,18 @@ public:
     * @param Map            - mapping between regular layout and compact layout
     */
     int Create(DoubleArray &Distance, IntArray &Map);
+    
+    /**
+     * \brief Write membrane data to output file
+     * @param filename  - name of file to save
+    */
+    void Write(string filename);
+    
+    /**
+     * \brief Read membrane data from input file
+     * @param filename  - name of file to save
+    */
+    void Read(string filename);
         
 	void SendD3Q7AA(double *dist);
 	void RecvD3Q7AA(double *dist);
