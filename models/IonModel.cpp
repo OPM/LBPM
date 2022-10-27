@@ -300,7 +300,8 @@ void ScaLBL_IonModel::ReadParams(string filename, vector<int> &num_iter) {
 void ScaLBL_IonModel::ReadParams(string filename) {
     //NOTE: the maximum iteration timesteps for ions are left unspecified
     //      it relies on the multiphys controller to compute the max timestep
-	USE_MEMBRANE = true;
+	USE_MEMBRANE = false;
+	Restart = false;
     // read the input database
     db = std::make_shared<Database>(filename);
     domain_db = db->getDatabase("Domain");

@@ -118,8 +118,8 @@ private:
     void SolveElectricPotentialAAeven(int timestep_from_Study);
     void SolveElectricPotentialAAodd(int timestep_from_Study);
     //void SolveElectricField();
-    void SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVelBC);
-    void SolvePoissonAAeven(double *ChargeDensity, bool UseSlippingVelBC);
+    void SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVelBC, int timestep);
+    void SolvePoissonAAeven(double *ChargeDensity, bool UseSlippingVelBC, int timestep);
     void getConvergenceLog(int timestep,double error);
     double getBoundaryVoltagefromPeriodicBC(double V0,double freq,double t0,int time_step);
     
