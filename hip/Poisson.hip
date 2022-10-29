@@ -602,7 +602,6 @@ __global__  void dvc_ScaLBL_D3Q19_Poisson_Init(int *Map, double *dist, double *P
 		}
 	}
 }
-
 __global__  void dvc_ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_z(int *list,  double *dist, double Vin, int count, int Np) {
 	
 	double W1 = 1.0/24.0;
@@ -642,13 +641,13 @@ __global__  void dvc_ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_z(int *d_neighborLi
 	
 	double W1 = 1.0/24.0;
 	double W2 = 1.0/48.0;
-    int nr5, nr11, nr14, nr15, nr18;
+    	int nr5, nr11, nr14, nr15, nr18;
     
 	int idx = blockIdx.x*blockDim.x + threadIdx.x;
 
 	if (idx < count){
 		int n = list[idx];
-	}
+
         
         // Unknown distributions
         nr5 = d_neighborList[n + 4 * Np];
@@ -669,7 +668,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_Z(int *d_neighborLi
 	
 	double W1 = 1.0/24.0;
 	double W2 = 1.0/48.0;
-    int nr6, nr12, nr13, nr16, nr17;
+    	int nr6, nr12, nr13, nr16, nr17;
 
 	int idx = blockIdx.x*blockDim.x + threadIdx.x;
 
@@ -693,40 +692,39 @@ __global__  void dvc_ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_Z(int *d_neighborLi
 /* wrapper functions to launch kernels */
 extern "C" void ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_z(int *list,  double *dist, double Vin, int count, int Np){
 	int GRID = count / 512 + 1;
-	dvc_ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_z<<<GRID,512>>>(list, dist, Vout, count, N);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("HIP error in ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_z (kernel): %s \n",hipGetErrorString(err));
+	dvc_ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_z<<<GRID,512>>>(list, dist, Vin, count, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("Hip error in ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_z (kernel): %s \n",cudaGetErrorString(err));
 	}
 }
 //
 extern "C" void ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_Z(int *list, double *dist,  double Vout, int count, int Np){
 	int GRID = count / 512 + 1;
-	dvc_ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_Z<<<GRID,512>>>(list, dist, Vout, count, N);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("HIP error in ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_Z (kernel): %s \n",hipGetErrorString(err));
+	dvc_ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_Z<<<GRID,512>>>(list, dist, Vout, count, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("Hip error in ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_Z (kernel): %s \n",cudaGetErrorString(err));
 	}
 }
 extern "C" void ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_z(int *d_neighborList, int *list, double *dist, double Vin, int count,int Np) {
 	int GRID = count / 512 + 1;
-	dvc_ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_z<<<GRID,512>>>(d_neighborList, list, dist, Vout, count, N);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("HIP error in ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_z (kernel): %s \n",hipGetErrorString(err));
+	dvc_ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_z<<<GRID,512>>>(d_neighborList, list, dist, Vin, count, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("Hip error in ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_z (kernel): %s \n",cudaGetErrorString(err));
 	}
 }
 //
 extern "C" void ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_Z(int *d_neighborList, int *list, double *dist, double Vout, int count, int Np)  {
 
 	int GRID = count / 512 + 1;
-	dvc_ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_Z<<<GRID,512>>>(d_neighborList, list, dist, Vout, count, N);
-	hipError_t err = hipGetLastError();
-	if (hipSuccess != err){
-		printf("HIP error in ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_Z (kernel): %s \n",hipGetErrorString(err));
+	dvc_ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_Z<<<GRID,512>>>(d_neighborList, list, dist, Vout, count, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("Hip error in ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_Z (kernel): %s \n",cudaGetErrorString(err));
 	}
 }
-
 
 extern "C" void ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
 		double *dist, double *Den_charge,
