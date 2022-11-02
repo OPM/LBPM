@@ -1050,22 +1050,22 @@ void ScaLBL_Poisson::SolveElectricPotentialAAodd(int timestep_from_Study){
         if (BoundaryConditionInlet > 0){
             switch (BoundaryConditionInlet){
                 case 1:
-                    ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq,  Vin, timestep);
+                    ScaLBL_Comm->D3Q19_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
                     break;
                 case 2:
                     Vin  = getBoundaryVoltagefromPeriodicBC(Vin0,freqIn,PhaseShift_In,timestep_from_Study);
-                    ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq,  Vin, timestep);
+                    ScaLBL_Comm->D3Q19_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
                     break;
             }
         }
         if (BoundaryConditionOutlet > 0){
             switch (BoundaryConditionOutlet){
                 case 1:
-                    ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, Vout, timestep);
+                    ScaLBL_Comm->D3Q19_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
                     break;
                 case 2:
                     Vout = getBoundaryVoltagefromPeriodicBC(Vout0,freqOut,PhaseShift_Out,timestep_from_Study);
-                    ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, Vout, timestep);
+                    ScaLBL_Comm->D3Q19_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
                     break;
             }
         }
@@ -1120,22 +1120,22 @@ void ScaLBL_Poisson::SolveElectricPotentialAAeven(int timestep_from_Study){
         if (BoundaryConditionInlet > 0){
             switch (BoundaryConditionInlet){
                 case 1:
-                    ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq,  Vin, timestep);
+                    ScaLBL_Comm->D3Q19_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
                     break;
                 case 2:
                     Vin  = getBoundaryVoltagefromPeriodicBC(Vin0,freqIn,PhaseShift_In,timestep_from_Study);
-                    ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq,  Vin, timestep);
+                    ScaLBL_Comm->D3Q19_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
                     break;
             }
         }
         if (BoundaryConditionOutlet > 0){
             switch (BoundaryConditionOutlet){
                 case 1:
-                    ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, Vout, timestep);
+                    ScaLBL_Comm->D3Q19_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
                     break;
                 case 2:
                     Vout = getBoundaryVoltagefromPeriodicBC(Vout0,freqOut,PhaseShift_Out,timestep_from_Study);
-                    ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, Vout, timestep);
+                    ScaLBL_Comm->D3Q19_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
                     break;
             }
         }
