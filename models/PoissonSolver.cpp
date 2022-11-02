@@ -995,7 +995,6 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, DoubleArray MembraneDistance, bo
 	delete [] host_Error;
 
 	//************************************************************************/
-
 	if(WriteLog==true){
 		getConvergenceLog(timestep,error);
 	}
