@@ -1,6 +1,85 @@
 =============================================
-Gauss's Law Model
+Cell model
 =============================================
+
+LBPM includes a whole-cell simulator based on a coupled solution of the Nernst-Planck equations with Gauss's law. 
+
+*********************
+Nernst-Planck model
+*********************
+
+The Nernst-Planck model is designed to model ion transport based on the
+Nernst-Planck equation.
+
+.. math::
+   :nowrap:
+
+   $$
+     \frac{\partial C_k}{\partial t} + \nabla \cdot \mathbf{j}_k = 0
+   $$
+
+where 
+
+.. math::
+   :nowrap:
+
+   $$
+     \mathbf{j}_k = C_k \mathbf{u} - D_k \Big( \nabla C_k + \frac{z_k C_k}{V_T} \nabla \psi\Big) 
+   $$
+
+
+
+A LBM solution is developed using a three-dimensional, seven velocity (D3Q7) lattice structure for each species. Each distribution is associated with a particular discrete velocity, such that the concentration is given  by their sum,
+
+.. math::
+   :nowrap:
+
+   $$
+    C_k  = \sum_{q=0}^{6} f^k_q \;.
+   $$
+
+Lattice Boltzmann equations (LBEs) are defined to determine the evolution of the distributions 
+
+.. math::
+   :nowrap:
+
+   $$
+    f^{k}_q (\mathbf{x}_n + \bm{\xi}_q \Delta t, t+ \Delta t)-
+        f^{k}_q (\mathbf{x}_n, t) = \frac{1}{\lambda_k} 
+        \Big( f^{k}_q - f^{eq}_q \Big)\;,
+   $$
+   
+where the relaxation time :math:`\lambda_k` controls the bulk diffusion coefficient,
+
+.. math::
+   :nowrap:
+
+   $$
+       D_k = c_s^2\Big( \lambda_k - \frac 12\Big)\;.
+   $$
+
+The speed of sound for the D3Q7 lattice model is :math:`c_s^2 = \frac 14` and the weights are :math:`W_0 = 1/4` and :math:`W_1,\ldots, W_6 = 1/8`.
+Equilibrium distributions are established from the fact that molecular velocity distribution follows a Gaussian distribution within the bulk fluids,
+
+.. math::
+   :nowrap:
+
+   $$
+          f^{eq}_q = W_q C_k \Big[ 1 + \frac{\bm{\xi_q}\cdot \mathbf{u}^\prime}{c_s^2} \Big]\;.
+   $$
+   
+The velocity is given by
+
+.. math::
+   :nowrap:
+
+   $$
+    \mathbf{u}^\prime = \mathbf{u} - \frac{z_k D_k}{V_T} \nabla \psi \;.
+   $$
+   
+*********************     
+Gauss's Law Model
+*********************
 
 The LBPM Gauss's law solver is designed to solve for the electric field in an ionic fluid. 
 
