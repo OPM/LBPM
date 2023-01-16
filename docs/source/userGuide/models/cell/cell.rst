@@ -77,7 +77,25 @@ The velocity is given by
    $$
     \mathbf{u}^\prime = \mathbf{u} - \frac{z_k D_k}{V_T} \nabla \psi \;.
    $$
-   
+
+Keys for the Nernst-Planck solver are provided in the ``Ion`` section of the input file database. Supported keys are
+
+- ``use_membrane`` -- set up a membrane structure (defaults to ``true`` if not specified)
+- ``Restart`` -- read concentrations from restart file (defaults to ``false`` if not specified)
+- ``number_ion_species`` -- number of ions to use in the model
+- ``temperature`` -- temperature to use for the thermal voltage (:math:`V_T=k_B T / e`, where the electron charge is :math:`e=1.6\times10^{-19}` Coulomb)
+- ``FluidVelDummy`` -- vector providing a dummy fluid velocity field (for advection component)
+- ``ElectricFieldDummy`` -- vectory providing a dummy electric field (for force component)
+- ``tauList`` -- list of relaxation times to set the diffusion coefficient based on :math:`\lambda_k`. 
+- ``IonDiffusivityList`` -- list of physical ion diffusivities in units :math:`\mbox{m}^2/\mbox{second}`. 
+- ``IonValenceList`` -- list of ion valence charges for each ion in the model. 
+- ``IonConcentrationList`` -- list of concentrations to set for each ion. 
+- ``MembraneIonConcentrationList`` -- list of concentrations to set for each ion inside the membrane. 
+- ``BC_InletList`` -- boundary conditions for each ion at the z-inlet (``0`` for periodic, ``1`` to set concentration)
+- ``BC_OutletList`` -- boundary conditions for each ion at the z-outlet
+- ``InletValueList`` -- concentration value to set at the inlet (if not periodic)
+- ``OutletValueList`` -- concentration value to set at the outlet (if not periodic)
+
 *********************     
 Gauss's Law Model
 *********************
@@ -158,16 +176,26 @@ The local value of the potential is then updated based on a relaxation scheme, w
    
 The algorithm can then proceed to the next timestep.
 
+Keys to control the Gauss's law solver are specified in the ``Poisson`` section of the input database.
+Supported keys are:
+
+- ``Restart`` -- read electric potential from a restart file (default ``false``)
+- ``timestepMax`` -- maximum number of timesteps to run before exiting
+- ``tau`` -- relaxation time
+- ``analysis_interval`` -- how often to check solution for steady state
+- ``tolerance`` -- controls the required accuracy
+- ``epsilonR`` -- controls the electric permittivity
+- ``WriteLog`` -- write a convergence log
+
 ***************************
 Membrane Model
 ***************************
 
-The LBPM membrane model provides the basis to model cellular dynamics. There are currently two supported ways
-to specify the membrane location:
+The LBPM membrane model provides the basis to model cellular dynamics. 
+There are currently two supported ways to specify the membrane location:
 
 1. provide a segemented image that is labeled to differentiate the cell
 interior and exterior. See the script ``NaCl-cell.py`` and input file ``NaCl.db`` as a reference for how to use labeled images.
-
 - ``IonConcentrationFile`` -- list of files that specify the initial concentration for each ion
 - ``Filename`` -- 8-bit binary file provided in the ``Domain`` section of the input database
 - ``ReadType`` -- this should be ``"8bit"`` (this is the default)
@@ -177,7 +205,74 @@ interior and exterior. See the script ``NaCl-cell.py`` and input file ``NaCl.db`
 - ``Filename`` -- swc file name should be provided in the ``Domain`` section of the input database
 - ``ReadType`` -- this should be ``"swc"`` (required since ``"8bit"`` is the internal default)
 
-Both examples are stored within the LBPM repository, located at ``example/SingleCell/``
+Example input files for both cases are stored within the LBPM repository, located at ``example/SingleCell/``
+
+
+The membrane simply prevents the diffusion of ions. All lattice links crossing the membrane are stored in a dedicated data structure so that transport is decoupled from the bulk regions. Suppose that site :math:`\mathbf{x}_{q\ell}` is inside the membrane and :math:`\mathbf{x}_{p\ell}` is outside the membrane. For each species :math:`k`, transport across each link :math:`\ell` is controlled by a pair of coefficients, :math:`\alpha^k_{\ell p}` and :math:`\alpha^k_{\ell q}`. Ions transported from the outside to the inside is
+
+.. math::
+   :nowrap:
+
+   $$
+   { f_{q}^{k \prime} (\mathbf{x}_{q\ell})  \gets (1-\alpha^k_{\ell q}) f_{q}^{k} (\mathbf{x}_{q\ell}) + \alpha^k_{\ell p } f_{ p}^{k}  (\mathbf{x}_{p\ell})}
+   $$
+
+Similarly, for ions transported from the inside to the outside
+
+.. math::
+   :nowrap:
+
+   $$
+   {f_{p}^{k \prime} (\mathbf{x}_{p\ell})  \gets (1-\alpha^k_{\ell p}) f_{p}^{k} (\mathbf{x}_{p\ell}) + \alpha^k_{\ell q } f_{q}^{k}  (\mathbf{x}_{q\ell})}
+   $$
+
+The basic closure relationship that is implemented is for voltage-gated ion channels.
+Let :math:`\Delta \psi_\ell = \psi(\mathbf{x}_{p\ell} ,t) - \psi(\mathbf{x}_{q\ell},t)` be the membrane potential across link :math:`\ell`. Since :math:`\psi` is determined based on the charge density, :math:`\Delta \psi_\ell` can vary with both space and time. The behavior of the gate is implmented as follows, 
+
+.. math::
+   :nowrap:
+
+   $$
+   \Delta \psi_\ell > \tilde{V}_m\; \Rightarrow \; \mbox{gate is open} \; \Rightarrow \; \alpha^{k}_{q \ell} = \alpha_{1} + \alpha_2\;,
+   $$
+
+and
+
+.. math::
+   :nowrap:
+
+   $$
+   \Delta \psi_\ell \le \tilde{V}_m\; \Rightarrow  \; \mbox{gate is closed}\; \Rightarrow \; \alpha^{{k}}_{q \ell} = \alpha_1\;
+    $$
+
+where :math:`\tilde{V}_m` is the membrane voltage threshold that controls gate. Mass conservation dictates that
+
+.. math::
+   :nowrap:
+
+    $$
+    \alpha_1 \ge 0\;, \quad \alpha_2 \ge 0\;, \quad \alpha_1 + \alpha_2 \le 1\;. 
+    $$
+
+The rule is enforced based on the Heaviside function, as follows
+
+.. math::
+   :nowrap:
+
+   $$
+   \alpha_{\ell q}^{k} (\Delta \psi_\ell) = \alpha_1 + \alpha_2 H\big(\Delta \psi_\ell - \tilde{V}_m \big)\;.
+   $$
+
+Note that different coefficients are specified for each ion in the model.
+   
+Keys for the membrane model are set in the ``Membrane`` section of the input file database.  Supported keys are
+
+- ``VoltageThreshold`` -- voltage threshold for each ion
+- ``MassFractionIn`` -- controls the membrane coefficient :math:`\alpha^k_{\ell p}` when the voltage threshold is not met
+- ``MassFractionOut`` -- controls the membrane coefficient :math:`\alpha^k_{\ell q}` when the voltage threshold is not met
+- ``ThresholdMassFractionIn`` -- controls :math:`\alpha^k_{\ell p}` when the voltage threshold is met
+- ``ThresholdMassFractionOut`` -- controls :math:`\alpha^k_{\ell q}` when the voltage threshold is met
+ 
 
 ****************************
 Example Input File
