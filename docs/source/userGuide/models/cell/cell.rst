@@ -267,12 +267,11 @@ Note that different coefficients are specified for each ion in the model.
    
 Keys for the membrane model are set in the ``Membrane`` section of the input file database.  Supported keys are
 
-- ``VoltageThreshold`` -- voltage threshold for each ion
-- ``MassFractionIn`` -- controls the membrane coefficient :math:`\alpha^k_{\ell p}` when the voltage threshold is not met
-- ``MassFractionOut`` -- controls the membrane coefficient :math:`\alpha^k_{\ell q}` when the voltage threshold is not met
-- ``ThresholdMassFractionIn`` -- controls :math:`\alpha^k_{\ell p}` when the voltage threshold is met
-- ``ThresholdMassFractionOut`` -- controls :math:`\alpha^k_{\ell q}` when the voltage threshold is met
- 
+- ``VoltageThreshold`` -- voltage threshold (may be different for each ion) 
+- ``MassFractionIn`` -- value of :math:`\alpha^k_{\ell p}` when the voltage threshold is not met
+- ``MassFractionOut`` -- value of :math:`\alpha^k_{\ell q}` when the voltage threshold is not met
+- ``ThresholdMassFractionIn`` -- value of :math:`\alpha^k_{\ell p}` when the voltage threshold is met
+- ``ThresholdMassFractionOut`` -- value of :math:`\alpha^k_{\ell q}` when the voltage threshold is met
 
 ****************************
 Example Input File
