@@ -1,75 +1,82 @@
 =============================================
-Nernst-Planck model
+Gauss's Law Model
 =============================================
 
-The Nernst-Planck model is designed to model ion transport based on the
-Nernst-Planck equation.
+The LBPM Gauss's law solver is designed to solve for the electric field in an ionic fluid. 
 
 .. math::
    :nowrap:
 
    $$
-     \frac{\partial C_k}{\partial t} + \nabla \cdot \mathbf{j}_k = 0
-   $$
+    \nabla^2_{fe} \psi (\mathbf{x}_i) = \frac{1}{6 \Delta x^2}
+    \Bigg( 2 \sum_{q=1}^{6} \psi(\mathbf{x}_i + \bm{\xi}_q \Delta t) 
+      +  \sum_{q=7}^{18} \psi(\mathbf{x}_i + \bm{\xi}_q \Delta t)
+   - 24 \psi (\mathbf{x}_i) \Bigg) \;,
+    $$
 
-where 
-
-.. math::
-   :nowrap:
-
-   $$
-     \mathbf{j}_k = C_k \mathbf{u} - D_k \Big( \nabla C_k + \frac{z_k C_k}{V_T} \nabla \psi\Big) 
-   $$
-
-
-
-A LBM solution is developed using a three-dimensional, seven velocity (D3Q7) lattice structure for each species. Each distribution is associated with a particular discrete velocity, such that the concentration is given  by their sum,
+The equilibrium functions are defined as
 
 .. math::
    :nowrap:
 
    $$
-    C_k  = \sum_{q=0}^{6} f^k_q \;.
+    g_q^{eq} =  w_q \psi\;,
    $$
 
-Lattice Boltzmann equations (LBEs) are defined to determine the evolution of the distributions 
+where :math:`w_0=1/2`, :math:`w_q=1/24` for :math:`q=1,\ldots,6` and :math:`w_q=1/48` for :math:`q=7,\ldots,18`
+
+which implies that 
 
 .. math::
    :nowrap:
 
    $$
-    f^{k}_q (\mathbf{x}_n + \bm{\xi}_q \Delta t, t+ \Delta t)-
-        f^{k}_q (\mathbf{x}_n, t) = \frac{1}{\lambda_k} 
-        \Big( f^{k}_q - f^{eq}_q \Big)\;,
+    \psi = \sum_{q=0}^{Q} g_q^{eq}\;.
+    $$
+    
+Given a particular initial condition for :math:`\psi`, let us consider application of the standard D3Q19 streaming step based on the equilibrium distributions
+
+.. math::
+   :nowrap:
+
+   $$
+    g_q^\prime(\mathbf{x}, t) = g_q^{eq}(\mathbf{x}-\bm{\xi}_q\Delta t, t+ \Delta t)\;.
    $$
    
-where the relaxation time :math:`\lambda_k` controls the bulk diffusion coefficient,
+Relative to the solution of Gauss's law, the error is given by
 
 .. math::
    :nowrap:
 
    $$
-       D_k = c_s^2\Big( \lambda_k - \frac 12\Big)\;.
+   \varepsilon_{\psi} = 
+   8 \Big[ -g_0 +  \sum_{q=1}^Q g_q^\prime(\mathbf{x}, t) \Big] 
+   + \frac{\rho_e}{\epsilon_r \epsilon_0} \;.
    $$
-
-The speed of sound for the D3Q7 lattice model is :math:`c_s^2 = \frac 14` and the weights are :math:`W_0 = 1/4` and :math:`W_1,\ldots, W_6 = 1/8`.
-Equilibrium distributions are established from the fact that molecular velocity distribution follows a Gaussian distribution within the bulk fluids,
+     
+Using the fact that :math:`f_0 = W_0 \psi`, we can compute the value 
+:math:`\psi^\prime` that would kill the error. We set :math:`\varepsilon_{\psi}=0`
+and rearrange terms to obtain
 
 .. math::
    :nowrap:
 
    $$
-          f^{eq}_q = W_q C_k \Big[ 1 + \frac{\bm{\xi_q}\cdot \mathbf{u}^\prime}{c_s^2} \Big]\;.
+   \psi^\prime (\mathbf{x},t) = \frac{1}{W_0}\Big[   \sum_{q=1}^Q g_q^\prime(\mathbf{x}, t) 
+   + \frac{1}{8}\frac{\rho_e}{\epsilon_r \epsilon_0}\Big]  \;.
+   $$
+
+The local value of the potential is then updated based on a relaxation scheme, which is controlled by the relaxation time :math:`\tau_\psi`
+
+.. math::
+   :nowrap:
+
+   $$
+   \psi(\mathbf{x},t+\Delta t) \leftarrow \Big(1 - \frac{1}{\tau_\psi} \Big )\psi (\mathbf{x},t)
+   + \frac{1}{\tau_\psi} \psi^\prime (\mathbf{x},t)\;.
    $$
    
-The velocity is given by
-
-.. math::
-   :nowrap:
-
-   $$
-    \mathbf{u}^\prime = \mathbf{u} - \frac{z_k D_k}{V_T} \nabla \psi \;.
-   $$
+The algorithm can then proceed to the next timestep.
 
 ****************************
 Example Input File
