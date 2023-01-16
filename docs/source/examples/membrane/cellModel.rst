@@ -9,6 +9,14 @@ file ``Bacterium.swc``, which specifies an oblong cell shape, relying on the ``.
 is commonly used to approximate neuron structures. The case considered is the four ion membrane transport
 problem considered in Figure 4 from McClure & Li 
 
+The cell simulation is performed by the executable ``lbpm_nernst_planck_cell_simulator``, which is launched
+in the same way as other parallel tools
+
+.. code:: bash
+
+	  mpirun -np 2 $LBPM_BIN/lbpm_nernst_planck_cell_simulator Bacterium.db
+
+
 The input file ``Bacterium.db`` specifies the following
 
 .. code:: c
@@ -85,15 +93,12 @@ The input file ``Bacterium.db`` specifies the following
 	     ThresholdMassFractionIn = 1e-1, 1.0, 5e-3, 0.0
 	     ThresholdMassFractionOut = 1e-1, 1.0, 5e-3, 0.0
 	  }
-
-Once this has been set, we launch ``lbpm_nernst_planck_simulator`` in the same way as other parallel tools
-
-.. code:: bash
-
-	  mpirun -np 2 $LBPM_BIN/lbpm_nernst_planck_simulator bacterium.db
+	  
+*******************
+Example Output
+*******************
 
 Successful output looks like the following
-
 
 .. code:: bash
 

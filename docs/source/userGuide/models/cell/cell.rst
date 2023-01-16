@@ -3,6 +3,7 @@ Cell model
 =============================================
 
 LBPM includes a whole-cell simulator based on a coupled solution of the Nernst-Planck equations with Gauss's law. 
+The lattice Boltzmann formulation is described below.
 
 *********************
 Nernst-Planck model
@@ -157,6 +158,27 @@ The local value of the potential is then updated based on a relaxation scheme, w
    
 The algorithm can then proceed to the next timestep.
 
+***************************
+Membrane Model
+***************************
+
+The LBPM membrane model provides the basis to model cellular dynamics. There are currently two supported ways
+to specify the membrane location:
+
+1. provide a segemented image that is labeled to differentiate the cell
+interior and exterior. See the script ``NaCl-cell.py`` and input file ``NaCl.db`` as a reference for how to use labeled images.
+
+- ``IonConcentrationFile`` -- list of files that specify the initial concentration for each ion
+- ``Filename`` -- 8-bit binary file provided in the ``Domain`` section of the input database
+- ``ReadType`` -- this should be ``"8bit"`` (this is the default)
+
+2. provide a ``.swc`` file that specifies the geometry (see example input file below).
+ 
+- ``Filename`` -- swc file name should be provided in the ``Domain`` section of the input database
+- ``ReadType`` -- this should be ``"swc"`` (required since ``"8bit"`` is the internal default)
+
+Both examples are stored within the LBPM repository, located at ``example/SingleCell/``
+
 ****************************
 Example Input File
 ****************************
@@ -170,13 +192,9 @@ Example Input File
 	 tolerance = 1.0e-9
 	 visualization_interval = 1000        // Frequency to write visualization data
      }
-     Stokes {
-	 tau = 1.0
-	 F = 0, 0, 0
-	 ElectricField = 0, 0, 0 //body electric field; user-input unit: [V/m]
-	 nu_phys = 0.889e-6      //fluid kinematic viscosity; user-input unit: [m^2/sec]
-     }
      Ions {
+         use_membrane = true
+         Restart = false
 	 MembraneIonConcentrationList = 150.0e-3, 10.0e-3, 15.0e-3, 155.0e-3 //user-input unit: [mol/m^3]
 	 temperature = 293.15 //unit [K]
 	 number_ion_species = 4  //number of ions

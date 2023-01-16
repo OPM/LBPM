@@ -12,9 +12,7 @@ Currently supported lattice Boltzmann models
 
    mrt/*
 
-   nernstPlanck/*
-
-   PoissonBoltzmann/*
+   cell/*
    
    greyscale/*
 
