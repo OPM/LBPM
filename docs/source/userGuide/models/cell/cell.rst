@@ -196,6 +196,7 @@ There are currently two supported ways to specify the membrane location:
 
 1. provide a segemented image that is labeled to differentiate the cell
 interior and exterior. See the script ``NaCl-cell.py`` and input file ``NaCl.db`` as a reference for how to use labeled images.
+
 - ``IonConcentrationFile`` -- list of files that specify the initial concentration for each ion
 - ``Filename`` -- 8-bit binary file provided in the ``Domain`` section of the input database
 - ``ReadType`` -- this should be ``"8bit"`` (this is the default)
