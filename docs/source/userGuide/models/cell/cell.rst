@@ -2,8 +2,10 @@
 Cell model
 =============================================
 
-LBPM includes a whole-cell simulator based on a coupled solution of the Nernst-Planck equations with Gauss's law. 
-The lattice Boltzmann formulation is described below.
+LBPM includes a whole-cell simulator based on a coupled solution of the Nernst-Planck equations with Gauss's law.
+The resulting model is fully non-equilibrium, and can resolve the dynamics of how ions diffuse through the cellular
+environment when subjected to complex membrane responses.
+The lattice Boltzmann formulation is described below. 
 
 *********************
 Nernst-Planck model
@@ -209,13 +211,13 @@ interior and exterior. See the script ``NaCl-cell.py`` and input file ``NaCl.db`
 Example input files for both cases are stored within the LBPM repository, located at ``example/SingleCell/``
 
 
-The membrane simply prevents the diffusion of ions. All lattice links crossing the membrane are stored in a dedicated data structure so that transport is decoupled from the bulk regions. Suppose that site :math:`\mathbf{x}_{q\ell}` is inside the membrane and :math:`\mathbf{x}_{p\ell}` is outside the membrane. For each species :math:`k`, transport across each link :math:`\ell` is controlled by a pair of coefficients, :math:`\alpha^k_{\ell p}` and :math:`\alpha^k_{\ell q}`. Ions transported from the outside to the inside is
+The membrane simply prevents the diffusion of ions. All lattice links crossing the membrane are stored in a dedicated data structure so that transport is decoupled from the bulk regions. Suppose that site :math:`\mathbf{x}_{q\ell}` is inside the membrane and :math:`\mathbf{x}_{p\ell}` is outside the membrane, with :math:`\mathbf{x}_{p \ell } = \mathbf{x}_{q\ell} + \bm{\xi}_q \Delta t`. For each species :math:`k`, transport across each link :math:`\ell` is controlled by a pair of coefficients, :math:`\alpha^k_{\ell p}` and :math:`\alpha^k_{\ell q}`. Ions transported from the outside to the inside is
 
 .. math::
    :nowrap:
 
    $$
-   { f_{q}^{k \prime} (\mathbf{x}_{q\ell})  \gets (1-\alpha^k_{\ell q}) f_{q}^{k} (\mathbf{x}_{q\ell}) + \alpha^k_{\ell p } f_{ p}^{k}  (\mathbf{x}_{p\ell})}
+   { f_{q}^{k \prime} (\mathbf{x}_{q \ell})  \gets (1-\alpha^k_{\ell q}) f_{q}^{k} (\mathbf{x}_{q\ell}) + \alpha^k_{\ell p } f_{ p}^{k}  (\mathbf{x}_{p\ell})}
    $$
 
 Similarly, for ions transported from the inside to the outside
