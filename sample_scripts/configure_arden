@@ -15,6 +15,6 @@ cmake -D CMAKE_C_COMPILER:PATH=/opt/arden/openmpi/3.1.2/bin/mpicc          \
     -D HDF5_DIRECTORY="/opt/arden/hdf5/1.8.12" \
     -D USE_CUDA=0                        \
     -D USE_TIMER=0 \
-    ~/Programs/LBPM-WIA
+    ~/Programs/LBPM
 
 #    -D HDF5_LIB="/opt/arden/hdf5/1.8.12/lib/libhdf5.a"\
