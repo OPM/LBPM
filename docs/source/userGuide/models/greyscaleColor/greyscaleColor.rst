@@ -241,46 +241,75 @@ The relaxation parameters are determined from the relaxation time:
 
 The non-zero equilibrium moments are defined as
 
+
 .. math::
    :nowrap:
 
    $$
-     m_1^{eq} = (j_x^2+j_y^2+j_z^2) - \alpha |\textbf{C}|, \\
+     m_1^{eq} = 19\frac{ j_x^2+j_y^2+j_z^2}{\rho_0} - 11\rho - 19 \alpha |\textbf{C}|, \\
+   $$     
+
+.. math::
+   :nowrap:
+
+   $$
+     m_2^{eq} = 3\rho - \frac{11( j_x^2+j_y^2+j_z^2)}{2\rho_0}, \\
+   $$     
+
+.. math::
+   :nowrap:
+
+   $$
+     m_4^{eq} = -\frac{2 j_x}{3}, \\
+   $$     
+
+.. math::
+   :nowrap:
+
+   $$
+     m_6^{eq} = -\frac{2 j_y}{3}, \\
+   $$     
+
+.. math::
+   :nowrap:
+
+   $$
+     m_8^{eq} = -\frac{2 j_z}{3}, \\
    $$     
 
 .. math::
    :nowrap:
 
    $$     
-     m_9^{eq} = (2j_x^2-j_y^2-j_z^2)+ \alpha \frac{|\textbf{C}|}{2}(2n_x^2-n_y^2-n_z^2), \\
+     m_9^{eq} = \frac{2j_x^2-j_y^2-j_z^2}{\rho_0}+ \alpha \frac{|\textbf{C}|}{2}(2n_x^2-n_y^2-n_z^2), \\
    $$     
 
 .. math::
    :nowrap:
 
    $$     
-     m_{11}^{eq} = (j_y^2-j_z^2) + \alpha \frac{|\textbf{C}|}{2}(n_y^2-n_z^2), \\
+     m_{11}^{eq} = \frac{j_y^2-j_z^2}{\rho_0} + \alpha \frac{|\textbf{C}|}{2}(n_y^2-n_z^2), \\
    $$     
 
 .. math::
    :nowrap:
 
    $$     
-     m_{13}^{eq} = j_x j_y + \alpha \frac{|\textbf{C}|}{2} n_x n_y\;, \\
+     m_{13}^{eq} = \frac{j_x j_y}{\rho_0} + \alpha \frac{|\textbf{C}|}{2} n_x n_y\;, \\
    $$     
 
 .. math::
    :nowrap:
 
    $$     
-     m_{14}^{eq} = j_y j_z + \alpha \frac{|\textbf{C}|}{2} n_y n_z\;, \\
+     m_{14}^{eq} = \frac{j_y j_z}{\rho_0} + \alpha \frac{|\textbf{C}|}{2} n_y n_z\;, \\
    $$     
 
 .. math::
    :nowrap:
 
    $$     
-     m_{15}^{eq} = j_x j_z + \alpha \frac{|\textbf{C}|}{2} n_x n_z\;, 
+     m_{15}^{eq} = \frac{j_x j_z}{\rho_0} + \alpha \frac{|\textbf{C}|}{2} n_x n_z\;. 
    $$
 
 where the color gradient is determined from the phase indicator field

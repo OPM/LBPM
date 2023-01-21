@@ -13,6 +13,7 @@ cmake -D CMAKE_C_COMPILER:PATH=/opt/arden/openmpi/3.1.2/bin/mpicc          \
     -D CUDA_HOST_COMPILER="/usr/bin/gcc" \
     -D USE_HDF5=1 \
     -D HDF5_DIRECTORY="/opt/arden/hdf5/1.8.12" \
+    -D USE_DOXYGEN=true \
     -D USE_CUDA=0                        \
     -D USE_TIMER=0 \
     ~/Programs/LBPM

@@ -301,7 +301,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
 		//........Get 1-D index for this thread....................
 		n =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
 		if (n<finish) {
-			//Load data
+				//Load data
 			//When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
 			//and thus the net space charge density is zero. 
 			rho_e = (UseSlippingVelBC==1) ? 0.0 : Den_charge[n] / epsilon_LB;
@@ -451,7 +451,8 @@ __global__  void dvc_ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
 			dist[nr18] = W2*psi; //f17 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 
 			// q = 18
-			dist[nr17] = W2*psi;
+			dist[nr17] = W2*psi; //f18 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
+	
 		}
 	}
 }
@@ -479,7 +480,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 		//........Get 1-D index for this thread....................
 		n =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
 		if (n<finish) {
-				//Load data
+			//Load data
 			//When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
 			//and thus the net space charge density is zero. 
 			rho_e = (UseSlippingVelBC==1) ? 0.0 : Den_charge[n] / epsilon_LB;
@@ -505,6 +506,12 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 			f17 = dist[18 * Np + n];
 			f18 = dist[17 * Np + n];
 
+			/* Ex = (f1 - f2) * rlx *
+	             4.0; //NOTE the unit of electric field here is V/lu
+	        Ey = (f3 - f4) * rlx *
+	             4.0; //factor 4.0 is D3Q7 lattice squared speed of sound
+	        Ez = (f5 - f6) * rlx * 4.0;
+			 */
 			Ex = (f1 - f2 + 0.5*(f7 - f8 + f9 - f10 + f11 - f12 + f13 - f14))*4.0; //NOTE the unit of electric field here is V/lu
 			Ey = (f3 - f4 + 0.5*(f7 - f8 - f9 + f10 + f15 - f16 + f17 - f18))*4.0;
 			Ez = (f5 - f6 + 0.5*(f11 - f12 - f13 + f14 + f15 - f16 - f17 + f18))*4.0;
@@ -514,12 +521,14 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 
 			sum_q = f1+f2+f3+f4+f5+f6+f7+f8+f9+f10+f11+f12+f13+f14+f15+f16+f17+f18;
 			error = 8.0*(sum_q - f0) + rho_e; 
+			
+			Error[n] = error;
 
 			psi = 2.0*(f0*(1.0 - rlx) + rlx*(sum_q + 0.125*rho_e));
-
-			idx = Map[n];
-			Psi[idx] = psi;
-
+	        
+	        idx = Map[n];
+	        Psi[idx] = psi;
+	        
 			// q = 0
 			dist[n] =  W0*psi;//
 
@@ -553,7 +562,6 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 			dist[16 * Np + n] = W2*psi;//f16 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 			dist[17 * Np + n] = W2*psi;//f17 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 			dist[18 * Np + n] = W2*psi;//f18 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
-
 			//........................................................................
 		}
 	}
@@ -592,6 +600,129 @@ __global__  void dvc_ScaLBL_D3Q19_Poisson_Init(int *Map, double *dist, double *P
 			dist[17 * Np + n] = W2* Psi[ijk];
 			dist[18 * Np + n] = W2* Psi[ijk];
 		}
+	}
+}
+__global__  void dvc_ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_z(int *list,  double *dist, double Vin, int count, int Np) {
+	
+	double W1 = 1.0/24.0;
+	double W2 = 1.0/48.0;
+	
+	int idx = blockIdx.x*blockDim.x + threadIdx.x;
+
+	if (idx < count){
+        int n = list[idx];
+        
+        dist[6 * Np + n]  = W1*Vin;
+        dist[12 * Np + n] = W2*Vin;
+        dist[13 * Np + n] = W2*Vin;
+        dist[16 * Np + n] = W2*Vin;
+        dist[17 * Np + n] = W2*Vin;
+    }
+}
+
+__global__  void dvc_ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_Z(int *list, double *dist, double Vout, int count, int Np) {
+	
+	double W1 = 1.0/24.0;
+	double W2 = 1.0/48.0;
+
+	int idx = blockIdx.x*blockDim.x + threadIdx.x;
+
+	if (idx < count){		
+        int n = list[idx];
+        dist[5 * Np + n]  = W1*Vout;
+        dist[11 * Np + n] = W2*Vout;
+        dist[14 * Np + n] = W2*Vout;
+        dist[15 * Np + n] = W2*Vout;
+        dist[18 * Np + n] = W2*Vout;
+	}
+}
+
+__global__  void dvc_ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_z(int *d_neighborList, int *list, double *dist, double Vin, int count, int Np) {
+	
+	double W1 = 1.0/24.0;
+	double W2 = 1.0/48.0;
+    	int nr5, nr11, nr14, nr15, nr18;
+    
+	int idx = blockIdx.x*blockDim.x + threadIdx.x;
+
+	if (idx < count){
+		int n = list[idx];
+
+        
+        // Unknown distributions
+        nr5 = d_neighborList[n + 4 * Np];
+        nr11 = d_neighborList[n + 10 * Np];
+        nr15 = d_neighborList[n + 14 * Np];
+        nr14 = d_neighborList[n + 13 * Np];
+        nr18 = d_neighborList[n + 17 * Np];
+        
+        dist[nr5]  = W1*Vin;
+        dist[nr11] = W2*Vin;
+        dist[nr15] = W2*Vin;
+        dist[nr14] = W2*Vin;
+        dist[nr18] = W2*Vin;
+    }
+}
+
+__global__  void dvc_ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_Z(int *d_neighborList, int *list, double *dist, double Vout, int count, int Np)  {
+	
+	double W1 = 1.0/24.0;
+	double W2 = 1.0/48.0;
+    	int nr6, nr12, nr13, nr16, nr17;
+
+	int idx = blockIdx.x*blockDim.x + threadIdx.x;
+
+	if (idx < count){		
+        int n = list[idx];
+        // unknown distributions
+        nr6 = d_neighborList[n + 5 * Np];
+        nr12 = d_neighborList[n + 11 * Np];
+        nr16 = d_neighborList[n + 15 * Np];
+        nr17 = d_neighborList[n + 16 * Np];
+        nr13 = d_neighborList[n + 12 * Np];
+        
+        dist[nr6]  = W1*Vout;
+        dist[nr12] = W2*Vout;
+        dist[nr16] = W2*Vout;
+        dist[nr17] = W2*Vout;
+        dist[nr13] = W2*Vout;
+	}
+}
+
+/* wrapper functions to launch kernels */
+extern "C" void ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_z(int *list,  double *dist, double Vin, int count, int Np){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_z<<<GRID,512>>>(list, dist, Vin, count, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("Hip error in ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_z (kernel): %s \n",cudaGetErrorString(err));
+	}
+}
+//
+extern "C" void ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_Z(int *list, double *dist,  double Vout, int count, int Np){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_Z<<<GRID,512>>>(list, dist, Vout, count, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("Hip error in ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_Z (kernel): %s \n",cudaGetErrorString(err));
+	}
+}
+extern "C" void ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_z(int *d_neighborList, int *list, double *dist, double Vin, int count,int Np) {
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_z<<<GRID,512>>>(d_neighborList, list, dist, Vin, count, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("Hip error in ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_z (kernel): %s \n",cudaGetErrorString(err));
+	}
+}
+//
+extern "C" void ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_Z(int *d_neighborList, int *list, double *dist, double Vout, int count, int Np)  {
+
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_Z<<<GRID,512>>>(d_neighborList, list, dist, Vout, count, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("Hip error in ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_Z (kernel): %s \n",cudaGetErrorString(err));
 	}
 }
 

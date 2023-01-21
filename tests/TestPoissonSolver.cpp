@@ -76,11 +76,14 @@ int main(int argc, char **argv)
                     PoissonSolver.getElectricField_debug(timestep);
                 }
             }
+            PoissonSolver.WriteVis(timestep);
         }
         else {
+        	int timestep = 1;
             PoissonSolver.Run(PoissonSolver.ChargeDensityDummy,false,1);
             PoissonSolver.getElectricPotential_debug(1);
             PoissonSolver.getElectricField_debug(1);
+            PoissonSolver.WriteVis(timestep);
         }
 
         if (rank==0) printf("Maximum timestep is reached and the simulation is completed\n");

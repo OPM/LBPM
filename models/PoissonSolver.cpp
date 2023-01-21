@@ -86,7 +86,7 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	}
     //'tolerance_method' can be {"MSE","MSE_max"}
 	tolerance_method = electric_db->getWithDefault<std::string>( "tolerance_method", "MSE" );
-	lattice_scheme = electric_db->getWithDefault<std::string>( "lattice_scheme", "D3Q7" );
+	lattice_scheme = electric_db->getWithDefault<std::string>( "lattice_scheme", "D3Q19" );
 	if (electric_db->keyExists( "epsilonR" )){
 		epsilonR = electric_db->getScalar<double>( "epsilonR" );
 	}
@@ -726,13 +726,13 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, bool UseSlippingVelBC, int times
             // *************ODD TIMESTEP*************//
             timestep++;
             SolveElectricPotentialAAodd(timestep_from_Study);//update electric potential
-            SolvePoissonAAodd(ChargeDensity, UseSlippingVelBC);//perform collision
+            SolvePoissonAAodd(ChargeDensity, UseSlippingVelBC,timestep);//perform collision
             ScaLBL_Comm->Barrier(); comm.barrier();
 
             // *************EVEN TIMESTEP*************//
             timestep++;
             SolveElectricPotentialAAeven(timestep_from_Study);//update electric potential
-            SolvePoissonAAeven(ChargeDensity, UseSlippingVelBC);//perform collision
+            SolvePoissonAAeven(ChargeDensity, UseSlippingVelBC,timestep);//perform collision
             ScaLBL_Comm->Barrier(); comm.barrier();
             //************************************************************************/
 
@@ -797,18 +797,17 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, bool UseSlippingVelBC, int times
             //************************************************************************/
             // *************ODD TIMESTEP*************//
             timestep++;
-            //SolveElectricPotentialAAodd(timestep_from_Study,ChargeDensity, UseSlippingVelBC);//update electric potential
-            SolvePoissonAAodd(ChargeDensity, UseSlippingVelBC);//perform collision
+            //SolveElectricPotentialAAodd(timestep_from_Study);//,ChargeDensity, UseSlippingVelBC);//update electric potential
+            SolvePoissonAAodd(ChargeDensity, UseSlippingVelBC,timestep);//perform collision
             ScaLBL_Comm->Barrier(); comm.barrier();
 
             // *************EVEN TIMESTEP*************//
             timestep++;
-            //SolveElectricPotentialAAeven(timestep_from_Study,ChargeDensity, UseSlippingVelBC);//update electric potential
-            SolvePoissonAAeven(ChargeDensity, UseSlippingVelBC);//perform collision
+            //SolveElectricPotentialAAeven(timestep_from_Study);//,ChargeDensity, UseSlippingVelBC);//update electric potential
+            SolvePoissonAAeven(ChargeDensity, UseSlippingVelBC,timestep);//perform collision
             ScaLBL_Comm->Barrier(); comm.barrier();
             //************************************************************************/
 
-            
             // Check convergence of steady-state solution
             if (timestep==2){
                 //save electric potential for convergence check
@@ -861,6 +860,145 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, bool UseSlippingVelBC, int times
     if(WriteLog==true){
         getConvergenceLog(timestep,error);
     }
+}
+
+void ScaLBL_Poisson::Run(double *ChargeDensity, DoubleArray MembraneDistance, bool UseSlippingVelBC, int timestep_from_Study){
+
+	double error = 1.0;
+	double threshold = 10000000.0;
+	bool SET_THRESHOLD = false;
+	if (electric_db->keyExists( "rescale_at_distance" )){
+		SET_THRESHOLD = true;
+		threshold = electric_db->getScalar<double>( "rescale_at_distance" );
+	}
+	if (BoundaryConditionInlet > 0)    SET_THRESHOLD = false;
+	if (BoundaryConditionOutlet > 0)   SET_THRESHOLD = false;
+	
+	double *host_Error;
+	host_Error = new double [Np];
+
+	timestep=0;
+	auto t1 = std::chrono::system_clock::now();
+	while (timestep < timestepMax && error > tolerance) {
+		//************************************************************************/
+		// *************ODD TIMESTEP*************//
+		timestep++;
+		//SolveElectricPotentialAAodd(timestep_from_Study,ChargeDensity, UseSlippingVelBC);//update electric potential
+		SolvePoissonAAodd(ChargeDensity, UseSlippingVelBC,timestep);//perform collision
+		ScaLBL_Comm->Barrier(); comm.barrier();
+
+		// *************EVEN TIMESTEP*************//
+		timestep++;
+		//SolveElectricPotentialAAeven(timestep_from_Study,ChargeDensity, UseSlippingVelBC);//update electric potential
+		SolvePoissonAAeven(ChargeDensity, UseSlippingVelBC,timestep);//perform collision
+		ScaLBL_Comm->Barrier(); comm.barrier();
+		//************************************************************************/
+
+		// Check convergence of steady-state solution
+		if (timestep==2){
+			//save electric potential for convergence check
+		}
+		if (timestep%analysis_interval==0){
+			/* get the elecric potential */
+			ScaLBL_CopyToHost(Psi_host.data(),Psi,sizeof(double)*Nx*Ny*Nz);
+			if (rank==0) printf("   ... getting Poisson solver error \n");
+			double err = 0.0;
+			double max_error = 0.0;
+			ScaLBL_CopyToHost(host_Error,ResidualError,sizeof(double)*Np);
+			for (int idx=0; idx<Np; idx++){
+				err = host_Error[idx]*host_Error[idx];
+				if (err > max_error ){
+					max_error = err;
+				}
+			}
+			error=Dm->Comm.maxReduce(max_error);
+
+			if (error > tolerance && SET_THRESHOLD){
+				/* don't use this with an external BC */
+				// cpompute the far-field electric potential
+				double inside_local = 0.0;
+				double outside_local = 0.0;
+				double inside_count_local = 0.0;
+				double outside_count_local = 0.0;
+				/* global values */
+				double inside_global = 0.0;
+				double outside_global = 0.0;
+				double inside_count_global = 0.0;
+				double outside_count_global = 0.0;
+				for (int k=1; k<Nz; k++){
+					for (int j=1; j<Ny; j++){
+						for (int i=1; i<Nx; i++){
+							int n = k*Nx*Ny + j*Nx + i;
+							double distance = MembraneDistance(i,j,k);
+							if  (distance > threshold  && distance < (threshold + 1.0)){
+								outside_count_local += 1.0;
+								outside_local += Psi_host(n);
+							}
+							else if  (distance < (-1.0)*threshold && distance > (-1.0)*(threshold + 1.0)){
+								inside_count_local += 1.0;
+								inside_local += Psi_host(n);
+							}
+						}
+					}
+				}
+				inside_count_global = Dm->Comm.sumReduce(inside_count_local);
+				outside_count_global = Dm->Comm.sumReduce(outside_count_local);
+				outside_global = Dm->Comm.sumReduce(outside_local);
+				inside_global = Dm->Comm.sumReduce(inside_local);
+				outside_global /= outside_count_global;
+				inside_global  /= inside_count_global;
+				
+				if (rank==0) printf("   Rescaling far-field electric potential to value (outside): %f \n",outside_global);
+				if (rank==0) printf("   Rescaling far-field electric potential to value (inside): %f \n",inside_global);
+
+				// rescale the far-field electric potential
+				for (int k=1; k<Nz; k++){
+					for (int j=1; j<Ny; j++){
+						for (int i=1; i<Nx; i++){
+							int n = k*Nx*Ny + j*Nx + i;
+							double distance = MembraneDistance(i,j,k);
+							if  ( distance > (threshold + 1.0)){
+								Psi_host(n) = outside_global;
+							}
+							else if  ( distance < (-1.0)*(threshold + 1.0)){
+								Psi_host(n) = inside_global;
+							}
+						}
+					}
+				}				
+				ScaLBL_CopyToDevice(Psi,Psi_host.data(),sizeof(double)*Nx*Ny*Nz);
+			}
+			/* compute the eletric field */
+			//ScaLBL_D3Q19_Poisson_getElectricField(fq, ElectricField, tau, Np);
+		}
+	}
+	if (rank == 0)
+		printf("---------------------------------------------------------------"
+				"----\n");
+	// Compute the walltime per timestep
+	auto t2 = std::chrono::system_clock::now();
+	double cputime = std::chrono::duration<double>(t2 - t1).count() / timestep;
+	// Performance obtained from each node
+	double MLUPS = double(Np) / cputime / 1000000;
+
+	if (rank == 0)
+		printf("********************************************************\n");
+	if (rank == 0)
+		printf("CPU time = %f \n", cputime);
+	if (rank == 0)
+		printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
+	MLUPS *= nprocs;
+	if (rank == 0)
+		printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
+	if (rank == 0)
+		printf("********************************************************\n");
+	delete [] host_Error;
+
+	//************************************************************************/
+
+	if(WriteLog==true){
+		getConvergenceLog(timestep,error);
+	}
 }
 
 void ScaLBL_Poisson::getConvergenceLog(int timestep,double error){
@@ -1008,7 +1146,7 @@ void ScaLBL_Poisson::SolveElectricPotentialAAeven(int timestep_from_Study){
     }
 }
 
-void ScaLBL_Poisson::SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVelBC){
+void ScaLBL_Poisson::SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVelBC, int timestep){
 	
     if (lattice_scheme.compare("D3Q7")==0){
         ScaLBL_D3Q7_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, UseSlippingVelBC, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
@@ -1029,6 +1167,30 @@ void ScaLBL_Poisson::SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVe
         ScaLBL_D3Q19_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, UseSlippingVelBC, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         //ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
         ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+        
+        // Set boundary conditions
+        if (BoundaryConditionInlet > 0){
+            switch (BoundaryConditionInlet){
+                case 1:
+                    ScaLBL_Comm->D3Q7_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
+                    break;
+                case 2:
+                    Vin  = getBoundaryVoltagefromPeriodicBC(Vin0,freqIn,PhaseShift_In,timestep);
+                    ScaLBL_Comm->D3Q7_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
+                    break;
+            }
+        }
+        if (BoundaryConditionOutlet > 0){
+            switch (BoundaryConditionOutlet){
+                case 1:
+                    ScaLBL_Comm->D3Q7_Poisson_Potential_BC_Z(NeighborList, fq, Vout, timestep);
+                    break;
+                case 2:
+                    Vout = getBoundaryVoltagefromPeriodicBC(Vout0,freqOut,PhaseShift_Out,timestep);
+                    ScaLBL_Comm->D3Q7_Poisson_Potential_BC_Z(NeighborList, fq, Vout, timestep);
+                    break;
+            }
+        }
 
         ScaLBL_D3Q19_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, UseSlippingVelBC, 0, ScaLBL_Comm->LastExterior(), Np);
         ScaLBL_Comm->Barrier();
@@ -1038,7 +1200,7 @@ void ScaLBL_Poisson::SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVe
     }
 }
 
-void ScaLBL_Poisson::SolvePoissonAAeven(double *ChargeDensity, bool UseSlippingVelBC){
+void ScaLBL_Poisson::SolvePoissonAAeven(double *ChargeDensity, bool UseSlippingVelBC, int timestep){
 
     if (lattice_scheme.compare("D3Q7")==0){
         ScaLBL_D3Q7_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, UseSlippingVelBC, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
@@ -1056,6 +1218,31 @@ void ScaLBL_Poisson::SolvePoissonAAeven(double *ChargeDensity, bool UseSlippingV
         ScaLBL_D3Q19_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, ResidualError, tau, epsilon_LB, UseSlippingVelBC, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
         //	ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+        
+        // Set boundary conditions
+        if (BoundaryConditionInlet > 0){
+            switch (BoundaryConditionInlet){
+                case 1:
+                    ScaLBL_Comm->D3Q7_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
+                    break;
+                case 2:
+                    Vin  = getBoundaryVoltagefromPeriodicBC(Vin0,freqIn,PhaseShift_In,timestep);
+                    ScaLBL_Comm->D3Q7_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
+                    break;
+            }
+        }
+        if (BoundaryConditionOutlet > 0){
+            switch (BoundaryConditionOutlet){
+                case 1:
+                    ScaLBL_Comm->D3Q7_Poisson_Potential_BC_Z(NeighborList, fq, Vout, timestep);
+                    break;
+                case 2:
+                    Vout = getBoundaryVoltagefromPeriodicBC(Vout0,freqOut,PhaseShift_Out,timestep);
+                    ScaLBL_Comm->D3Q7_Poisson_Potential_BC_Z(NeighborList, fq, Vout, timestep);
+                    break;
+            }
+        }
+        
         ScaLBL_D3Q19_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, ResidualError, tau, epsilon_LB, UseSlippingVelBC, 0, ScaLBL_Comm->LastExterior(), Np);
         ScaLBL_Comm->Barrier();
         
@@ -1180,6 +1367,53 @@ void ScaLBL_Poisson::ElectricField_LB_to_Phys(DoubleArray &Efield_reg){
             }
         }
     }
+}
+
+void ScaLBL_Poisson::WriteVis( int timestep) {
+
+    auto vis_db = db->getDatabase("Visualization");
+    auto format = vis_db->getWithDefault<string>( "format", "hdf5" );
+
+    DoubleArray ElectricalPotential(Nx, Ny, Nz);
+    std::vector<IO::MeshDataStruct> visData;
+    fillHalo<double> fillData(Dm->Comm, Dm->rank_info,
+                              {Dm->Nx - 2, Dm->Ny - 2, Dm->Nz - 2}, {1, 1, 1},
+                              0, 1);
+
+    IO::initialize("",format,"false");
+    // Create the MeshDataStruct    
+    visData.resize(1);
+
+    visData[0].meshName = "domain";
+    visData[0].mesh =
+        std::make_shared<IO::DomainMesh>(Dm->rank_info, Dm->Nx - 2, Dm->Ny - 2,
+                                         Dm->Nz - 2, Dm->Lx, Dm->Ly, Dm->Lz);
+    //electric potential
+    auto ElectricPotentialVar = std::make_shared<IO::Variable>();
+
+    //--------------------------------------------------------------------------------------------------------------------
+
+    //-------------------------------------Create Names for Variables------------------------------------------------------
+    if (vis_db->getWithDefault<bool>("save_electric_potential", true)) {
+        ElectricPotentialVar->name = "ElectricPotential";
+        ElectricPotentialVar->type = IO::VariableType::VolumeVariable;
+        ElectricPotentialVar->dim = 1;
+        ElectricPotentialVar->data.resize(Dm->Nx - 2, Dm->Ny - 2, Dm->Nz - 2);
+        visData[0].vars.push_back(ElectricPotentialVar);
+    }
+    //--------------------------------------------------------------------------------------------------------------------
+
+    //------------------------------------Save All Variables--------------------------------------------------------------
+    if (vis_db->getWithDefault<bool>("save_electric_potential", true)) {
+        ASSERT(visData[0].vars[0]->name == "ElectricPotential");
+        getElectricPotential(ElectricalPotential);
+        Array<double> &ElectricPotentialData = visData[0].vars[0]->data;
+        fillData.copy(ElectricalPotential, ElectricPotentialData);
+    }
+
+    if (vis_db->getWithDefault<bool>("write_silo", true))
+        IO::writeData(timestep, visData, Dm->Comm);
+    //--------------------------------------------------------------------------------------------------------------------
 }
 
 //void ScaLBL_Poisson::SolveElectricField(){

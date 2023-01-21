@@ -631,6 +631,8 @@ extern "C" void ScaLBL_D3Q19_AAeven_Poisson_ElectricPotential(
     }
 }
 
+
+
 extern "C" void ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
                                           double *dist, double *Den_charge,
                                           double *Psi, double *ElectricField,
@@ -912,6 +914,92 @@ extern "C" void ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 		dist[18 * Np + n] = W2*psi;//f18 * (1.0 - rlx) +W2* (rlx * psi) - (1.0-0.5*rlx)*0.02777777777777778*rho_e;
 
 		//........................................................................
+	}
+}
+
+extern "C" void ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_z(int *list,  double *dist, double Vin, int count, int Np) {
+	double W1 = 1.0/24.0;
+	double W2 = 1.0/48.0;
+    int nread, nr5;
+    
+    for (int idx = 0; idx < count; idx++) {
+        int n = list[idx];
+        
+        dist[6 * Np + n]  = W1*Vin;
+        dist[12 * Np + n] = W2*Vin;
+        dist[13 * Np + n] = W2*Vin;
+        dist[16 * Np + n] = W2*Vin;
+        dist[17 * Np + n] = W2*Vin;
+    }
+}
+
+extern "C" void ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_Z(int *list,
+                                                          double *dist,
+                                                          double Vout,
+                                                          int count, int Np) {
+	
+	double W1 = 1.0/24.0;
+	double W2 = 1.0/48.0;
+
+	for (int idx = 0; idx < count; idx++) {
+		
+        int n = list[idx];
+        dist[5 * Np + n]  = W1*Vout;
+        dist[11 * Np + n] = W2*Vout;
+        dist[14 * Np + n] = W2*Vout;
+        dist[15 * Np + n] = W2*Vout;
+        dist[18 * Np + n] = W2*Vout;
+	}
+}
+
+extern "C" void ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_z(int *d_neighborList,
+                                                         int *list,
+                                                         double *dist,
+                                                         double Vin, int count,
+                                                         int Np) {
+	double W1 = 1.0/24.0;
+	double W2 = 1.0/48.0;
+    int nr5, nr11, nr14, nr15, nr18;
+    
+    for (int idx = 0; idx < count; idx++) {
+        int n = list[idx];
+        
+        // Unknown distributions
+        nr5 = d_neighborList[n + 4 * Np];
+        nr11 = d_neighborList[n + 10 * Np];
+        nr15 = d_neighborList[n + 14 * Np];
+        nr14 = d_neighborList[n + 13 * Np];
+        nr18 = d_neighborList[n + 17 * Np];
+        
+        dist[nr5]  = W1*Vin;
+        dist[nr11] = W2*Vin;
+        dist[nr15] = W2*Vin;
+        dist[nr14] = W2*Vin;
+        dist[nr18] = W2*Vin;
+    }
+}
+
+extern "C" void ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_Z(int *d_neighborList, int *list, double *dist, double Vout, int count, int Np)  {
+	
+	double W1 = 1.0/24.0;
+	double W2 = 1.0/48.0;
+    int nr6, nr12, nr13, nr16, nr17;
+
+	for (int idx = 0; idx < count; idx++) {
+		
+        int n = list[idx];
+        // unknown distributions
+        nr6 = d_neighborList[n + 5 * Np];
+        nr12 = d_neighborList[n + 11 * Np];
+        nr16 = d_neighborList[n + 15 * Np];
+        nr17 = d_neighborList[n + 16 * Np];
+        nr13 = d_neighborList[n + 12 * Np];
+        
+        dist[nr6]  = W1*Vout;
+        dist[nr12] = W2*Vout;
+        dist[nr16] = W2*Vout;
+        dist[nr17] = W2*Vout;
+        dist[nr13] = W2*Vout;
 	}
 }
 
