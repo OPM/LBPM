@@ -96,8 +96,10 @@ int main( int argc, char **argv )
 					SKIP_TIMESTEPS = 0;
 				if (PROTOCOL == "fractional flow")
 					FRACTIONAL_FLOW_INCREMENT = flow_db->getWithDefault<double>( "fractional_flow_increment", 0.05);
-				if (PROTOCOL == "seed water")
+				if (PROTOCOL == "seed water"){
 					SEED_WATER = flow_db->getWithDefault<double>( "seed_water", 0.01);
+					FRACTIONAL_FLOW_INCREMENT = flow_db->getWithDefault<double>( "fractional_flow_increment", 0.05);
+				}
 			}
 			/* analysis keys*/
 			int ANALYSIS_INTERVAL = ColorModel.timestepMax;
