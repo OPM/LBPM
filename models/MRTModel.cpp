@@ -387,7 +387,7 @@ void ScaLBL_MRTModel::Run() {
 
             double h = Dm->voxel_length;
             double absperm =
-                h * h * mu * Mask->Porosity() * flow_rate / force_mag;
+                h * h * mu * Mask->Porosity() *  Mask->Porosity()* flow_rate / force_mag;
             if (rank == 0) {
                 printf("     %f\n", absperm);
                 FILE *log_file = fopen("Permeability.csv", "a");

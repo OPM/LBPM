@@ -912,31 +912,31 @@ double ScaLBL_ColorModel::Run(int returntime) {
             				(vBd_x * dir_x + vBd_y * dir_y + vBd_z * dir_z);
 
             		double kAeff_connected =
-            				h * h * muA * Mask->Porosity()* flow_rate_A_connected / (force_mag);
+            				h * h * muA * Mask->Porosity()*  Mask->Porosity()* flow_rate_A_connected / (force_mag);
             		double kBeff_connected =
-            				h * h * muB * Mask->Porosity()* flow_rate_B_connected / (force_mag);
+            				h * h * muB * Mask->Porosity()* Mask->Porosity()*  flow_rate_B_connected / (force_mag);
 
             		// Saturation normalized effective permeability to account for decoupled phases and
             		// effective porosity.
             		double kAeff_connected_low =
-            				(1.0 - current_saturation) * h * h * muA* Mask->Porosity() *
+            				(1.0 - current_saturation) * h * h * muA* Mask->Porosity() *Mask->Porosity() *
             				flow_rate_A_connected / (force_mag);
             		double kBeff_connected_low = current_saturation * h * h *
-            				muB * Mask->Porosity()* flow_rate_B_connected /
+            				muB * Mask->Porosity()* Mask->Porosity() *flow_rate_B_connected /
             				(force_mag);
 
             		double kAeff_disconnected =
-            				h * h * muA * Mask->Porosity()* flow_rate_A_disconnected / (force_mag);
+            				h * h * muA * Mask->Porosity()*Mask->Porosity() * flow_rate_A_disconnected / (force_mag);
             		double kBeff_disconnected =
-            				h * h * muB * Mask->Porosity()* flow_rate_B_disconnected / (force_mag);
+            				h * h * muB * Mask->Porosity()*Mask->Porosity() * flow_rate_B_disconnected / (force_mag);
 
-            		double kAeff = h * h * muA* Mask->Porosity() * (flow_rate_A) / (force_mag);
-            		double kBeff = h * h * muB* Mask->Porosity() * (flow_rate_B) / (force_mag);
+            		double kAeff = h * h * muA* Mask->Porosity() *Mask->Porosity() * (flow_rate_A) / (force_mag);
+            		double kBeff = h * h * muB* Mask->Porosity() *Mask->Porosity() * (flow_rate_B) / (force_mag);
 
 
             		/* not counting films */
-            		double krnf = kAeff - h * h * muA* Mask->Porosity() * not_water_film_flow_rate / force_mag;
-            		double krwf = kBeff - h * h * muB* Mask->Porosity() * water_film_flow_rate / force_mag;
+            		double krnf = kAeff - h * h * muA* Mask->Porosity()* Mask->Porosity() * not_water_film_flow_rate / force_mag;
+            		double krwf = kBeff - h * h * muB* Mask->Porosity()*  Mask->Porosity() *water_film_flow_rate / force_mag;
 
             		/* not counting films */
             		double krnf_low = (1.0 - current_saturation) * krnf;
@@ -946,7 +946,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
             		// effective porosity.
             		double kAeff_low = (1.0 - current_saturation) * h * h *
             				muA* Mask->Porosity() * (flow_rate_A) / (force_mag);
-            		double kBeff_low = current_saturation * h * h * muB* Mask->Porosity() *
+            		double kBeff_low = current_saturation * h * h * muB* Mask->Porosity() *Mask->Porosity() *
             				(flow_rate_B) / (force_mag);
 
             		double viscous_pressure_drop =
