@@ -1,4 +1,4 @@
-\============
+============
 Publications
 ============
 
@@ -13,3 +13,5 @@ Publications
 * J.E. McClure, M. Berrill, W. Gray, C.T. Miller, C.T. "Tracking interface and common curve dynamics for two-fluid flow in porous media. Journal of Fluid Mechanics, 796, 211-232 (2016) https://doi.org/10.1017/jfm.2016.212 
 
 * J.E.McClure, D.Adalsteinsson, C.Pan, W.G.Gray, C.T.Miller "Approximation of interfacial properties in multiphase porous medium systems" Advances in Water Resources, 30 (3): 354-365 (2007) https://doi.org/10.1016/j.advwatres.2006.06.010
+
+ * J.E. McClure, Z. Li "Capturing membrane structure and function in lattice Boltzmann models" arXiv preprint arXiv:2208.14122	https://arxiv.org/pdf/2208.14122.pdf

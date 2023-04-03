@@ -181,6 +181,7 @@ extern "C" void ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_z(int *d_neighborList,
     }
 }
 
+
 extern "C" void ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_Z(int *d_neighborList,
                                                          int *list,
                                                          double *dist,
@@ -212,6 +213,8 @@ extern "C" void ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_Z(int *d_neighborList,
         dist[nr6] = f6;
     }
 }
+
+
 
 extern "C" void ScaLBL_Poisson_D3Q7_BC_z(int *list, int *Map, double *Psi,
                                          double Vin, int count) {

@@ -430,11 +430,11 @@ void SubPhase::Basic() {
         //double total_flow_rate = water_flow_rate + not_water_flow_rate;
         //double fractional_flow = water_flow_rate / total_flow_rate;
         double h = Dm->voxel_length;
-        double krn = h * h * nu_n * Porosity * not_water_flow_rate / force_mag;
-        double krw = h * h * nu_w * Porosity* water_flow_rate / force_mag;
+        double krn = h * h * nu_n * Porosity* Porosity * not_water_flow_rate / force_mag;
+        double krw = h * h * nu_w * Porosity* Porosity* water_flow_rate / force_mag;
         /* not counting films */
-        double krnf = krn - h * h * nu_n * Porosity * not_water_film_flow_rate / force_mag;
-        double krwf = krw - h * h * nu_w * Porosity * water_film_flow_rate / force_mag;
+        double krnf = krn - h * h * nu_n * Porosity* Porosity * not_water_film_flow_rate / force_mag;
+        double krwf = krw - h * h * nu_w * Porosity* Porosity * water_film_flow_rate / force_mag;
         double eff_pressure = 1.0 / (krn + krw); // effective pressure drop
 
         fprintf(TIMELOG,

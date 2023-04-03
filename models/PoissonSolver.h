@@ -22,6 +22,7 @@
 #ifndef ScaLBL_POISSON_INC
 #define ScaLBL_POISSON_INC
 
+
 class ScaLBL_Poisson {
 public:
     ScaLBL_Poisson(int RANK, int NP, const Utilities::MPI &COMM);
@@ -35,12 +36,15 @@ public:
     void Create();
     void Initialize(double time_conv_from_Study);
     void Run(double *ChargeDensity, bool UseSlippingVelBC, int timestep_from_Study);
+    void Run(double *ChargeDensity, DoubleArray MembraneDistance, 
+    		 bool UseSlippingVelBC, int timestep_from_Study);
     void getElectricPotential(DoubleArray &ReturnValues);
     void getElectricPotential_debug(int timestep);
     void getElectricField(DoubleArray &Values_x, DoubleArray &Values_y,
                           DoubleArray &Values_z);
     void getElectricField_debug(int timestep);
     void Checkpoint();
+    void WriteVis( int timestep);
 
     void DummyChargeDensity(); //for debugging
 
@@ -114,8 +118,8 @@ private:
     void SolveElectricPotentialAAeven(int timestep_from_Study);
     void SolveElectricPotentialAAodd(int timestep_from_Study);
     //void SolveElectricField();
-    void SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVelBC);
-    void SolvePoissonAAeven(double *ChargeDensity, bool UseSlippingVelBC);
+    void SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVelBC, int timestep);
+    void SolvePoissonAAeven(double *ChargeDensity, bool UseSlippingVelBC, int timestep);
     void getConvergenceLog(int timestep,double error);
     double getBoundaryVoltagefromPeriodicBC(double V0,double freq,double t0,int time_step);
     

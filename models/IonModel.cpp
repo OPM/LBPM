@@ -301,6 +301,7 @@ void ScaLBL_IonModel::ReadParams(string filename) {
     //NOTE: the maximum iteration timesteps for ions are left unspecified
     //      it relies on the multiphys controller to compute the max timestep
 	USE_MEMBRANE = true;
+	Restart = false;
     // read the input database
     db = std::make_shared<Database>(filename);
     domain_db = db->getDatabase("Domain");
@@ -1080,20 +1081,42 @@ void ScaLBL_IonModel::Initialize() {
         printf("LB Ion Solver: initializing D3Q7 distributions\n");
     //USE_MEMBRANE = true; 
     if (USE_MEMBRANE){
-            double *Ci_host;
-            if (rank == 0)
-                printf("   ...initializing based on membrane list \n");
-            Ci_host = new double[number_ion_species * Np];
-            for (size_t ic = 0; ic < number_ion_species; ic++) {
-            	AssignIonConcentrationMembrane( &Ci_host[ic * Np],  ic);
-            }
-            ScaLBL_CopyToDevice(Ci, Ci_host, number_ion_species * sizeof(double) * Np);
-            comm.barrier();
-            for (size_t ic = 0; ic < number_ion_species; ic++) {
-                ScaLBL_D3Q7_Ion_Init_FromFile(&fq[ic * Np * 7], &Ci[ic * Np], Np);
-            }
-            delete[] Ci_host;
+    	double *Ci_host;
+    	Ci_host = new double[number_ion_species * Np];
+
+    	if (ion_db->keyExists("IonConcentrationFile")) {
+    		//NOTE: "IonConcentrationFile" is a vector, including "file_name, datatype"
+    		auto File_ion = ion_db->getVector<std::string>("IonConcentrationFile");
+    		if (File_ion.size() == 2*number_ion_species) {
+    			for (size_t ic = 0; ic < number_ion_species; ic++) {
+    				AssignIonConcentration_FromFile(&Ci_host[ic * Np], File_ion,
+    						ic);
+    			}
+    			ScaLBL_CopyToDevice(Ci, Ci_host,
+    					number_ion_species * sizeof(double) * Np);
+    			comm.barrier();
+    			for (size_t ic = 0; ic < number_ion_species; ic++) {
+    				ScaLBL_D3Q7_Ion_Init_FromFile(&fq[ic * Np * 7], &Ci[ic * Np],
+    						Np);
+    			}
+    		}
+    	}
+    	else{
+    		if (rank == 0)
+    			printf("   ...initializing based on membrane list \n");
+    		for (size_t ic = 0; ic < number_ion_species; ic++) {
+    			AssignIonConcentrationMembrane( &Ci_host[ic * Np],  ic);
+    		}
+    		ScaLBL_CopyToDevice(Ci, Ci_host, number_ion_species * sizeof(double) * Np);
+    		comm.barrier();
+    		for (size_t ic = 0; ic < number_ion_species; ic++) {
+    			ScaLBL_D3Q7_Ion_Init_FromFile(&fq[ic * Np * 7], &Ci[ic * Np], Np);
+    		}
+    	}
+    	delete[] Ci_host;
+
     }
+
     else if (ion_db->keyExists("IonConcentrationFile")) {
         //NOTE: "IonConcentrationFile" is a vector, including "file_name, datatype"
         auto File_ion = ion_db->getVector<std::string>("IonConcentrationFile");
@@ -1548,7 +1571,6 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
 
 
 			IonMembrane->IonTransport(&fq[ic * Np * 7],&Ci[ic * Np]);
-
 
 			/*           if (BoundaryConditionSolid == 1) {
                 //TODO IonSolid may also be species-dependent

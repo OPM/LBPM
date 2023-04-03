@@ -396,6 +396,12 @@ extern "C" void ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
 
 extern "C" void ScaLBL_D3Q19_Poisson_getElectricField(double *dist, double *ElectricField, double tau, int Np);
 
+
+extern "C" void ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_Z(int *d_neighborList, int *list,  double *dist, double Vin, int count,  int Np);
+extern "C" void ScaLBL_D3Q19_AAodd_Poisson_Potential_BC_z(int *d_neighborList, int *list, double *dist, double Vin, int count, int Np);
+extern "C" void ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_Z(int *list, double *dist, double Vout, int count, int Np);
+extern "C" void ScaLBL_D3Q19_AAeven_Poisson_Potential_BC_z(int *list, double *dist, double Vout, int count, int Np);
+
 // LBM Stokes Model (adapted from MRT model)
 extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, 
                 double Gx, double Gy, double Gz,double rho0, double den_scale, double h, double time_conv, bool UseSlippingVelBC, int start, int finish, int Np);
@@ -806,6 +812,8 @@ public:
     double D3Q19_Flux_BC_z(int *neighborList, double *fq, double flux, int time);
     void D3Q7_Poisson_Potential_BC_z(int *neighborList, double *fq, double Vin, int time);
     void D3Q7_Poisson_Potential_BC_Z(int *neighborList, double *fq, double Vout, int time);
+    void D3Q19_Poisson_Potential_BC_z(int *neighborList, double *fq, double Vin, int time);
+    void D3Q19_Poisson_Potential_BC_Z(int *neighborList, double *fq, double Vout, int time);
     void Poisson_D3Q7_BC_z(int *Map, double *Psi, double Vin);
     void Poisson_D3Q7_BC_Z(int *Map, double *Psi, double Vout);
     void D3Q7_Ion_Concentration_BC_z(int *neighborList, double *fq, double Cin, int time);
