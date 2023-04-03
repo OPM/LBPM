@@ -20,3 +20,5 @@ a basic introduction to working with LBPM.
    color/*
 
    analysis/*
+
+   membrane/*
