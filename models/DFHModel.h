@@ -68,8 +68,8 @@ public:
 private:
     Utilities::MPI comm;
 
-    int dist_mem_size;
-    int neighborSize;
+    size_t dist_mem_size;
+    size_t neighborSize;
     // filenames
     char LocalRankString[8];
     char LocalRankFilename[40];
