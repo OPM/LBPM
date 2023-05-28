@@ -516,8 +516,8 @@ void ScaLBL_StokesModel::Create() {
     if (rank == 0)
         printf("LB Single-Fluid Solver: Allocating distributions \n");
     //......................device distributions.................................
-    int dist_mem_size = Np * sizeof(double);
-    int neighborSize = 18 * (Np * sizeof(int));
+    size_t dist_mem_size = Np * sizeof(double);
+    size_t neighborSize = 18 * (Np * sizeof(int));
     //...........................................................................
     ScaLBL_AllocateDeviceMemory((void **)&NeighborList, neighborSize);
     ScaLBL_AllocateDeviceMemory((void **)&fq, 19 * dist_mem_size);
