@@ -521,7 +521,7 @@ void ScaLBL_ColorModel::Initialize() {
         double IFT = 6.0 * alpha;
         double CrossSectionalArea =
             (double)(nprocx * (Nx - 2) * nprocy * (Ny - 2));
-        flux = Mask->Porosity() * CrossSectionalArea * (Ny - 2) * IFT *
+        flux = Mask->Porosity() * CrossSectionalArea * IFT *
                capillary_number / MuB;
         if (rank == 0)
             printf("   flux=%f \n", flux);
