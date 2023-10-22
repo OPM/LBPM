@@ -34,7 +34,8 @@ int main(int argc, char **argv)
 	{
 
 		int i,j,k,n;
-
+		bool Bounceback = false;
+		
         int rank = comm.getRank();
 		if (rank == 0){
 			printf("********************************************************\n");
@@ -300,7 +301,7 @@ int main(int argc, char **argv)
 		ScaLBL_CopyToDevice(fq, fq_host, sizeof(double)*7*Np);
 		
 		M.SendD3Q7AA(&fq[0]);
-		M.RecvD3Q7AA(&gq[0]);
+		M.RecvD3Q7AA(&gq[0],Bounceback);
 		// this has only the communicated values
 		//ScaLBL_CopyToHost(fq_host, gq, sizeof(double)*7*Np);
 		if (rank==0)	printf ("Sum result \n");

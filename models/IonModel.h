@@ -50,10 +50,14 @@ public:
     void DummyFluidVelocity();
     void DummyElectricField();
     void Checkpoint();
+    
+    void TestGrotthus();
+
     double CalIonDenConvergence(vector<double> &ci_avg_previous);
 
     bool Restart;
     int timestep;
+    int timestepGlobal;
     vector<int> timestepMax;
     int BoundaryConditionSolid;
     double h; //domain resolution, unit [um/lu]
@@ -62,6 +66,10 @@ public:
     double tolerance;
     double fluidVelx_dummy, fluidVely_dummy, fluidVelz_dummy;
     double Ex_dummy, Ey_dummy, Ez_dummy;
+    
+    bool use_Grotthus;
+    size_t pH_ion;
+    double IonizationEnergy;
 
     size_t number_ion_species;
     vector<int> BoundaryConditionInlet;
@@ -79,6 +87,8 @@ public:
     vector<double> Cout; //outlet boundary value, can be either concentration [mol/m^3] or flux [mol/m^2/sec]
     vector<double> tau;
     vector<double> time_conv;
+    vector<double>  BC_frequency;
+    vector<double> BC_amplitude;
 
     int Nx, Ny, Nz, N, Np;
     int rank, nprocx, nprocy, nprocz, nprocs;
