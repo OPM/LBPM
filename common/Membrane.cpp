@@ -12,6 +12,8 @@ Membrane::Membrane(std::shared_ptr <ScaLBL_Communicator> sComm, int *dvcNeighbor
 	//......................................................................................
 	// Create a separate copy of the communicator for the device
     MPI_COMM_SCALBL = sComm->MPI_COMM_SCALBL.dup();
+    int myrank = sComm->MPI_COMM_SCALBL.getRank();
+    rank_info =  RankInfoStruct(myrank, rank_info.nx, rank_info.ny, rank_info.nz);
     
     ScaLBL_CopyToHost(initialNeighborList, dvcNeighborList, 18*Np*sizeof(int));
     sComm->MPI_COMM_SCALBL.barrier();
@@ -37,6 +39,8 @@ Membrane::Membrane(std::shared_ptr <ScaLBL_Communicator> sComm, int *dvcNeighbor
 	rank_X=sComm->rank_X;
 	rank_Y=sComm->rank_Y;
 	rank_Z=sComm->rank_Z;
+    
+	BoundaryCondition = sComm->BoundaryCondition;
 	
 	if (rank == 0){
 		printf("**** Creating membrane data structure ****** \n");
@@ -828,7 +832,7 @@ void Membrane::SendD3Q7AA(double *dist){
 
 }
 
-void Membrane::RecvD3Q7AA(double *dist){
+void Membrane::RecvD3Q7AA(double *dist, bool BounceBack){
 
 	//...................................................................................
 	// Wait for completion of D3Q19 communication
@@ -840,7 +844,7 @@ void Membrane::RecvD3Q7AA(double *dist){
 	// Unpack the distributions on the device
 	//...................................................................................
 	//...Unpacking for x face(q=2)................................
-       	ScaLBL_D3Q7_Membrane_Unpack(2,dvcRecvDist_x, recvbuf_x,recvCount_x,dist,Np,coefficient_x);
+    ScaLBL_D3Q7_Membrane_Unpack(2,dvcRecvDist_x, recvbuf_x,recvCount_x,dist,Np,coefficient_x);
 	//...................................................................................
 	//...Packing for X face(q=1)................................
 	ScaLBL_D3Q7_Membrane_Unpack(1,dvcRecvDist_X, recvbuf_X,recvCount_X,dist,Np,coefficient_X);
@@ -851,12 +855,21 @@ void Membrane::RecvD3Q7AA(double *dist){
 	//...Packing for Y face(q=3).................................
 	ScaLBL_D3Q7_Membrane_Unpack(3,dvcRecvDist_Y, recvbuf_Y,recvCount_Y,dist,Np,coefficient_Y);
 	//...................................................................................
-	//...Packing for z face(q=6)................................
-	ScaLBL_D3Q7_Membrane_Unpack(6,dvcRecvDist_z, recvbuf_z, recvCount_z,dist,Np,coefficient_z);
-	//...Packing for Z face(q=5)................................
-	ScaLBL_D3Q7_Membrane_Unpack(5,dvcRecvDist_Z, recvbuf_Z,recvCount_Z,dist,Np,coefficient_Z);
-	//..................................................................................
-	
+	//if (BoundaryCondition > 0 && rank_info.kz == 0)
+	if (BounceBack && rank_info.kz == 0)	
+	{/* leave the bounce-back distributions in place */}
+	else {
+		//...Packing for z face(q=6)................................
+		ScaLBL_D3Q7_Membrane_Unpack(6,dvcRecvDist_z, recvbuf_z, recvCount_z,dist,Np,coefficient_z);
+	}
+	//if (BoundaryCondition > 0 && rank_info.kz == rank_info.nz-1)
+	if (BounceBack  && rank_info.kz == rank_info.nz-1)	
+	{/* leave the bounce-back distributions in place */}
+	else {	
+		//...Packing for Z face(q=5)................................
+		ScaLBL_D3Q7_Membrane_Unpack(5,dvcRecvDist_Z, recvbuf_Z,recvCount_Z,dist,Np,coefficient_Z);
+		//..................................................................................
+	}
 	MPI_COMM_SCALBL.barrier();
 	//...................................................................................
 	Lock=false; // unlock the communicator after communications complete

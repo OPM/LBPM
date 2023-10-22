@@ -2,23 +2,6 @@
 // Note this is a modified version of the MPI class for the Advanced Multi-Physics Package
 // Used with permission
 
-/*
-
-Copyright (c) 2012 UT-Battelle, LLC
-
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted
-provided that the following conditions are met: Redistributions of source code must retain the above
-copyright notice, this list of conditions and the following disclaimer. Redistributions in binary
-form must reproduce the above copyright notice, this list of conditions and the following disclaimer
-in the documentation and/or other materials provided with the distribution. Collection of
-administrative costs for redistribution of the source code or binary form is allowed. However,
-collection of a royalty or other fee in excess of good faith amount for cost recovery for such
-redistribution is prohibited.
-
-*/
-
 #ifndef included_LBPM_MPI
 #define included_LBPM_MPI
 

@@ -62,7 +62,7 @@ public:
      * \details  Update fractional flow condition. Mass will be preferentially added or removed from 
      * phase regions based on where flow is occurring
      * @param M        ScaLBL_ColorModel 
-    */
+    */ 
     double UpdateFractionalFlow(ScaLBL_ColorModel &M);
 
     /**
