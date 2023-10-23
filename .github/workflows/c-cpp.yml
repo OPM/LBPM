@@ -102,7 +102,7 @@ jobs:
           -D TIMER_DIRECTORY=$LBPM_TIMER_DIR     \
         -D USE_NETCDF=0                             \
           -D NETCDF_DIRECTORY=$LBPM_NETCDF_DIR   \
-        -D USE_SILO=1                               \
+        -D USE_SILO=0                               \
           -D HDF5_DIRECTORY=$LBPM_HDF5_DIR         \
           -D SILO_DIRECTORY=$LBPM_SILO_DIR         \
         -D USE_CUDA=0                               \
