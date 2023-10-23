@@ -1,3 +1,19 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright Equnior ASA
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 // CPU Functions for D3Q7 Lattice Boltzmann Methods
 // Boundary Conditions
 
@@ -35,31 +51,39 @@ extern "C" void ScaLBL_Solid_Neumann_D3Q7(double *dist, double *BoundaryValue,
     }
 }
 
-extern "C" void ScaLBL_Solid_DirichletAndNeumann_D3Q7(double *dist,double *BoundaryValue,int* BoundaryLabel,int *BounceBackDist_list,int *BounceBackSolid_list,int N){
+extern "C" void ScaLBL_Solid_DirichletAndNeumann_D3Q7(
+    double *dist, double *BoundaryValue, int *BoundaryLabel,
+    int *BounceBackDist_list, int *BounceBackSolid_list, int N) {
 
     int idx;
-    int iq,ib;
-    double value_b,value_b_label,value_q;
-	for (idx=0; idx<N; idx++){
-		iq = BounceBackDist_list[idx];
+    int iq, ib;
+    double value_b, value_b_label, value_q;
+    for (idx = 0; idx < N; idx++) {
+        iq = BounceBackDist_list[idx];
         ib = BounceBackSolid_list[idx];
-		value_b = BoundaryValue[ib];//get boundary value from a solid site
-		value_b_label = BoundaryLabel[ib];//get boundary label (i.e. type of BC) from a solid site
+        value_b = BoundaryValue[ib]; //get boundary value from a solid site
+        value_b_label = BoundaryLabel
+            [ib]; //get boundary label (i.e. type of BC) from a solid site
         value_q = dist[iq];
-        if (value_b_label==1){//Dirichlet BC
-		    dist[iq] = -1.0*value_q + value_b*0.25;//NOTE 0.25 is the speed of sound for D3Q7 lattice
+        if (value_b_label == 1) { //Dirichlet BC
+            dist[iq] =
+                -1.0 * value_q +
+                value_b *
+                    0.25; //NOTE 0.25 is the speed of sound for D3Q7 lattice
         }
-        if (value_b_label==2){//Neumann BC
-		    dist[iq] = value_q + value_b;
+        if (value_b_label == 2) { //Neumann BC
+            dist[iq] = value_q + value_b;
         }
-	}
+    }
 }
 
-extern "C" void ScaLBL_Solid_SlippingVelocityBC_D3Q19(double *dist, double *zeta_potential, double *ElectricField, double *SolidGrad,
-                                                      double epsilon_LB, double tau, double rho0,double den_scale, double h, double time_conv,
-                                                      int *BounceBackDist_list, int *BounceBackSolid_list, int *FluidBoundary_list,
-                                                      double *lattice_weight, float *lattice_cx, float *lattice_cy, float *lattice_cz,
-                                                      int count, int Np){
+extern "C" void ScaLBL_Solid_SlippingVelocityBC_D3Q19(
+    double *dist, double *zeta_potential, double *ElectricField,
+    double *SolidGrad, double epsilon_LB, double tau, double rho0,
+    double den_scale, double h, double time_conv, int *BounceBackDist_list,
+    int *BounceBackSolid_list, int *FluidBoundary_list, double *lattice_weight,
+    float *lattice_cx, float *lattice_cy, float *lattice_cz, int count,
+    int Np) {
 
     int idx;
     int iq, ib, ifluidBC;
@@ -181,7 +205,6 @@ extern "C" void ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_z(int *d_neighborList,
     }
 }
 
-
 extern "C" void ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_Z(int *d_neighborList,
                                                          int *list,
                                                          double *dist,
@@ -213,8 +236,6 @@ extern "C" void ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_Z(int *d_neighborList,
         dist[nr6] = f6;
     }
 }
-
-
 
 extern "C" void ScaLBL_Poisson_D3Q7_BC_z(int *list, int *Map, double *Psi,
                                          double Vin, int count) {

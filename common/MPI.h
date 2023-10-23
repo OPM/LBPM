@@ -1,3 +1,19 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright Equnior ASA
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 // This file includes a wrapper class for MPI functions
 // Note this is a modified version of the MPI class for the Advanced Multi-Physics Package
 // Used with permission
@@ -728,8 +744,8 @@ public: // Member functions
      *                  need to manually free the request
      */
     template <class type>
-    std::shared_ptr<MPI_Request> Isend_init(const type *buf, int length, int recv_proc,
-                           int tag) const;
+    std::shared_ptr<MPI_Request> Isend_init(const type *buf, int length,
+                                            int recv_proc, int tag) const;
 
     /*!
      * @brief This function sets up an Irecv call (see MPI_Recv_init)
@@ -742,13 +758,14 @@ public: // Member functions
      *                  need to manually free the request
      */
     template <class type>
-    std::shared_ptr<MPI_Request> Irecv_init(type *buf, int length, int send_proc, int tag) const;
+    std::shared_ptr<MPI_Request> Irecv_init(type *buf, int length,
+                                            int send_proc, int tag) const;
 
     /*!
      * @brief Start the MPI communication
      * @param request   Request to start
      */
-    void Start( MPI_Request &request );
+    void Start(MPI_Request &request);
 
     /*!
      * Each processor sends every other processor a single value.

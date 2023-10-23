@@ -1,3 +1,19 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright Equnior ASA
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include "analysis/ElectroChemistry.h"
 
 ElectroChemistryAnalyzer::ElectroChemistryAnalyzer(std::shared_ptr<Domain> dm)
@@ -49,7 +65,7 @@ ElectroChemistryAnalyzer::ElectroChemistryAnalyzer(std::shared_ptr<Domain> dm)
     IonFluxElectrical_y.fill(0);
     IonFluxElectrical_z.resize(Nx, Ny, Nz);
     IonFluxElectrical_z.fill(0);
-    
+
     if (Dm->rank() == 0) {
         bool WriteHeader = false;
         TIMELOG = fopen("electrokinetic.csv", "r");
@@ -75,9 +91,11 @@ ElectroChemistryAnalyzer::ElectroChemistryAnalyzer(ScaLBL_IonModel &IonModel)
     Nz = Dm->Nz;
     Volume = (Nx - 2) * (Ny - 2) * (Nz - 2) * Dm->nprocx() * Dm->nprocy() *
              Dm->nprocz() * 1.0;
-    
-    if (Dm->rank()==0) printf("Analyze system with sub-domain size = %i x %i x %i \n",Nx,Ny,Nz);
-    
+
+    if (Dm->rank() == 0)
+        printf("Analyze system with sub-domain size = %i x %i x %i \n", Nx, Ny,
+               Nz);
+
     USE_MEMBRANE = IonModel.USE_MEMBRANE;
 
     ChemicalPotential.resize(Nx, Ny, Nz);
@@ -120,11 +138,11 @@ ElectroChemistryAnalyzer::ElectroChemistryAnalyzer(ScaLBL_IonModel &IonModel)
     IonFluxElectrical_y.fill(0);
     IonFluxElectrical_z.resize(Nx, Ny, Nz);
     IonFluxElectrical_z.fill(0);
-    
-       
+
     if (Dm->rank() == 0) {
-    	printf("Set up analysis routines for %lu ions \n",IonModel.number_ion_species);
-    	
+        printf("Set up analysis routines for %lu ions \n",
+               IonModel.number_ion_species);
+
         bool WriteHeader = false;
         TIMELOG = fopen("electrokinetic.csv", "r");
         if (TIMELOG != NULL)
@@ -138,15 +156,19 @@ ElectroChemistryAnalyzer::ElectroChemistryAnalyzer(ScaLBL_IonModel &IonModel)
             //fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
             fprintf(TIMELOG, "timestep voltage_out voltage_in ");
             fprintf(TIMELOG, "voltage_out_membrane voltage_in_membrane ");
-            for (size_t i=0; i<IonModel.number_ion_species; i++){
-                fprintf(TIMELOG, "rho_%lu_out rho_%lu_in ",i, i);
-                fprintf(TIMELOG, "rho_%lu_out_membrane rho_%lu_in_membrane ", i, i);
-                fprintf(TIMELOG, "jx_%lu_out jx_%lu_in ",i, i);
-                fprintf(TIMELOG, "jx_%lu_out_membrane jx_%lu_in_membrane ", i, i);
-                fprintf(TIMELOG, "jy_%lu_out jy_%lu_in ",i, i);
-                fprintf(TIMELOG, "jy_%lu_out_membrane jy_%lu_in_membrane ", i, i);
-                fprintf(TIMELOG, "jz_%lu_out jz_%lu_in ",i, i);
-                fprintf(TIMELOG, "jz_%lu_out_membrane jz_%lu_in_membrane ", i, i);
+            for (size_t i = 0; i < IonModel.number_ion_species; i++) {
+                fprintf(TIMELOG, "rho_%lu_out rho_%lu_in ", i, i);
+                fprintf(TIMELOG, "rho_%lu_out_membrane rho_%lu_in_membrane ", i,
+                        i);
+                fprintf(TIMELOG, "jx_%lu_out jx_%lu_in ", i, i);
+                fprintf(TIMELOG, "jx_%lu_out_membrane jx_%lu_in_membrane ", i,
+                        i);
+                fprintf(TIMELOG, "jy_%lu_out jy_%lu_in ", i, i);
+                fprintf(TIMELOG, "jy_%lu_out_membrane jy_%lu_in_membrane ", i,
+                        i);
+                fprintf(TIMELOG, "jz_%lu_out jz_%lu_in ", i, i);
+                fprintf(TIMELOG, "jz_%lu_out_membrane jz_%lu_in_membrane ", i,
+                        i);
             }
             fprintf(TIMELOG, "count_out count_in ");
             fprintf(TIMELOG, "count_out_membrane count_in_membrane\n");
@@ -163,18 +185,16 @@ ElectroChemistryAnalyzer::~ElectroChemistryAnalyzer() {
 void ElectroChemistryAnalyzer::SetParams() {}
 
 void ElectroChemistryAnalyzer::Membrane(ScaLBL_IonModel &Ion,
-                                     ScaLBL_Poisson &Poisson,
-                                     int timestep) {
+                                        ScaLBL_Poisson &Poisson, int timestep) {
 
     int i, j, k;
 
     Poisson.getElectricPotential(ElectricalPotential);
 
-    if (Dm->rank() == 0) 
-    	fprintf(TIMELOG, "%i ", timestep);
+    if (Dm->rank() == 0)
+        fprintf(TIMELOG, "%i ", timestep);
 
-    
- /*   int iq, ip, nq, np, nqm, npm;
+    /*   int iq, ip, nq, np, nqm, npm;
     Ion.MembraneDistance(i,j,k); // inside (-) or outside (+) the ion
     for (int link; link<Ion.IonMembrane->membraneLinkCount; link++){
         int iq = Ion.IonMembrane->membraneLinks[2*link];	
@@ -187,7 +207,7 @@ void ElectroChemistryAnalyzer::Membrane(ScaLBL_IonModel &Ion,
 */
     unsigned long int in_local_count, out_local_count;
     unsigned long int in_global_count, out_global_count;
-    
+
     double value_in_local, value_out_local;
     double value_in_global, value_out_global;
 
@@ -208,54 +228,53 @@ void ElectroChemistryAnalyzer::Membrane(ScaLBL_IonModel &Ion,
     double jx_in_global, jx_out_global;
     double jy_in_global, jy_out_global;
     double jz_in_global, jz_out_global;
-    
+
     unsigned long int membrane_in_local_count, membrane_out_local_count;
     unsigned long int membrane_in_global_count, membrane_out_global_count;
-    
-    double memdist,value,jx,jy,jz;
+
+    double memdist, value, jx, jy, jz;
     in_local_count = 0;
     out_local_count = 0;
     membrane_in_local_count = 0;
     membrane_out_local_count = 0;
-    
+
     value_membrane_in_local = 0.0;
     value_membrane_out_local = 0.0;
     value_in_local = 0.0;
     value_out_local = 0.0;
     for (k = Dm->inlet_layers_z; k < Nz; k++) {
-    	for (j = 1; j < Ny; j++) {
-    		for (i = 1; i < Nx; i++) {
-    			/* electric potential  */
-    			memdist = Ion.MembraneDistance(i,j,k);
-    			value = ElectricalPotential(i,j,k);
-    			if (memdist < 0.0){
-    				// inside the membrane
-    				if (fabs(memdist) < 1.0){
-    					value_membrane_in_local += value;
-    					membrane_in_local_count++;
-    				}
-    				value_in_local += value;
-    				in_local_count++;
+        for (j = 1; j < Ny; j++) {
+            for (i = 1; i < Nx; i++) {
+                /* electric potential  */
+                memdist = Ion.MembraneDistance(i, j, k);
+                value = ElectricalPotential(i, j, k);
+                if (memdist < 0.0) {
+                    // inside the membrane
+                    if (fabs(memdist) < 1.0) {
+                        value_membrane_in_local += value;
+                        membrane_in_local_count++;
+                    }
+                    value_in_local += value;
+                    in_local_count++;
 
-    			}
-    			else {
-    				// outside the membrane
-    				if (fabs(memdist) < 1.0){
-    					value_membrane_out_local += value;
-    					membrane_out_local_count++;
-    				}
-    				value_out_local += value;
-    				out_local_count++;
-    			}
-    		}
-    	}
+                } else {
+                    // outside the membrane
+                    if (fabs(memdist) < 1.0) {
+                        value_membrane_out_local += value;
+                        membrane_out_local_count++;
+                    }
+                    value_out_local += value;
+                    out_local_count++;
+                }
+            }
+        }
     }
     /* these only need to be computed the first time through */
     out_global_count = Dm->Comm.sumReduce(out_local_count);
     in_global_count = Dm->Comm.sumReduce(in_local_count);
     membrane_out_global_count = Dm->Comm.sumReduce(membrane_out_local_count);
     membrane_in_global_count = Dm->Comm.sumReduce(membrane_in_local_count);
-    
+
     value_out_global = Dm->Comm.sumReduce(value_out_local);
     value_in_global = Dm->Comm.sumReduce(value_in_local);
     value_membrane_out_global = Dm->Comm.sumReduce(value_membrane_out_local);
@@ -265,12 +284,12 @@ void ElectroChemistryAnalyzer::Membrane(ScaLBL_IonModel &Ion,
     value_in_global /= in_global_count;
     value_membrane_out_global /= membrane_out_global_count;
     value_membrane_in_global /= membrane_in_global_count;
-    
+
     if (Dm->rank() == 0) {
-    	fprintf(TIMELOG, "%.8g ", value_out_global);
-    	fprintf(TIMELOG, "%.8g ", value_in_global);
-    	fprintf(TIMELOG, "%.8g ", value_membrane_out_global);
-    	fprintf(TIMELOG, "%.8g ", value_membrane_in_global);
+        fprintf(TIMELOG, "%.8g ", value_out_global);
+        fprintf(TIMELOG, "%.8g ", value_in_global);
+        fprintf(TIMELOG, "%.8g ", value_membrane_out_global);
+        fprintf(TIMELOG, "%.8g ", value_membrane_in_global);
     }
 
     value_membrane_in_local = 0.0;
@@ -279,72 +298,81 @@ void ElectroChemistryAnalyzer::Membrane(ScaLBL_IonModel &Ion,
     value_out_local = 0.0;
     for (size_t ion = 0; ion < Ion.number_ion_species; ion++) {
         Ion.getIonConcentration(Rho, ion);
-        Ion.getIonFluxDiffusive(IonFluxDiffusive_x, IonFluxDiffusive_y, IonFluxDiffusive_z, ion);
-        Ion.getIonFluxAdvective(IonFluxAdvective_x, IonFluxAdvective_y, IonFluxAdvective_z, ion);
-        Ion.getIonFluxElectrical(IonFluxElectrical_x, IonFluxElectrical_y, IonFluxElectrical_z, ion);
+        Ion.getIonFluxDiffusive(IonFluxDiffusive_x, IonFluxDiffusive_y,
+                                IonFluxDiffusive_z, ion);
+        Ion.getIonFluxAdvective(IonFluxAdvective_x, IonFluxAdvective_y,
+                                IonFluxAdvective_z, ion);
+        Ion.getIonFluxElectrical(IonFluxElectrical_x, IonFluxElectrical_y,
+                                 IonFluxElectrical_z, ion);
 
         value_membrane_in_local = 0.0;
         value_membrane_out_local = 0.0;
         value_in_local = 0.0;
         value_out_local = 0.0;
-        
-		jx_membrane_in_local = jy_membrane_in_local = jz_membrane_in_local = 0.0;
-		jx_membrane_out_local = jy_membrane_out_local = jz_membrane_out_local = 0.0;
-		jx_in_local = jy_in_local = jz_in_local = 0.0;
-		jx_out_local = jy_out_local = jz_out_local = 0.0;
+
+        jx_membrane_in_local = jy_membrane_in_local = jz_membrane_in_local =
+            0.0;
+        jx_membrane_out_local = jy_membrane_out_local = jz_membrane_out_local =
+            0.0;
+        jx_in_local = jy_in_local = jz_in_local = 0.0;
+        jx_out_local = jy_out_local = jz_out_local = 0.0;
 
         for (k = Dm->inlet_layers_z; k < Nz; k++) {
-        	for (j = 1; j < Ny; j++) {
-        		for (i = 1; i < Nx; i++) {
-        			/* electric potential  */
-        			memdist = Ion.MembraneDistance(i,j,k);
-        			value = Rho(i,j,k);
-        			jx = IonFluxDiffusive_x(i,j,k) + IonFluxAdvective_x(i,j,k) + IonFluxElectrical_x(i,j,k);
-        			jy = IonFluxDiffusive_y(i,j,k) + IonFluxAdvective_y(i,j,k) + IonFluxElectrical_y(i,j,k);
-        			jz = IonFluxDiffusive_z(i,j,k) + IonFluxAdvective_z(i,j,k) + IonFluxElectrical_z(i,j,k);
-        			
-        			if (memdist < 0.0){
-        				// inside the membrane
-        				if (fabs(memdist) < 1.0){
-        					value_membrane_in_local += value;
-        					jx_membrane_in_local += jx;
-        					jy_membrane_in_local += jy;
-        					jz_membrane_in_local += jz;
+            for (j = 1; j < Ny; j++) {
+                for (i = 1; i < Nx; i++) {
+                    /* electric potential  */
+                    memdist = Ion.MembraneDistance(i, j, k);
+                    value = Rho(i, j, k);
+                    jx = IonFluxDiffusive_x(i, j, k) +
+                         IonFluxAdvective_x(i, j, k) +
+                         IonFluxElectrical_x(i, j, k);
+                    jy = IonFluxDiffusive_y(i, j, k) +
+                         IonFluxAdvective_y(i, j, k) +
+                         IonFluxElectrical_y(i, j, k);
+                    jz = IonFluxDiffusive_z(i, j, k) +
+                         IonFluxAdvective_z(i, j, k) +
+                         IonFluxElectrical_z(i, j, k);
 
-        				}
-        				value_in_local += value;
-    					jx_in_local += jx;
-    					jy_in_local += jy;
-    					jz_in_local += jz;
+                    if (memdist < 0.0) {
+                        // inside the membrane
+                        if (fabs(memdist) < 1.0) {
+                            value_membrane_in_local += value;
+                            jx_membrane_in_local += jx;
+                            jy_membrane_in_local += jy;
+                            jz_membrane_in_local += jz;
+                        }
+                        value_in_local += value;
+                        jx_in_local += jx;
+                        jy_in_local += jy;
+                        jz_in_local += jz;
 
-        			}
-        			else {
-        				// outside the membrane
-        				if (fabs(memdist) < 1.0){
-        					value_membrane_out_local += value;
-        					jx_membrane_out_local += jx;
-        					jy_membrane_out_local += jy;
-        					jz_membrane_out_local += jz;
-
-        				}
-        				value_out_local += value;
-    					jx_out_local += jx;
-    					jy_out_local += jy;
-    					jz_out_local += jz;        				
-        			}
-        		}
-        	}
+                    } else {
+                        // outside the membrane
+                        if (fabs(memdist) < 1.0) {
+                            value_membrane_out_local += value;
+                            jx_membrane_out_local += jx;
+                            jy_membrane_out_local += jy;
+                            jz_membrane_out_local += jz;
+                        }
+                        value_out_local += value;
+                        jx_out_local += jx;
+                        jy_out_local += jy;
+                        jz_out_local += jz;
+                    }
+                }
+            }
         }
         value_out_global = Dm->Comm.sumReduce(value_out_local);
         value_in_global = Dm->Comm.sumReduce(value_in_local);
-        value_membrane_out_global = Dm->Comm.sumReduce(value_membrane_out_local);
+        value_membrane_out_global =
+            Dm->Comm.sumReduce(value_membrane_out_local);
         value_membrane_in_global = Dm->Comm.sumReduce(value_membrane_in_local);
 
         value_out_global /= out_global_count;
         value_in_global /= in_global_count;
         value_membrane_out_global /= membrane_out_global_count;
         value_membrane_in_global /= membrane_in_global_count;
-        
+
         jx_out_global = Dm->Comm.sumReduce(jx_out_local);
         jx_in_global = Dm->Comm.sumReduce(jx_in_local);
         jx_membrane_out_global = Dm->Comm.sumReduce(jx_membrane_out_local);
@@ -354,7 +382,7 @@ void ElectroChemistryAnalyzer::Membrane(ScaLBL_IonModel &Ion,
         jx_in_global /= in_global_count;
         jx_membrane_out_global /= membrane_out_global_count;
         jx_membrane_in_global /= membrane_in_global_count;
-        
+
         jy_out_global = Dm->Comm.sumReduce(jy_out_local);
         jy_in_global = Dm->Comm.sumReduce(jy_in_local);
         jy_membrane_out_global = Dm->Comm.sumReduce(jy_membrane_out_local);
@@ -364,7 +392,7 @@ void ElectroChemistryAnalyzer::Membrane(ScaLBL_IonModel &Ion,
         jy_in_global /= in_global_count;
         jy_membrane_out_global /= membrane_out_global_count;
         jy_membrane_in_global /= membrane_in_global_count;
-        
+
         jz_out_global = Dm->Comm.sumReduce(jz_out_local);
         jz_in_global = Dm->Comm.sumReduce(jz_in_local);
         jz_membrane_out_global = Dm->Comm.sumReduce(jz_membrane_out_local);
@@ -376,37 +404,36 @@ void ElectroChemistryAnalyzer::Membrane(ScaLBL_IonModel &Ion,
         jz_membrane_in_global /= membrane_in_global_count;
 
         if (Dm->rank() == 0) {
-        	fprintf(TIMELOG, "%.8g ", value_out_global);
-        	fprintf(TIMELOG, "%.8g ", value_in_global);
-        	fprintf(TIMELOG, "%.8g ", value_membrane_out_global);
-        	fprintf(TIMELOG, "%.8g ", value_membrane_in_global);
-        	
-        	fprintf(TIMELOG, "%.8g ", jx_out_global);
-        	fprintf(TIMELOG, "%.8g ", jx_in_global);
-        	fprintf(TIMELOG, "%.8g ", jx_membrane_out_global);
-        	fprintf(TIMELOG, "%.8g ", jx_membrane_in_global);
-        	
-        	fprintf(TIMELOG, "%.8g ", jy_out_global);
-        	fprintf(TIMELOG, "%.8g ", jy_in_global);
-        	fprintf(TIMELOG, "%.8g ", jy_membrane_out_global);
-        	fprintf(TIMELOG, "%.8g ", jy_membrane_in_global);
-        	
-        	fprintf(TIMELOG, "%.8g ", jz_out_global);
-        	fprintf(TIMELOG, "%.8g ", jz_in_global);
-        	fprintf(TIMELOG, "%.8g ", jz_membrane_out_global);
-        	fprintf(TIMELOG, "%.8g ", jz_membrane_in_global);
+            fprintf(TIMELOG, "%.8g ", value_out_global);
+            fprintf(TIMELOG, "%.8g ", value_in_global);
+            fprintf(TIMELOG, "%.8g ", value_membrane_out_global);
+            fprintf(TIMELOG, "%.8g ", value_membrane_in_global);
+
+            fprintf(TIMELOG, "%.8g ", jx_out_global);
+            fprintf(TIMELOG, "%.8g ", jx_in_global);
+            fprintf(TIMELOG, "%.8g ", jx_membrane_out_global);
+            fprintf(TIMELOG, "%.8g ", jx_membrane_in_global);
+
+            fprintf(TIMELOG, "%.8g ", jy_out_global);
+            fprintf(TIMELOG, "%.8g ", jy_in_global);
+            fprintf(TIMELOG, "%.8g ", jy_membrane_out_global);
+            fprintf(TIMELOG, "%.8g ", jy_membrane_in_global);
+
+            fprintf(TIMELOG, "%.8g ", jz_out_global);
+            fprintf(TIMELOG, "%.8g ", jz_in_global);
+            fprintf(TIMELOG, "%.8g ", jz_membrane_out_global);
+            fprintf(TIMELOG, "%.8g ", jz_membrane_in_global);
         }
     }
 
     if (Dm->rank() == 0) {
-    	fprintf(TIMELOG, "%lu ", out_global_count);
-    	fprintf(TIMELOG, "%lu ", in_global_count);
-    	fprintf(TIMELOG, "%lu ", membrane_out_global_count);
-    	fprintf(TIMELOG, "%lu\n", membrane_in_global_count);
+        fprintf(TIMELOG, "%lu ", out_global_count);
+        fprintf(TIMELOG, "%lu ", in_global_count);
+        fprintf(TIMELOG, "%lu ", membrane_out_global_count);
+        fprintf(TIMELOG, "%lu\n", membrane_in_global_count);
         fflush(TIMELOG);
     }
 }
-
 
 void ElectroChemistryAnalyzer::Basic(ScaLBL_IonModel &Ion,
                                      ScaLBL_Poisson &Poisson,
@@ -522,34 +549,35 @@ void ElectroChemistryAnalyzer::WriteVis(ScaLBL_IonModel &Ion,
                                         ScaLBL_StokesModel &Stokes,
                                         std::shared_ptr<Database> input_db,
                                         int timestep) {
-    
+
     auto vis_db = input_db->getDatabase("Visualization");
     char VisName[40];
-    auto format = vis_db->getWithDefault<string>( "format", "hdf5" );
-    
+    auto format = vis_db->getWithDefault<string>("format", "hdf5");
+
     if (Dm->rank() == 0) {
-    	printf("ElectroChemistryAnalyzer::WriteVis (format = %s)\n", format.c_str());
-    	if (vis_db->getWithDefault<bool>("save_electric_potential", true)){
-    		printf("       save electric potential \n");
-    	}
-    	if (vis_db->getWithDefault<bool>("save_concentration", true)) {
-    		printf("       save concentration \n");
-    	}
-    	if (vis_db->getWithDefault<bool>("save_velocity", false)) {
-    		printf("       save velocity \n");
-    	}
-    	if (vis_db->getWithDefault<bool>("save_ion_flux_diffusive", false)) {
-    		printf("       save ion flux (diffusive) \n");
-    	}
-    	if (vis_db->getWithDefault<bool>("save_ion_flux_advective", false)) {
-    		printf("       save ion flux (advective) \n");
-    	}
-    	if (vis_db->getWithDefault<bool>("save_ion_flux_electrical", false)) {
-    		printf("       save ion flux (electrical) \n");
-    	}
-    	if (vis_db->getWithDefault<bool>("save_electric_field", false)) {
-    		printf("       save electric field \n");
-    	}
+        printf("ElectroChemistryAnalyzer::WriteVis (format = %s)\n",
+               format.c_str());
+        if (vis_db->getWithDefault<bool>("save_electric_potential", true)) {
+            printf("       save electric potential \n");
+        }
+        if (vis_db->getWithDefault<bool>("save_concentration", true)) {
+            printf("       save concentration \n");
+        }
+        if (vis_db->getWithDefault<bool>("save_velocity", false)) {
+            printf("       save velocity \n");
+        }
+        if (vis_db->getWithDefault<bool>("save_ion_flux_diffusive", false)) {
+            printf("       save ion flux (diffusive) \n");
+        }
+        if (vis_db->getWithDefault<bool>("save_ion_flux_advective", false)) {
+            printf("       save ion flux (advective) \n");
+        }
+        if (vis_db->getWithDefault<bool>("save_ion_flux_electrical", false)) {
+            printf("       save ion flux (electrical) \n");
+        }
+        if (vis_db->getWithDefault<bool>("save_electric_field", false)) {
+            printf("       save electric field \n");
+        }
     }
 
     std::vector<IO::MeshDataStruct> visData;
@@ -557,8 +585,8 @@ void ElectroChemistryAnalyzer::WriteVis(ScaLBL_IonModel &Ion,
                               {Dm->Nx - 2, Dm->Ny - 2, Dm->Nz - 2}, {1, 1, 1},
                               0, 1);
 
-    IO::initialize("",format,"false");
-    // Create the MeshDataStruct    
+    IO::initialize("", format, "false");
+    // Create the MeshDataStruct
     visData.resize(1);
 
     visData[0].meshName = "domain";
@@ -955,8 +983,7 @@ void ElectroChemistryAnalyzer::WriteVis(ScaLBL_IonModel &Ion,
 }
 
 void ElectroChemistryAnalyzer::Basic(ScaLBL_IonModel &Ion,
-                                     ScaLBL_Poisson &Poisson,
-                                     int timestep) {
+                                     ScaLBL_Poisson &Poisson, int timestep) {
 
     int i, j, k;
     double Vin = 0.0;
@@ -975,10 +1002,10 @@ void ElectroChemistryAnalyzer::Basic(ScaLBL_IonModel &Ion,
     double *rho_mu_fluctuation_global;
     double *rho_psi_avg_global;
     double *rho_psi_fluctuation_global;
-    
+
     /* Get the distance to the membrane */
-    if (Ion.USE_MEMBRANE){
-    	//Ion.MembraneDistance;
+    if (Ion.USE_MEMBRANE) {
+        //Ion.MembraneDistance;
     }
 
     /* local sub-domain averages */
@@ -1075,40 +1102,41 @@ void ElectroChemistryAnalyzer::WriteVis(ScaLBL_IonModel &Ion,
 
     auto vis_db = input_db->getDatabase("Visualization");
     char VisName[40];
-    auto format = vis_db->getWithDefault<string>( "format", "hdf5" );
+    auto format = vis_db->getWithDefault<string>("format", "hdf5");
 
     std::vector<IO::MeshDataStruct> visData;
     fillHalo<double> fillData(Dm->Comm, Dm->rank_info,
                               {Dm->Nx - 2, Dm->Ny - 2, Dm->Nz - 2}, {1, 1, 1},
                               0, 1);
-    
+
     if (Dm->rank() == 0) {
-    	printf("ElectroChemistryAnalyzer::WriteVis (format = %s)\n", format.c_str());
-    	if (vis_db->getWithDefault<bool>("save_electric_potential", true)){
-    		printf("       save electric potential \n");
-    	}
-    	if (vis_db->getWithDefault<bool>("save_concentration", true)) {
-    		printf("       save concentration \n");
-    	}
-    	if (vis_db->getWithDefault<bool>("save_velocity", false)) {
-    		printf("       save velocity \n");
-    	}
-    	if (vis_db->getWithDefault<bool>("save_ion_flux_diffusive", false)) {
-    		printf("       save ion flux (diffusive) \n");
-    	}
-    	if (vis_db->getWithDefault<bool>("save_ion_flux_advective", false)) {
-    		printf("       save ion flux (advective) \n");
-    	}
-    	if (vis_db->getWithDefault<bool>("save_ion_flux_electrical", false)) {
-    		printf("       save ion flux (electrical) \n");
-    	}
-    	if (vis_db->getWithDefault<bool>("save_electric_field", false)) {
-    		printf("       save electric field \n");
-    	}
+        printf("ElectroChemistryAnalyzer::WriteVis (format = %s)\n",
+               format.c_str());
+        if (vis_db->getWithDefault<bool>("save_electric_potential", true)) {
+            printf("       save electric potential \n");
+        }
+        if (vis_db->getWithDefault<bool>("save_concentration", true)) {
+            printf("       save concentration \n");
+        }
+        if (vis_db->getWithDefault<bool>("save_velocity", false)) {
+            printf("       save velocity \n");
+        }
+        if (vis_db->getWithDefault<bool>("save_ion_flux_diffusive", false)) {
+            printf("       save ion flux (diffusive) \n");
+        }
+        if (vis_db->getWithDefault<bool>("save_ion_flux_advective", false)) {
+            printf("       save ion flux (advective) \n");
+        }
+        if (vis_db->getWithDefault<bool>("save_ion_flux_electrical", false)) {
+            printf("       save ion flux (electrical) \n");
+        }
+        if (vis_db->getWithDefault<bool>("save_electric_field", false)) {
+            printf("       save electric field \n");
+        }
     }
 
-    IO::initialize("",format,"false");
-    // Create the MeshDataStruct    
+    IO::initialize("", format, "false");
+    // Create the MeshDataStruct
     visData.resize(1);
 
     visData[0].meshName = "domain";
@@ -1199,7 +1227,6 @@ void ElectroChemistryAnalyzer::WriteVis(ScaLBL_IonModel &Ion,
             visData[0].vars.push_back(IonFluxDiffusive[3 * ion + 2]);
         }
     }
-
 
     if (vis_db->getWithDefault<bool>("save_ion_flux_electrical", false)) {
         for (size_t ion = 0; ion < Ion.number_ion_species; ion++) {

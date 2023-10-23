@@ -1,3 +1,19 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright Equnior ASA
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 // This file impliments a wrapper class for MPI functions
 
 #include "common/MPI.h"
@@ -3691,28 +3707,29 @@ MPI MPI::loadBalance(double local, std::vector<double> work) {
     return split(0, key[getRank()]);
 }
 
-
-
 /****************************************************************************
  * Function Persistent Communication                                         *
  ****************************************************************************/
 template <>
-std::shared_ptr<MPI_Request> MPI::Isend_init<double>(const double *buf, int N, int proc, int tag) const
-{
-    std::shared_ptr<MPI_Request> obj( new MPI_Request, []( MPI_Request *req ) { MPI_Request_free( req ); delete req; } );
-    MPI_Send_init( buf, N, MPI_DOUBLE, proc, tag, communicator, obj.get() );
+std::shared_ptr<MPI_Request> MPI::Isend_init<double>(const double *buf, int N,
+                                                     int proc, int tag) const {
+    std::shared_ptr<MPI_Request> obj(new MPI_Request, [](MPI_Request *req) {
+        MPI_Request_free(req);
+        delete req;
+    });
+    MPI_Send_init(buf, N, MPI_DOUBLE, proc, tag, communicator, obj.get());
     return obj;
 }
-template<>
-std::shared_ptr<MPI_Request> MPI::Irecv_init<double>(double *buf, int N, int proc, int tag) const
-{
-    std::shared_ptr<MPI_Request> obj( new MPI_Request, []( MPI_Request *req ) { MPI_Request_free( req ); delete req; } );
-    MPI_Recv_init( buf, N, MPI_DOUBLE, proc, tag, communicator, obj.get() );
+template <>
+std::shared_ptr<MPI_Request> MPI::Irecv_init<double>(double *buf, int N,
+                                                     int proc, int tag) const {
+    std::shared_ptr<MPI_Request> obj(new MPI_Request, [](MPI_Request *req) {
+        MPI_Request_free(req);
+        delete req;
+    });
+    MPI_Recv_init(buf, N, MPI_DOUBLE, proc, tag, communicator, obj.get());
     return obj;
 }
-void MPI::Start( MPI_Request &request )
-{
-    MPI_Start( &request );
-}
+void MPI::Start(MPI_Request &request) { MPI_Start(&request); }
 
 } // namespace Utilities

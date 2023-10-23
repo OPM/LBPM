@@ -1,3 +1,19 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright Equnior ASA
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include "analysis/SubPhase.h"
 
 // Constructor
@@ -411,7 +427,7 @@ void SubPhase::Basic() {
             dir_z = 1.0;
             force_mag = 1.0;
         }
-        double Porosity = (gwb.V + gnb.V)/Dm->Volume;
+        double Porosity = (gwb.V + gnb.V) / Dm->Volume;
         double saturation = gwb.V / (gwb.V + gnb.V);
         double water_flow_rate =
             gwb.V * (gwb.Px * dir_x + gwb.Py * dir_y + gwb.Pz * dir_z) / gwb.M /
@@ -431,10 +447,12 @@ void SubPhase::Basic() {
         //double fractional_flow = water_flow_rate / total_flow_rate;
         double h = Dm->voxel_length;
         double krn = h * h * nu_n * Porosity * not_water_flow_rate / force_mag;
-        double krw = h * h * nu_w * Porosity* water_flow_rate / force_mag;
+        double krw = h * h * nu_w * Porosity * water_flow_rate / force_mag;
         /* not counting films */
-        double krnf = krn - h * h * nu_n * Porosity * not_water_film_flow_rate / force_mag;
-        double krwf = krw - h * h * nu_w * Porosity * water_film_flow_rate / force_mag;
+        double krnf = krn - h * h * nu_n * Porosity * not_water_film_flow_rate /
+                                force_mag;
+        double krwf =
+            krw - h * h * nu_w * Porosity * water_film_flow_rate / force_mag;
         double eff_pressure = 1.0 / (krn + krw); // effective pressure drop
 
         fprintf(TIMELOG,

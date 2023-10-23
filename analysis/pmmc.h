@@ -1,3 +1,19 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright Equnior ASA
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #ifndef pmmc_INC
 #define pmmc_INC
 
@@ -4041,7 +4057,7 @@ inline double pmmc_CubeContactAngle(DoubleArray &CubeValues,
                       (A.z - B.z) * (A.z - B.z));
         integral += 0.5 * length * (vA + vB);
     }
-    
+
     return integral;
 }
 //--------------------------------------------------------------------------------------------------------
@@ -4422,12 +4438,12 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s,
                 fx = f_x(i, j, k);
                 fy = f_y(i, j, k);
                 fz = f_z(i, j, k);
-                
+
                 // Normal to fluid surface
                 Nx.Corners(i - ic, j - jc, k - kc) = fx;
                 Ny.Corners(i - ic, j - jc, k - kc) = fy;
                 Nz.Corners(i - ic, j - jc, k - kc) = fz;
-                
+
                 // Normal to solid surface
                 Sx.Corners(i - ic, j - jc, k - kc) = sx;
                 Sy.Corners(i - ic, j - jc, k - kc) = sy;
@@ -4534,7 +4550,7 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s,
         nsx /= norm;
         nsy /= norm;
         nsz /= norm;
-        
+
         // Normal vector to the fluid surface
         nwx = Nx.eval(P);
         nwy = Ny.eval(P);
@@ -4562,7 +4578,7 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s,
             nwsy = -nwsy;
             nwsz = -nwsz;
         }
-        
+
         // common curve normal in the fluid surface tangent plane (rel. geodesic curvature)
         nwnx = twnsy * nwz - twnsz * nwy;
         nwny = twnsz * nwx - twnsx * nwz;
@@ -4579,7 +4595,6 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s,
             nwny = -nwny;
             nwnz = -nwnz;
         }
-
 
         if (length > 0.0) {
             // normal curvature component in the direction of the solid surface

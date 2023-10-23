@@ -1,3 +1,19 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright Equnior ASA
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include <stdio.h>
 
 extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(
@@ -38,12 +54,20 @@ extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(
         Ey = ElectricField[n + 1 * Np];
         Ez = ElectricField[n + 2 * Np];
         //compute total body force, including input body force (Gx,Gy,Gz)
-        Fx = (UseSlippingVelBC==1) ? Gx : Gx + rhoE * Ex * (time_conv * time_conv) / (h * h * 1.0e-12) /
-                      den_scale; //the extra factors at the end necessarily convert unit from phys to LB
-        Fy = (UseSlippingVelBC==1) ? Gy : Gy + rhoE * Ey * (time_conv * time_conv) / (h * h * 1.0e-12) /
-                      den_scale;
-        Fz = (UseSlippingVelBC==1) ? Gz : Gz + rhoE * Ez * (time_conv * time_conv) / (h * h * 1.0e-12) /
-                      den_scale;
+        Fx =
+            (UseSlippingVelBC == 1)
+                ? Gx
+                : Gx +
+                      rhoE * Ex * (time_conv * time_conv) / (h * h * 1.0e-12) /
+                          den_scale; //the extra factors at the end necessarily convert unit from phys to LB
+        Fy = (UseSlippingVelBC == 1)
+                 ? Gy
+                 : Gy + rhoE * Ey * (time_conv * time_conv) /
+                            (h * h * 1.0e-12) / den_scale;
+        Fz = (UseSlippingVelBC == 1)
+                 ? Gz
+                 : Gz + rhoE * Ez * (time_conv * time_conv) /
+                            (h * h * 1.0e-12) / den_scale;
 
         // q=0
         fq = dist[n];
@@ -520,13 +544,21 @@ extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(
         //Fz = Gz + rhoE * Ez * (time_conv * time_conv) / (h * h * 1.0e-12) /
         //              den_scale;
         //When Helmholtz-Smoluchowski slipping velocity BC is used, the bulk fluid is considered as electroneutral
-        //and body force induced by external efectric field is reduced to slipping velocity BC. 
-        Fx = (UseSlippingVelBC==1) ? Gx : Gx + rhoE * Ex * (time_conv * time_conv) / (h * h * 1.0e-12) /
-                      den_scale; //the extra factors at the end necessarily convert unit from phys to LB
-        Fy = (UseSlippingVelBC==1) ? Gy : Gy + rhoE * Ey * (time_conv * time_conv) / (h * h * 1.0e-12) /
-                      den_scale;
-        Fz = (UseSlippingVelBC==1) ? Gz : Gz + rhoE * Ez * (time_conv * time_conv) / (h * h * 1.0e-12) /
-                      den_scale;
+        //and body force induced by external efectric field is reduced to slipping velocity BC.
+        Fx =
+            (UseSlippingVelBC == 1)
+                ? Gx
+                : Gx +
+                      rhoE * Ex * (time_conv * time_conv) / (h * h * 1.0e-12) /
+                          den_scale; //the extra factors at the end necessarily convert unit from phys to LB
+        Fy = (UseSlippingVelBC == 1)
+                 ? Gy
+                 : Gy + rhoE * Ey * (time_conv * time_conv) /
+                            (h * h * 1.0e-12) / den_scale;
+        Fz = (UseSlippingVelBC == 1)
+                 ? Gz
+                 : Gz + rhoE * Ez * (time_conv * time_conv) /
+                            (h * h * 1.0e-12) / den_scale;
 
         // q=0
         fq = dist[n];

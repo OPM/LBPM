@@ -1,3 +1,19 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright Equnior ASA
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include "analysis/TwoPhase.h"
 
 #include "analysis/pmmc.h"
@@ -10,7 +26,6 @@
 #include "IO/Reader.h"
 #include "IO/Writer.h"
 #include "analysis/filters.h"
-
 
 #include <memory>
 
@@ -401,7 +416,8 @@ void TwoPhase::UpdateSolid() {
 
 void TwoPhase::UpdateMeshValues() {
     int i, j, k, n;
-    fillHalo<double> fillData(Dm->Comm, Dm->rank_info, {Nx-2,Ny-2,Nz-2}, {1, 1, 1}, 0, 1);
+    fillHalo<double> fillData(Dm->Comm, Dm->rank_info, {Nx - 2, Ny - 2, Nz - 2},
+                              {1, 1, 1}, 0, 1);
 
     //...........................................................................
     //Dm->CommunicateMeshHalo(SDn);
@@ -560,7 +576,7 @@ void TwoPhase::ComputeLocal() {
                     Kwn += pmmc_CubeSurfaceInterpValue(
                         CubeValues, GaussCurvature, nw_pts, nw_tris, Values, i,
                         j, k, n_nw_pts, n_nw_tris);
-                    
+
                     Jwn += pmmc_CubeSurfaceInterpValue(
                         CubeValues, MeanCurvature, nw_pts, nw_tris, Values, i,
                         j, k, n_nw_pts, n_nw_tris);
@@ -591,7 +607,7 @@ void TwoPhase::ComputeLocal() {
                     efawns += pmmc_CubeContactAngle(
                         CubeValues, Values, SDn_x, SDn_y, SDn_z, SDs_x, SDs_y,
                         SDs_z, local_nws_pts, i, j, k, n_local_nws_pts);
-                    
+
                     wwnsdnwn += pmmc_CommonCurveSpeed(
                         CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z, SDs_x,
                         SDs_y, SDs_z, local_nws_pts, i, j, k, n_local_nws_pts);
@@ -705,18 +721,19 @@ void TwoPhase::ComputeStatic() {
     kmin = 1;
     kmax = Nz - 1;
     imin = jmin = 1;
-    
+
     /* set fluid isovalue to "grow" NWP for contact angle measurement */
     fluid_isovalue = -1.0;
-    
+
     string FILENAME = "ContactAngle";
-    
+
     char LocalRankString[8];
     char LocalRankFilename[40];
     sprintf(LocalRankString, "%05d", Dm->rank());
-    sprintf(LocalRankFilename, "%s%s%s", "ContactAngle.", LocalRankString,".csv");
+    sprintf(LocalRankFilename, "%s%s%s", "ContactAngle.", LocalRankString,
+            ".csv");
     FILE *ANGLES = fopen(LocalRankFilename, "a+");
-    fprintf(ANGLES,"x y z angle\n");
+    fprintf(ANGLES, "x y z angle\n");
 
     for (k = kmin; k < kmax; k++) {
         for (j = jmin; j < Ny - 1; j++) {
@@ -761,13 +778,13 @@ void TwoPhase::ComputeStatic() {
                     Kwn += pmmc_CubeSurfaceInterpValue(
                         CubeValues, GaussCurvature, nw_pts, nw_tris, Values, i,
                         j, k, n_nw_pts, n_nw_tris);
-                    
+
                     Jwn += pmmc_CubeSurfaceInterpValue(
                         CubeValues, MeanCurvature, nw_pts, nw_tris, Values, i,
                         j, k, n_nw_pts, n_nw_tris);
-                    
-                    Xwn += geomavg_EulerCharacteristic(nw_pts, nw_tris, n_nw_pts,
-                                                         n_nw_tris, i, j, k);
+
+                    Xwn += geomavg_EulerCharacteristic(
+                        nw_pts, nw_tris, n_nw_pts, n_nw_tris, i, j, k);
 
                     // Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
                     pmmc_CubeTrimSurfaceInterpValues(
@@ -785,12 +802,13 @@ void TwoPhase::ComputeStatic() {
                     efawns += pmmc_CubeContactAngle(
                         CubeValues, Values, SDn_x, SDn_y, SDn_z, SDs_x, SDs_y,
                         SDs_z, local_nws_pts, i, j, k, n_local_nws_pts);
-                    
+
                     for (int p = 0; p < n_local_nws_pts; p++) {
                         // Extract the line segment
                         Point A = local_nws_pts(p);
                         double value = Values(p);
-                        fprintf(ANGLES, "%.8g %.8g %.8g %.8g\n", A.x, A.y, A.z, value);
+                        fprintf(ANGLES, "%.8g %.8g %.8g %.8g\n", A.x, A.y, A.z,
+                                value);
                     }
 
                     pmmc_CurveCurvature(SDn, SDs, SDn_x, SDn_y, SDn_z, SDs_x,
@@ -800,14 +818,14 @@ void TwoPhase::ComputeStatic() {
 
                     lwns +=
                         pmmc_CubeCurveLength(local_nws_pts, n_local_nws_pts);
-                    
+
                     /* half contribution for vertices / edges at the common line 
                      *   each cube with contact line has a net of undercounting vertices 
                      *   each cube is undercounting edges due to internal counts
                     */
-                    Xwn += 0.25*n_local_nws_pts - 0.5;
-                    Xws += 0.25*n_local_nws_pts - 0.5;
-                    Xns += 0.25*n_local_nws_pts - 0.5;
+                    Xwn += 0.25 * n_local_nws_pts - 0.5;
+                    Xws += 0.25 * n_local_nws_pts - 0.5;
+                    Xns += 0.25 * n_local_nws_pts - 0.5;
                 }
 
                 // Solid interface averagees
@@ -820,12 +838,12 @@ void TwoPhase::ComputeStatic() {
                                                        n_ns_tris);
                     aws += pmmc_CubeSurfaceOrientation(Gws, ws_pts, ws_tris,
                                                        n_ws_tris);
-                    
-                    Xws += geomavg_EulerCharacteristic(ws_pts, ws_tris, n_ws_pts,
-                                                         n_ws_tris, i, j, k);
-                    
-                    Xns += geomavg_EulerCharacteristic(ns_pts, ns_tris, n_ns_pts,
-                                                         n_ns_tris, i, j, k);
+
+                    Xws += geomavg_EulerCharacteristic(
+                        ws_pts, ws_tris, n_ws_pts, n_ws_tris, i, j, k);
+
+                    Xns += geomavg_EulerCharacteristic(
+                        ns_pts, ns_tris, n_ns_pts, n_ns_tris, i, j, k);
                 }
                 //...........................................................................
                 // Compute the integral curvature of the non-wetting phase
@@ -850,11 +868,9 @@ void TwoPhase::ComputeStatic() {
                 Kn += pmmc_CubeSurfaceInterpValue(CubeValues, GaussCurvature,
                                                   nw_pts, nw_tris, Values, i, j,
                                                   k, n_nw_pts, n_nw_tris);
-                
 
                 euler += geomavg_EulerCharacteristic(nw_pts, nw_tris, n_nw_pts,
                                                      n_nw_tris, i, j, k);
-
             }
         }
     }
@@ -1522,7 +1538,6 @@ void TwoPhase::Reduce() {
     dEs = dEs * iVol_global;
     lwns_global = lwns_global * iVol_global;
     */
-
 }
 
 void TwoPhase::NonDimensionalize(double D, double viscosity, double IFT) {
@@ -1536,27 +1551,28 @@ void TwoPhase::NonDimensionalize(double D, double viscosity, double IFT) {
 
 void TwoPhase::PrintStatic() {
     if (Dm->rank() == 0) {
-    	FILE *STATIC;
+        FILE *STATIC;
         STATIC = fopen("geometry.csv", "a+");
         if (fseek(STATIC, 0, SEEK_SET) == fseek(STATIC, 0, SEEK_CUR)) {
             // If timelog is empty, write a short header to list the averages
             fprintf(STATIC, "sw awn ans aws Jwn Kwn lwns cwns KGws "
-                             "KGwn Xwn Xws Xns "); // Scalar averages
-            fprintf(STATIC,
+                            "KGwn Xwn Xws Xns "); // Scalar averages
+            fprintf(
+                STATIC,
                 "Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz "); // Orientation tensors
             fprintf(STATIC, "Gwsxx Gwsyy Gwszz Gwsxy Gwsxz Gwsyz ");
             fprintf(STATIC, "Gnsxx Gnsyy Gnszz Gnsxy Gnsxz Gnsyz ");
             fprintf(STATIC, "trawn trJwn trRwn "); //trimmed curvature,
-            fprintf(STATIC, "Vw Aw Jw Xw ");      //miknowski measures,
-            fprintf(STATIC, "Vn An Jn Xn\n");     //miknowski measures,
+            fprintf(STATIC, "Vw Aw Jw Xw ");       //miknowski measures,
+            fprintf(STATIC, "Vn An Jn Xn\n");      //miknowski measures,
             //fprintf(STATIC,"Euler Kn2 Jn2 An2\n"); 			//miknowski measures,
         }
 
-        fprintf(STATIC, "%.5g ", sat_w); // saturation 
+        fprintf(STATIC, "%.5g ", sat_w); // saturation
         fprintf(STATIC, "%.5g %.5g %.5g ", awn_global, ans_global,
                 aws_global); // interfacial areas
         fprintf(STATIC, "%.5g %.5g ", Jwn_global,
-                Kwn_global);                      // curvature of wn interface
+                Kwn_global);                     // curvature of wn interface
         fprintf(STATIC, "%.5g ", lwns_global);   // common curve length
         fprintf(STATIC, "%.5g ", efawns_global); // average contact angle
         fprintf(STATIC, "%.5g %.5g ", KNwns_global,
@@ -1576,7 +1592,7 @@ void TwoPhase::PrintStatic() {
                 trRwn_global); // Trimmed curvature
         fprintf(STATIC, "%.5g %.5g %.5g %.5g ", wet_morph->V(), wet_morph->A(),
                 wet_morph->H(), wet_morph->X());
-       fprintf(STATIC, "%.5g %.5g %.5g %.5g\n", nonwet_morph->V(),
+        fprintf(STATIC, "%.5g %.5g %.5g %.5g\n", nonwet_morph->V(),
                 nonwet_morph->A(), nonwet_morph->H(), nonwet_morph->X());
         //fprintf(STATIC,"%.5g %.5g %.5g %.5g\n",euler_global, Kn_global, Jn_global, An_global);			// minkowski measures
         fclose(STATIC);

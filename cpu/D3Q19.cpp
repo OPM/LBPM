@@ -1,3 +1,19 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright Equnior ASA
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include <stdio.h>
 
 extern "C" void ScaLBL_D3Q19_Pack(int q, int *list, int start, int count,
@@ -31,7 +47,6 @@ extern "C" void ScaLBL_D3Q19_Unpack(int q, int *list, int start, int count,
         //dist[q*N+n] = recvbuf[start+idx];
     }
 }
-
 
 extern "C" void ScaLBL_D3Q19_AA_Init(double *f_even, double *f_odd, int Np) {
     int n;
@@ -1926,8 +1941,8 @@ extern "C" void ScaLBL_D3Q19_AAeven_Compact(double *dist, int Np) {
     }
 }
 
-extern "C" void ScaLBL_D3Q19_AAodd_Compact(int *neighborList,
-                                           double *dist, int Np) {
+extern "C" void ScaLBL_D3Q19_AAodd_Compact(int *neighborList, double *dist,
+                                           int Np) {
     int nread;
 
     for (int n = 0; n < Np; n++) {

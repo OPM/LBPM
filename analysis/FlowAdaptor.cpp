@@ -1,3 +1,19 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright Equnior ASA
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 /* Flow adaptor class for multiphase flow methods */
 
 #include "analysis/FlowAdaptor.h"
@@ -17,9 +33,7 @@ FlowAdaptor::FlowAdaptor(ScaLBL_ColorModel &M) {
     phi_t.fill(0); // time derivative for the phase indicator field
 }
 
-FlowAdaptor::~FlowAdaptor() {
-	
-}
+FlowAdaptor::~FlowAdaptor() {}
 
 double FlowAdaptor::ImageInit(ScaLBL_ColorModel &M, std::string Filename) {
     int rank = M.rank;
@@ -237,12 +251,12 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M) {
     //ScaLBL_CopyToDevice(Phi,phase.data(),7*Np*sizeof(double));
     ScaLBL_CopyToDevice(M.Aq, Aq_tmp, 7 * Np * sizeof(double));
     ScaLBL_CopyToDevice(M.Bq, Bq_tmp, 7 * Np * sizeof(double));
-    
-    delete Aq_tmp; 
+
+    delete Aq_tmp;
     delete Bq_tmp;
-    delete Vel_x; 
-    delete Vel_y; 
-    delete Vel_z; 
+    delete Vel_x;
+    delete Vel_y;
+    delete Vel_z;
     delete Phase;
 
     return (TOTAL_MASS_CHANGE);
@@ -594,8 +608,8 @@ double FlowAdaptor::SeedPhaseField(ScaLBL_ColorModel &M,
     //ScaLBL_CopyToDevice(Phi,phase.data(),7*Np*sizeof(double));
     ScaLBL_CopyToDevice(M.Aq, Aq_tmp, 7 * Np * sizeof(double));
     ScaLBL_CopyToDevice(M.Bq, Bq_tmp, 7 * Np * sizeof(double));
-    
-    delete Aq_tmp; 
+
+    delete Aq_tmp;
     delete Bq_tmp;
     return (mass_loss);
 }
