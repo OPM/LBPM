@@ -1,19 +1,3 @@
-/*
-  Copyright 2013--2022 James E. McClure, Virginia Polytechnic & State University
-  Copyright Equnior ASA
-
-  This file is part of the Open Porous Media project (OPM).
-  OPM is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-  OPM is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-  You should have received a copy of the GNU General Public License
-  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
-*/
 #include "common/ScaLBL.h"
 #include <chrono>
 
@@ -23,6 +7,9 @@ ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	//......................................................................................
 	// Create a separate copy of the communicator for the device
     MPI_COMM_SCALBL = Dm->Comm.dup();
+    int myrank = MPI_COMM_SCALBL.getRank();
+    rank_info  =  RankInfoStruct(myrank, rank_info.nx, rank_info.ny, rank_info.nz);
+    
 	//......................................................................................
 	// Copy the domain size and communication information directly from Dm
 	Nx = Dm->Nx;
@@ -1735,18 +1722,7 @@ void ScaLBL_Communicator::RecvD3Q19AA(double *dist){
 	ScaLBL_D3Q19_Unpack(15,dvcRecvDist_Y,3*recvCount_Y,recvCount_Y,recvbuf_Y,dist,N);
 	ScaLBL_D3Q19_Unpack(17,dvcRecvDist_Y,4*recvCount_Y,recvCount_Y,recvbuf_Y,dist,N);
 	//...................................................................................
-	//...Packing for z face(6,12,13,16,17)................................
-	ScaLBL_D3Q19_Unpack(6,dvcRecvDist_z,0,recvCount_z,recvbuf_z,dist,N);
-	ScaLBL_D3Q19_Unpack(12,dvcRecvDist_z,recvCount_z,recvCount_z,recvbuf_z,dist,N);
-	ScaLBL_D3Q19_Unpack(13,dvcRecvDist_z,2*recvCount_z,recvCount_z,recvbuf_z,dist,N);
-	ScaLBL_D3Q19_Unpack(16,dvcRecvDist_z,3*recvCount_z,recvCount_z,recvbuf_z,dist,N);
-	ScaLBL_D3Q19_Unpack(17,dvcRecvDist_z,4*recvCount_z,recvCount_z,recvbuf_z,dist,N);
-	//...Packing for Z face(5,11,14,15,18)................................
-	ScaLBL_D3Q19_Unpack(5,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,dist,N);
-	ScaLBL_D3Q19_Unpack(11,dvcRecvDist_Z,recvCount_Z,recvCount_Z,recvbuf_Z,dist,N);
-	ScaLBL_D3Q19_Unpack(14,dvcRecvDist_Z,2*recvCount_Z,recvCount_Z,recvbuf_Z,dist,N);
-	ScaLBL_D3Q19_Unpack(15,dvcRecvDist_Z,3*recvCount_Z,recvCount_Z,recvbuf_Z,dist,N);
-	ScaLBL_D3Q19_Unpack(18,dvcRecvDist_Z,4*recvCount_Z,recvCount_Z,recvbuf_Z,dist,N);
+	
 	//..................................................................................
 	//...Pack the xy edge (8)................................
 	ScaLBL_D3Q19_Unpack(8,dvcRecvDist_xy,0,recvCount_xy,recvbuf_xy,dist,N);
@@ -1756,22 +1732,42 @@ void ScaLBL_Communicator::RecvD3Q19AA(double *dist){
 	ScaLBL_D3Q19_Unpack(10,dvcRecvDist_xY,0,recvCount_xY,recvbuf_xY,dist,N);
 	//...Pack the XY edge (7)................................
 	ScaLBL_D3Q19_Unpack(7,dvcRecvDist_XY,0,recvCount_XY,recvbuf_XY,dist,N);
-	//...Pack the xz edge (12)................................
-	ScaLBL_D3Q19_Unpack(12,dvcRecvDist_xz,0,recvCount_xz,recvbuf_xz,dist,N);
-	//...Pack the xZ edge (14)................................
-	ScaLBL_D3Q19_Unpack(14,dvcRecvDist_xZ,0,recvCount_xZ,recvbuf_xZ,dist,N);
-	//...Pack the Xz edge (13)................................
-	ScaLBL_D3Q19_Unpack(13,dvcRecvDist_Xz,0,recvCount_Xz,recvbuf_Xz,dist,N);
-	//...Pack the XZ edge (11)................................
-	ScaLBL_D3Q19_Unpack(11,dvcRecvDist_XZ,0,recvCount_XZ,recvbuf_XZ,dist,N);
-	//...Pack the yz edge (16)................................
-	ScaLBL_D3Q19_Unpack(16,dvcRecvDist_yz,0,recvCount_yz,recvbuf_yz,dist,N);
-	//...Pack the yZ edge (18)................................
-	ScaLBL_D3Q19_Unpack(18,dvcRecvDist_yZ,0,recvCount_yZ,recvbuf_yZ,dist,N);
-	//...Pack the Yz edge (17)................................
-	ScaLBL_D3Q19_Unpack(17,dvcRecvDist_Yz,0,recvCount_Yz,recvbuf_Yz,dist,N);
-	//...Pack the YZ edge (15)................................
-	ScaLBL_D3Q19_Unpack(15,dvcRecvDist_YZ,0,recvCount_YZ,recvbuf_YZ,dist,N);
+	
+	//if (BoundaryCondition == 0 || kproc != 0 ){
+		ScaLBL_D3Q19_Unpack(6,dvcRecvDist_z,0,recvCount_z,recvbuf_z,dist,N);
+		ScaLBL_D3Q19_Unpack(12,dvcRecvDist_z,recvCount_z,recvCount_z,recvbuf_z,dist,N);
+		ScaLBL_D3Q19_Unpack(13,dvcRecvDist_z,2*recvCount_z,recvCount_z,recvbuf_z,dist,N);
+		ScaLBL_D3Q19_Unpack(16,dvcRecvDist_z,3*recvCount_z,recvCount_z,recvbuf_z,dist,N);
+		ScaLBL_D3Q19_Unpack(17,dvcRecvDist_z,4*recvCount_z,recvCount_z,recvbuf_z,dist,N);
+		
+		//...Pack the xz edge (12)................................
+		ScaLBL_D3Q19_Unpack(12,dvcRecvDist_xz,0,recvCount_xz,recvbuf_xz,dist,N);
+		//...Pack the Xz edge (13)................................
+		ScaLBL_D3Q19_Unpack(13,dvcRecvDist_Xz,0,recvCount_Xz,recvbuf_Xz,dist,N);
+		//...Pack the yz edge (16)................................
+		ScaLBL_D3Q19_Unpack(16,dvcRecvDist_yz,0,recvCount_yz,recvbuf_yz,dist,N);
+		//...Pack the Yz edge (17)................................
+		ScaLBL_D3Q19_Unpack(17,dvcRecvDist_Yz,0,recvCount_Yz,recvbuf_Yz,dist,N);
+		
+	//}
+	//if (BoundaryCondition == 0 || kproc != nprocz-1){
+		//...Packing for Z face(5,11,14,15,18)................................
+		ScaLBL_D3Q19_Unpack(5,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,dist,N);
+		ScaLBL_D3Q19_Unpack(11,dvcRecvDist_Z,recvCount_Z,recvCount_Z,recvbuf_Z,dist,N);
+		ScaLBL_D3Q19_Unpack(14,dvcRecvDist_Z,2*recvCount_Z,recvCount_Z,recvbuf_Z,dist,N);
+		ScaLBL_D3Q19_Unpack(15,dvcRecvDist_Z,3*recvCount_Z,recvCount_Z,recvbuf_Z,dist,N);
+		ScaLBL_D3Q19_Unpack(18,dvcRecvDist_Z,4*recvCount_Z,recvCount_Z,recvbuf_Z,dist,N);
+
+		//...Pack the xZ edge (14)................................
+		ScaLBL_D3Q19_Unpack(14,dvcRecvDist_xZ,0,recvCount_xZ,recvbuf_xZ,dist,N);
+		//...Pack the XZ edge (11)................................
+		ScaLBL_D3Q19_Unpack(11,dvcRecvDist_XZ,0,recvCount_XZ,recvbuf_XZ,dist,N);
+		//...Pack the yZ edge (18)................................
+		ScaLBL_D3Q19_Unpack(18,dvcRecvDist_yZ,0,recvCount_yZ,recvbuf_yZ,dist,N);
+		//...Pack the YZ edge (15)................................
+		ScaLBL_D3Q19_Unpack(15,dvcRecvDist_YZ,0,recvCount_YZ,recvbuf_YZ,dist,N);
+	//}
+
 	//...................................................................................
 	Lock=false; // unlock the communicator after communications complete
 	//...................................................................................

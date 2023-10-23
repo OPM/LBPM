@@ -1,19 +1,3 @@
-/*
-  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
-  Copyright Equnior ASA
-
-  This file is part of the Open Porous Media project (OPM).
-  OPM is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-  OPM is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-  You should have received a copy of the GNU General Public License
-  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
-*/
 // Created by James McClure
 // Copyright 2008-2020
 #include <stdio.h>
@@ -355,20 +339,7 @@ void Domain::initialize(std::shared_ptr<Database> db) {
     // Initialize ranks
     int myrank = Comm.getRank();
     rank_info = RankInfoStruct(myrank, nproc[0], nproc[1], nproc[2]);
-    // inlet layers only apply to lower part of domain
-    if (rank_info.ix > 0)
-        inlet_layers_x = 0;
-    if (rank_info.jy > 0)
-        inlet_layers_y = 0;
-    if (rank_info.kz > 0)
-        inlet_layers_z = 0;
-    // outlet layers only apply to top part of domain
-    if (rank_info.ix < nproc[0] - 1)
-        outlet_layers_x = 0;
-    if (rank_info.jy < nproc[1] - 1)
-        outlet_layers_y = 0;
-    if (rank_info.kz < nproc[2] - 1)
-        outlet_layers_z = 0;
+
     // Fill remaining variables
     N = Nx * Ny * Nz;
     Volume = nx * ny * nz * nproc[0] * nproc[1] * nproc[2] * 1.0;
@@ -907,6 +878,22 @@ void Domain::Decomp(const std::string &Filename) {
     	}
         delete[] SegData;
     }
+    /************************/
+   // inlet layers only apply to lower part of domain
+    if (rank_info.ix > 0)
+        inlet_layers_x = 0;
+    if (rank_info.jy > 0)
+        inlet_layers_y = 0;
+    if (rank_info.kz > 0)
+        inlet_layers_z = 0;
+    // outlet layers only apply to top part of domain
+    if (rank_info.ix < nproc[0] - 1)
+        outlet_layers_x = 0;
+    if (rank_info.jy < nproc[1] - 1)
+        outlet_layers_y = 0;
+    if (rank_info.kz < nproc[2] - 1)
+        outlet_layers_z = 0;
+    /************************/
     Comm.barrier();
     ComputePorosity();
 }

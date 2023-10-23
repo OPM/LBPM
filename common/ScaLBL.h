@@ -1,19 +1,3 @@
-/*
-  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
-  Copyright Equnior ASA
-
-  This file is part of the Open Porous Media project (OPM).
-  OPM is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-  OPM is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-  You should have received a copy of the GNU General Public License
-  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
-*/
 /** @file  ScaLBL.h */
 /*  \details Header file for Scalable Lattice Boltzmann Library
  *  Separate implementations for GPU and CPU must both follow the conventions defined in this header
@@ -217,6 +201,39 @@ extern "C" void ScaLBL_D3Q19_AAeven_BGK(double *dist, int start, int finish, int
 */
 extern "C" void ScaLBL_D3Q19_AAodd_BGK(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
 
+/**
+* \brief BGK collision based on AA even access pattern for D3Q19 
+* @param dist - D3Q19 distributions
+* @param start - lattice node to start loop
+* @param finish - lattice node to finish loop
+* @param Np - size of local sub-domain (derived from Domain structure)
+* @param rlx - relaxation parameter
+* @param Fx - force in x direction
+* @param Fy - force in y direction
+* @param Fz - force in z direction
+*/
+extern "C" void ScaLBL_D3Q19_AAeven_Kubo(double *dist, double *Integral, int start, int finish, int Np);
+/**
+* \brief Kubo integral function 
+* @param neighborList - neighbors based on D3Q19 lattice structure
+* @param dist - D3Q19 distributions
+* @param integral - time integral
+* @param start - lattice node to start loop
+* @param finish - lattice node to finish loop
+* @param Np - size of local sub-domain (derived from Domain structure)
+*/
+
+extern "C" void ScaLBL_D3Q19_AAodd_Kubo(int *neighborList, double *dist, double *Integral, int start, int finish, int Np);
+/**
+* \brief Kubo integral function 
+* @param neighborList - neighbors based on D3Q19 lattice structure
+* @param dist - D3Q19 distributions
+* @param integral - time integral
+* @param start - lattice node to start loop
+* @param finish - lattice node to finish loop
+* @param Np - size of local sub-domain (derived from Domain structure)
+*/
+
 // MEMBRANE MODEL
 
 extern "C" void ScaLBL_D3Q7_Membrane_IonTransport(int *membrane, double *coef, double *dist, double *Den, int memLinks, int Np);
@@ -308,6 +325,15 @@ extern "C" void ScaLBL_D3Q7_Ion_Init_FromFile(double *dist, double *Den, int Np)
 
 extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity, double IonValence, int ion_component, int start, int finish, int Np);
 
+extern "C" void ScaLBL_D3Q7_AAeven_pH_ionization( double *dist,
+		double *Den, double *ElectricField, double * Velocity,
+        double Di, double Vt,
+		int pH_ion, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAodd_pH_ionization(int *neighborList, double *dist,
+                                      double *Den, double *ElectricField, double *Velocity,
+                                      double Di, double Vt,
+                                      int pH_ion, int start, int finish, int Np);
 
 // LBM Poisson solver
 
@@ -383,16 +409,17 @@ extern "C" void ScaLBL_D3Q19_Poisson_Init(int *Map, double *dist, double *Psi, i
 
 
 extern "C" void ScaLBL_D3Q19_AAodd_Poisson(int *neighborList, int *Map,
-                                          double *dist, double *Den_charge,
-                                          double *Psi, double *ElectricField,
-                                          double tau, double epsilon_LB, bool UseSlippingVelBC,
-                                          int start, int finish, int Np);
+		double *dist, double *Den_charge,
+		double *Psi, double *ElectricField,
+		double tau, double Vt, double Cp,
+		double epsilon_LB, bool UseSlippingVelBC,
+		int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_AAeven_Poisson(int *Map, double *dist,
-                                           double *Den_charge, double *Psi,
-                                           double *ElectricField, double *Error, double tau,
-                                           double epsilon_LB, bool UseSlippingVelBC,
-                                           int start, int finish, int Np);
+		double *Den_charge, double *Psi, double *ElectricField, double *Error,
+		double tau, double Vt, double Cp,
+		double epsilon_LB, bool UseSlippingVelBC,
+		int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_Poisson_getElectricField(double *dist, double *ElectricField, double tau, int Np);
 
@@ -735,6 +762,8 @@ public:
 	//......................................................................................
 	unsigned long int CommunicationCount,SendCount,RecvCount;
 	int Nx,Ny,Nz,N;
+	int iproc,jproc,kproc;
+	int nprocx,nprocy,nprocz;
 	int n_bb_d3q7, n_bb_d3q19; 
 	int BoundaryCondition;
 	//......................................................................................
@@ -838,8 +867,6 @@ private:
 	// only one set of Send requests can be active at any time (per instance)
 	int i,j,k,n;
 
-	int iproc,jproc,kproc;
-	int nprocx,nprocy,nprocz;
 	int sendtag,recvtag;
 	// Give the object it's own MPI communicator
 	RankInfoStruct rank_info;

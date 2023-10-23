@@ -53,7 +53,8 @@ public:
     int Np;
     int Nx,Ny,Nz,N;
     int membraneLinkCount;
-    
+	int BoundaryCondition;
+
     int *initialNeighborList;   // original neighborlist
     int *NeighborList;			// modified neighborlist
 
@@ -106,7 +107,7 @@ public:
     void Read(string filename);
         
 	void SendD3Q7AA(double *dist);
-	void RecvD3Q7AA(double *dist);
+	void RecvD3Q7AA(double *dist, bool BounceBack);
 	void AssignCoefficients(int *Map, double *Psi, double Threshold,
 			double MassFractionIn, double MassFractionOut, double ThresholdMassFractionIn,
 			double ThresholdMassFractionOut);

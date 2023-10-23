@@ -39,6 +39,7 @@ public:
     void Run(double *ChargeDensity, DoubleArray MembraneDistance, 
     		 bool UseSlippingVelBC, int timestep_from_Study);
     void getElectricPotential(DoubleArray &ReturnValues);
+    void getSolverError(DoubleArray &ReturnValues);
     void getElectricPotential_debug(int timestep);
     void getElectricField(DoubleArray &Values_x, DoubleArray &Values_y,
                           DoubleArray &Values_z);
@@ -96,6 +97,7 @@ public:
     double *Psi; 
     int *Psi_BCLabel;
     double *ElectricField;
+    double *Permittivity;
     double *ChargeDensityDummy; // for debugging
     double *ResidualError;
 
@@ -120,6 +122,7 @@ private:
     //void SolveElectricField();
     void SolvePoissonAAodd(double *ChargeDensity, bool UseSlippingVelBC, int timestep);
     void SolvePoissonAAeven(double *ChargeDensity, bool UseSlippingVelBC, int timestep);
+    void SetMeanZeroVoltage();
     void getConvergenceLog(int timestep,double error);
     double getBoundaryVoltagefromPeriodicBC(double V0,double freq,double t0,int time_step);
     

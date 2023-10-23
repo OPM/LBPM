@@ -7,7 +7,7 @@
 #include "common/ReadMicroCT.h"
 
 ScaLBL_IonModel::ScaLBL_IonModel(int RANK, int NP, const Utilities::MPI &COMM)
-    : rank(RANK), nprocs(NP), timestep(0), timestepMax(0), time_conv(0), kb(0),
+    : rank(RANK), nprocs(NP), timestep(0), timestepGlobal(0), timestepMax(0), time_conv(0), kb(0),
       electron_charge(0), T(0), Vt(0), k2_inv(0), h(0), tolerance(0),
       number_ion_species(0), Nx(0), Ny(0), Nz(0), N(0), Np(0), nprocx(0),
       nprocy(0), nprocz(0), fluidVelx_dummy(0), fluidVely_dummy(0),
@@ -30,74 +30,7 @@ ScaLBL_IonModel::~ScaLBL_IonModel() {
 
 void ScaLBL_IonModel::ReadParams(string filename, vector<int> &num_iter) {
 
-    // read the input database
-    db = std::make_shared<Database>(filename);
-    domain_db = db->getDatabase("Domain");
-    ion_db = db->getDatabase("Ions");
-
-    // Universal constant
-    kb = 1.38e-23;             //Boltzmann constant;unit [J/K]
-    electron_charge = 1.6e-19; //electron charge;unit [C]
-
-    //---------------------- Default model parameters --------------------------//
-    T = 300.0;                     //temperature; unit [K]
-    Vt = kb * T / electron_charge; //thermal voltage; unit [Vy]
-    k2_inv = 4.0;                  //speed of sound for D3Q7 lattice
-    h = 1.0;                       //resolution; unit: um/lu
-    tolerance = 1.0e-8;
-    number_ion_species = 1;
-    tau.push_back(1.0);
-    IonDiffusivity.push_back(
-        1.0e-9); //user-input diffusivity has physical unit [m^2/sec]
-    IonValence.push_back(1); //algebraic valence charge
-    IonConcentration.push_back(
-        1.0e-3); //user-input ion concentration has physical unit [mol/m^3]
-    //tau.push_back(0.5+k2_inv*time_conv/(h*1.0e-6)/(h*1.0e-6)*IonDiffusivity[0]);
-    time_conv.push_back((tau[0] - 0.5) / k2_inv * (h * h * 1.0e-12) /
-                        IonDiffusivity[0]);
-    fluidVelx_dummy = 0.0; //for debugging, unit [m/sec]
-    fluidVely_dummy = 0.0; //for debugging, unit [m/sec]
-    fluidVelz_dummy = 0.0; //for debugging, unit [m/sec]
-    Ex_dummy = 0.0;        //for debugging, unit [V/m]
-    Ey_dummy = 0.0;        //for debugging, unit [V/m]
-    Ez_dummy = 0.0;        //for debugging, unit [V/m]
-    
-    sprintf(LocalRankString, "%05d", rank);
-    sprintf(LocalRestartFile, "%s%s", "Restart.", LocalRankString);
-    //--------------------------------------------------------------------------//
-
-    BoundaryConditionSolid = 0;
-    
-    // Read domain parameters
-    if (domain_db->keyExists("voxel_length")) { //default unit: um/lu
-        h = domain_db->getScalar<double>("voxel_length");
-    }
-
-    // LB-Ion Model parameters
-    //if (ion_db->keyExists( "timestepMax" )){
-    //	timestepMax = ion_db->getScalar<int>( "timestepMax" );
-    //}
-    if (ion_db->keyExists("tolerance")) {
-        tolerance = ion_db->getScalar<double>("tolerance");
-    }
-    if (ion_db->keyExists("temperature")) {
-        T = ion_db->getScalar<int>("temperature");
-        //re-calculate thermal voltage
-        Vt = kb * T / electron_charge; //thermal voltage; unit [Vy]
-    }
-    if (ion_db->keyExists("FluidVelDummy")) {
-        fluidVelx_dummy = ion_db->getVector<double>("FluidVelDummy")[0];
-        fluidVely_dummy = ion_db->getVector<double>("FluidVelDummy")[1];
-        fluidVelz_dummy = ion_db->getVector<double>("FluidVelDummy")[2];
-    }
-    if (ion_db->keyExists("ElectricFieldDummy")) {
-        Ex_dummy = ion_db->getVector<double>("ElectricFieldDummy")[0];
-        Ey_dummy = ion_db->getVector<double>("ElectricFieldDummy")[1];
-        Ez_dummy = ion_db->getVector<double>("ElectricFieldDummy")[2];
-    }
-    if (ion_db->keyExists("number_ion_species")) {
-        number_ion_species = ion_db->getScalar<int>("number_ion_species");
-    }
+	
     //------ Load number of iteration from multiphysics controller ------//
     if (num_iter.size() != number_ion_species) {
         ERROR("Error: number_ion_species and num_iter_Ion_List (from "
@@ -105,196 +38,9 @@ void ScaLBL_IonModel::ReadParams(string filename, vector<int> &num_iter) {
     } else {
         timestepMax.assign(num_iter.begin(), num_iter.end());
     }
-    //-------------------------------------------------------------------//
-    if (ion_db->keyExists("tauList")) {
-        tau.clear();
-        tau = ion_db->getVector<double>("tauList");
-        vector<double> Di = ion_db->getVector<double>(
-            "IonDiffusivityList"); //temp storing ion diffusivity in physical unit
-        if (tau.size() != number_ion_species ||
-            Di.size() != number_ion_species) {
-            ERROR("Error: number_ion_species, tauList and IonDiffusivityList "
-                  "must be of the same length! \n");
-        } else {
-            time_conv.clear();
-            for (size_t i = 0; i < tau.size(); i++) {
-                time_conv.push_back((tau[i] - 0.5) / k2_inv *
-                                    (h * h * 1.0e-12) / Di[i]);
-            }
-        }
-    }
-    //read ion related list
-    //NOTE: ion diffusivity has INPUT unit: [m^2/sec]
-    //      it must be converted to LB unit: [lu^2/lt]
-    if (ion_db->keyExists("IonDiffusivityList")) {
-        IonDiffusivity.clear();
-        IonDiffusivity = ion_db->getVector<double>("IonDiffusivityList");
-        if (IonDiffusivity.size() != number_ion_species) {
-            ERROR("Error: number_ion_species and IonDiffusivityList must be "
-                  "the same length! \n");
-        } else {
-            for (size_t i = 0; i < IonDiffusivity.size(); i++) {
-                IonDiffusivity[i] =
-                    IonDiffusivity[i] * time_conv[i] /
-                    (h * h * 1.0e-12); //LB diffusivity has unit [lu^2/lt]
-            }
-        }
-    } else {
-        for (size_t i = 0; i < IonDiffusivity.size(); i++) {
-            //convert ion diffusivity in physical unit to LB unit
-            IonDiffusivity[i] =
-                IonDiffusivity[i] * time_conv[i] /
-                (h * h * 1.0e-12); //LB diffusivity has unit [lu^2/lt]
-        }
-    }
-    // read time relaxation time list
-    //read ion algebric valence list
-    if (ion_db->keyExists("IonValenceList")) {
-        IonValence.clear();
-        IonValence = ion_db->getVector<int>("IonValenceList");
-        if (IonValence.size() != number_ion_species) {
-            ERROR("Error: number_ion_species and IonValenceList must be the "
-                  "same length! \n");
-        }
-    }
-    //read initial ion concentration list; INPUT unit [mol/m^3]
-    //it must be converted to LB unit [mol/lu^3]
-    if (ion_db->keyExists("IonConcentrationList")) {
-        IonConcentration.clear();
-        IonConcentration = ion_db->getVector<double>("IonConcentrationList");
-        if (IonConcentration.size() != number_ion_species) {
-            ERROR("Error: number_ion_species and IonConcentrationList must be "
-                  "the same length! \n");
-        } else {
-            for (size_t i = 0; i < IonConcentration.size(); i++) {
-                IonConcentration[i] =
-                    IonConcentration[i] *
-                    (h * h * h *
-                     1.0e-18); //LB ion concentration has unit [mol/lu^3]
-            }
-        }
-    } else {
-        for (size_t i = 0; i < IonConcentration.size(); i++) {
-            IonConcentration[i] =
-                IonConcentration[i] *
-                (h * h * h *
-                 1.0e-18); //LB ion concentration has unit [mol/lu^3]
-        }
-    }
-
-    //Read solid boundary condition specific to Ion model
-    BoundaryConditionSolid = 0;
-    if (ion_db->keyExists("BC_Solid")) {
-        BoundaryConditionSolid = ion_db->getScalar<int>("BC_Solid");
-    }
-    // Read boundary condition for ion transport
-    // BC = 0: zero-flux bounce-back BC
-    // BC = 1: fixed ion concentration; unit=[mol/m^3]
-    // BC = 2: fixed ion flux (inward flux); unit=[mol/m^2/sec]
-    BoundaryConditionInlet.push_back(0);
-    BoundaryConditionOutlet.push_back(0);
-    //Inlet
-    if (ion_db->keyExists("BC_InletList")) {
-        BoundaryConditionInlet = ion_db->getVector<int>("BC_InletList");
-        if (BoundaryConditionInlet.size() != number_ion_species) {
-            ERROR("Error: number_ion_species and BC_InletList must be of the "
-                  "same length! \n");
-        }
-        unsigned short int BC_inlet_min = *min_element(
-            BoundaryConditionInlet.begin(), BoundaryConditionInlet.end());
-        unsigned short int BC_inlet_max = *max_element(
-            BoundaryConditionInlet.begin(), BoundaryConditionInlet.end());
-        if (BC_inlet_min == 0 && BC_inlet_max > 0) {
-            ERROR("Error: BC_InletList: mix of periodic, ion concentration and "
-                  "flux BC is not supported! \n");
-        }
-        if (BC_inlet_min > 0) {
-            //read in inlet values Cin
-            if (ion_db->keyExists("InletValueList")) {
-                Cin = ion_db->getVector<double>("InletValueList");
-                if (Cin.size() != number_ion_species) {
-                    ERROR("Error: number_ion_species and InletValueList must "
-                          "be the same length! \n");
-                }
-            } else {
-                ERROR("Error: Non-periodic BCs are specified but "
-                      "InletValueList cannot be found! \n");
-            }
-            for (size_t i = 0; i < BoundaryConditionInlet.size(); i++) {
-                switch (BoundaryConditionInlet[i]) {
-                case 1: //fixed boundary ion concentration [mol/m^3]
-                    Cin[i] =
-                        Cin[i] *
-                        (h * h * h *
-                         1.0e-18); //LB ion concentration has unit [mol/lu^3]
-                    break;
-                case 21: //fixed boundary ion flux [mol/m^2/sec]
-                    Cin[i] = Cin[i] * (h * h * 1.0e-12) *
-                             time_conv[i]; //LB ion flux has unit [mol/lu^2/lt]
-                    break;
-                case 22: //fixed boundary ion flux [mol/m^2/sec]
-                    Cin[i] = Cin[i] * (h * h * 1.0e-12) *
-                             time_conv[i]; //LB ion flux has unit [mol/lu^2/lt]
-                    break;
-                case 23: //fixed boundary ion flux [mol/m^2/sec]
-                    Cin[i] = Cin[i] * (h * h * 1.0e-12) *
-                             time_conv[i]; //LB ion flux has unit [mol/lu^2/lt]
-                    break;
-                }
-            }
-        }
-    }
-    //Outlet
-    if (ion_db->keyExists("BC_OutletList")) {
-        BoundaryConditionOutlet = ion_db->getVector<int>("BC_OutletList");
-        if (BoundaryConditionOutlet.size() != number_ion_species) {
-            ERROR("Error: number_ion_species and BC_OutletList must be of the "
-                  "same length! \n");
-        }
-        unsigned short int BC_outlet_min = *min_element(
-            BoundaryConditionOutlet.begin(), BoundaryConditionOutlet.end());
-        unsigned short int BC_outlet_max = *max_element(
-            BoundaryConditionOutlet.begin(), BoundaryConditionOutlet.end());
-        if (BC_outlet_min == 0 && BC_outlet_max > 0) {
-            ERROR("Error: BC_OutletList: mix of periodic, ion concentration "
-                  "and flux BC is not supported! \n");
-        }
-        if (BC_outlet_min > 0) {
-            //read in outlet values Cout
-            if (ion_db->keyExists("OutletValueList")) {
-                Cout = ion_db->getVector<double>("OutletValueList");
-                if (Cout.size() != number_ion_species) {
-                    ERROR("Error: number_ion_species and OutletValueList must "
-                          "be the same length! \n");
-                }
-            } else {
-                ERROR("Error: Non-periodic BCs are specified but "
-                      "OutletValueList cannot be found! \n");
-            }
-            for (size_t i = 0; i < BoundaryConditionOutlet.size(); i++) {
-                switch (BoundaryConditionOutlet[i]) {
-                case 1: //fixed boundary ion concentration [mol/m^3]
-                    Cout[i] =
-                        Cout[i] *
-                        (h * h * h *
-                         1.0e-18); //LB ion concentration has unit [mol/lu^3]
-                    break;
-                case 21: //fixed boundary ion flux [mol/m^2/sec]
-                    Cout[i] = Cout[i] * (h * h * 1.0e-12) *
-                              time_conv[i]; //LB ion flux has unit [mol/lu^2/lt]
-                    break;
-                case 22: //fixed boundary ion flux [mol/m^2/sec]
-                    Cout[i] = Cout[i] * (h * h * 1.0e-12) *
-                              time_conv[i]; //LB ion flux has unit [mol/lu^2/lt]
-                    break;
-                case 23: //fixed boundary ion flux [mol/m^2/sec]
-                    Cout[i] = Cout[i] * (h * h * 1.0e-12) *
-                              time_conv[i]; //LB ion flux has unit [mol/lu^2/lt]
-                    break;
-                }
-            }
-        }
-    }
+    
+    ReadParams(filename);
+   
 }
 
 void ScaLBL_IonModel::ReadParams(string filename) {
@@ -310,6 +56,9 @@ void ScaLBL_IonModel::ReadParams(string filename) {
     // Universal constant
     kb = 1.38e-23;             //Boltzmann constant;unit [J/K]
     electron_charge = 1.6e-19; //electron charge;unit [C]
+    
+    use_Grotthus = false;
+    pH_ion = -1;
 
     //---------------------- Default model parameters --------------------------//
     T = 300.0;                     //temperature; unit [K]
@@ -335,7 +84,7 @@ void ScaLBL_IonModel::ReadParams(string filename) {
     Ez_dummy = 0.0;        //for debugging, unit [V/m]
     
     sprintf(LocalRankString, "%05d", rank);
-    sprintf(LocalRestartFile, "%s%s", "Restart.", LocalRankString);
+    sprintf(LocalRestartFile, "%s%s", "IonModel.", LocalRankString);
     //--------------------------------------------------------------------------//
 
     // Read domain parameters
@@ -387,8 +136,13 @@ void ScaLBL_IonModel::ReadParams(string filename) {
             for (size_t i = 0; i < tau.size(); i++) {
                 time_conv.push_back((tau[i] - 0.5) / k2_inv *
                                     (h * h * 1.0e-12) / Di[i]);
+        		if (rank==0)  printf("   tauList[%zu] = %.5g \n",i,tau[i]);
+        		if (rank==0)  printf("   Di[%zu] = %.5g \n",i,Di[i]);
+        		if (rank==0)  printf("   time_conv[%zu] = %.5g \n",i,time_conv[i]);
+
             }
         }
+
     }
     //read ion related list
     //NOTE: ion diffusivity has INPUT unit: [m^2/sec]
@@ -397,17 +151,19 @@ void ScaLBL_IonModel::ReadParams(string filename) {
         IonDiffusivity.clear();
         IonDiffusivity = ion_db->getVector<double>("IonDiffusivityList");
         if (IonDiffusivity.size() != number_ion_species) {
-            ERROR("Error: number_ion_species and IonDiffusivityList must be "
-                  "the same length! \n");
+        	ERROR("Error: number_ion_species and IonDiffusivityList must be "
+        			"the same length! \n");
         } else {
-            for (size_t i = 0; i < IonDiffusivity.size(); i++) {
-                IonDiffusivity[i] =
-                    IonDiffusivity[i] * time_conv[i] /
-                    (h * h * 1.0e-12); //LB diffusivity has unit [lu^2/lt]
-            }
+        	for (size_t i = 0; i < IonDiffusivity.size(); i++) {
+        		IonDiffusivity[i] =
+        				IonDiffusivity[i] * time_conv[i] /
+        				(h * h * 1.0e-12); //LB diffusivity has unit [lu^2/lt]
+        		if (rank==0)  printf("   IonDiffusivityList[%zu] = %.5g [lu^2/lt] \n",i,IonDiffusivity[i]);
+        	}
         }
+
     } else {
-        for (size_t i = 0; i < IonDiffusivity.size(); i++) {
+    	for (size_t i = 0; i < IonDiffusivity.size(); i++) {
             //convert ion diffusivity in physical unit to LB unit
             IonDiffusivity[i] =
                 IonDiffusivity[i] * time_conv[i] /
@@ -423,6 +179,28 @@ void ScaLBL_IonModel::ReadParams(string filename) {
             ERROR("Error: number_ion_species and IonValenceList must be the "
                   "same length! \n");
         }
+        for (size_t i = 0; i < IonValence.size(); i++) {
+        	if (rank==0)  printf("   IonValenceList[%zu] = %i \n",i,IonValence[i]);
+        }
+    }
+
+    if (ion_db->keyExists("WaterIonList")) {
+        use_Grotthus = true;
+        vector<int> GrotthusList = ion_db->getVector<int>("WaterIonList");
+        IonizationEnergy = ion_db->getWithDefault<double>("IonizationEnergy", 20.24); // in eV
+        if (GrotthusList.size() != 1 ) {
+            ERROR("Error: water ionization model only supports one pH ion \n");
+        }
+        else {
+        	pH_ion = GrotthusList[0];
+            if (rank==0) printf( "  Grotthus mechanism enabled. "
+            		"pH ion is %zu,  \n",pH_ion);
+        }
+        /* check that user specifies consistent valence charge */
+        if (IonValence[pH_ion] != 1){
+            ERROR("Error: pH ion must have valence charge of +1 \n");
+        }
+
     }
     //read initial ion concentration list; INPUT unit [mol/m^3]
     //it must be converted to LB unit [mol/lu^3]
@@ -432,22 +210,28 @@ void ScaLBL_IonModel::ReadParams(string filename) {
         if (IonConcentration.size() != number_ion_species) {
             ERROR("Error: number_ion_species and IonConcentrationList must be "
                   "the same length! \n");
-        } else {
-            for (size_t i = 0; i < IonConcentration.size(); i++) {
-                IonConcentration[i] =
-                    IonConcentration[i] *
-                    (h * h * h *
-                     1.0e-18); //LB ion concentration has unit [mol/lu^3]
-            }
+        } 
+        else {
+        	for (size_t i = 0; i < IonConcentration.size(); i++) {
+        		IonConcentration[i] =
+        				IonConcentration[i] *
+        				(h * h * h *
+        						1.0e-18); //LB ion concentration has unit [mol/lu^3]
+        		if (rank==0)  printf("   IonConcentrationList[%zu] = %.5g [mol/lu^3] \n",i,IonConcentration[i]);
+        	}
         }
-    } else {
+    }
+    else {
+    	if (rank==0)  printf("   IonConcentrationList not specified in input database. Setting default values \n");
         for (size_t i = 0; i < IonConcentration.size(); i++) {
             IonConcentration[i] =
                 IonConcentration[i] *
                 (h * h * h *
                  1.0e-18); //LB ion concentration has unit [mol/lu^3]
+    		if (rank==0)  printf("   IonConcentrationList[%zu] = %.5g [mol/lu^3] \n",i,IonConcentration[i]);
         }
     }
+
     
     if (USE_MEMBRANE){
         membrane_db = db->getDatabase("Membrane");
@@ -546,7 +330,6 @@ void ScaLBL_IonModel::ReadParams(string filename) {
     			}
     		}
     	}
-
     }
     //Read solid boundary condition specific to Ion model
     BoundaryConditionSolid = 0;
@@ -557,8 +340,10 @@ void ScaLBL_IonModel::ReadParams(string filename) {
     // BC = 0: zero-flux bounce-back BC
     // BC = 1: fixed ion concentration; unit=[mol/m^3]
     // BC = 2: fixed ion flux (inward flux); unit=[mol/m^2/sec]
-    BoundaryConditionInlet.push_back(0);
-    BoundaryConditionOutlet.push_back(0);
+    for (size_t i = 0; i < number_ion_species; i++) {
+    	BoundaryConditionInlet.push_back(0);
+    	BoundaryConditionOutlet.push_back(0);
+    }
     //Inlet
     if (ion_db->keyExists("BC_InletList")) {
         BoundaryConditionInlet = ion_db->getVector<int>("BC_InletList");
@@ -574,7 +359,7 @@ void ScaLBL_IonModel::ReadParams(string filename) {
             ERROR("Error: BC_InletList: mix of periodic, ion concentration and "
                   "flux BC is not supported! \n");
         }
-        if (BC_inlet_min > 0) {
+        if (BC_inlet_min > 1) {
             //read in inlet values Cin
             if (ion_db->keyExists("InletValueList")) {
                 Cin = ion_db->getVector<double>("InletValueList");
@@ -588,21 +373,21 @@ void ScaLBL_IonModel::ReadParams(string filename) {
             }
             for (size_t i = 0; i < BoundaryConditionInlet.size(); i++) {
                 switch (BoundaryConditionInlet[i]) {
-                case 1: //fixed boundary ion concentration [mol/m^3]
+                case 2: //fixed boundary ion concentration [mol/m^3]
                     Cin[i] =
                         Cin[i] *
                         (h * h * h *
                          1.0e-18); //LB ion concentration has unit [mol/lu^3]
                     break;
-                case 21: //fixed boundary ion flux [mol/m^2/sec]
+                case 3: //fixed boundary ion flux [mol/m^2/sec]
                     Cin[i] = Cin[i] * (h * h * 1.0e-12) *
                              time_conv[i]; //LB ion flux has unit [mol/lu^2/lt]
                     break;
-                case 22: //fixed boundary ion flux [mol/m^2/sec]
+                case 4: //fixed boundary ion flux [mol/m^2/sec]
                     Cin[i] = Cin[i] * (h * h * 1.0e-12) *
                              time_conv[i]; //LB ion flux has unit [mol/lu^2/lt]
                     break;
-                case 23: //fixed boundary ion flux [mol/m^2/sec]
+                case 5: //fixed boundary ion flux [mol/m^2/sec]
                     Cin[i] = Cin[i] * (h * h * 1.0e-12) *
                              time_conv[i]; //LB ion flux has unit [mol/lu^2/lt]
                     break;
@@ -625,7 +410,7 @@ void ScaLBL_IonModel::ReadParams(string filename) {
             ERROR("Error: BC_OutletList: mix of periodic, ion concentration "
                   "and flux BC is not supported! \n");
         }
-        if (BC_outlet_min > 0) {
+        if (BC_outlet_min > 1) {
             //read in outlet values Cout
             if (ion_db->keyExists("OutletValueList")) {
                 Cout = ion_db->getVector<double>("OutletValueList");
@@ -639,27 +424,38 @@ void ScaLBL_IonModel::ReadParams(string filename) {
             }
             for (size_t i = 0; i < BoundaryConditionOutlet.size(); i++) {
                 switch (BoundaryConditionOutlet[i]) {
-                case 1: //fixed boundary ion concentration [mol/m^3]
+                case 2: //fixed boundary ion concentration [mol/m^3]
                     Cout[i] =
                         Cout[i] *
                         (h * h * h *
                          1.0e-18); //LB ion concentration has unit [mol/lu^3]
                     break;
-                case 21: //fixed boundary ion flux [mol/m^2/sec]
+                case 3: //fixed boundary ion flux [mol/m^2/sec]
                     Cout[i] = Cout[i] * (h * h * 1.0e-12) *
                               time_conv[i]; //LB ion flux has unit [mol/lu^2/lt]
                     break;
-                case 22: //fixed boundary ion flux [mol/m^2/sec]
+                case 4: //fixed boundary ion flux [mol/m^2/sec]
                     Cout[i] = Cout[i] * (h * h * 1.0e-12) *
                               time_conv[i]; //LB ion flux has unit [mol/lu^2/lt]
                     break;
-                case 23: //fixed boundary ion flux [mol/m^2/sec]
+                case 5: //fixed boundary ion flux [mol/m^2/sec]
                     Cout[i] = Cout[i] * (h * h * 1.0e-12) *
                               time_conv[i]; //LB ion flux has unit [mol/lu^2/lt]
                     break;
                 }
             }
         }
+    }
+    if (ion_db->keyExists("BC_frequency")) {
+    	BC_frequency = ion_db->getVector<double>("BC_frequency");
+    }
+    if (ion_db->keyExists("BC_amplitude")) {
+    	BC_amplitude = ion_db->getVector<double>("BC_amplitude");
+    	if (BC_amplitude.size() != number_ion_species ||
+    			BC_amplitude.size() != number_ion_species) {
+    		ERROR("Error: number_ion_species and boundary condition specification "
+    				"must be of the same length! \n");
+    	}
     }
 }
 
@@ -779,7 +575,7 @@ void ScaLBL_IonModel::ReadInput() {
 
     sprintf(LocalRankString, "%05d", Dm->rank());
     sprintf(LocalRankFilename, "%s%s", "ID.", LocalRankString);
-    sprintf(LocalRestartFile, "%s%s", "Restart.", LocalRankString);
+    sprintf(LocalRestartFile, "%s%s", "IonModel.", LocalRankString);
 
     if (domain_db->keyExists("Filename")) {
         auto Filename = domain_db->getScalar<std::string>("Filename");
@@ -993,8 +789,8 @@ void ScaLBL_IonModel::Create() {
     if (rank == 0)
         printf("LB Ion Solver: Allocating distributions \n");
     //......................device distributions.................................
-    int dist_mem_size = Np * sizeof(double);
-    int neighborSize = 18 * (Np * sizeof(int));
+    size_t dist_mem_size = Np * sizeof(double);
+    size_t neighborSize = 18 * (Np * sizeof(int));
     //...........................................................................
     ScaLBL_AllocateDeviceMemory((void **)&NeighborList, neighborSize);
     ScaLBL_AllocateDeviceMemory((void **)&dvcMap, sizeof(int) * Np);
@@ -1157,12 +953,11 @@ void ScaLBL_IonModel::Initialize() {
         Ci_host = new double[number_ion_species * Np];        
         
         ifstream File(LocalRestartFile, ios::binary);
-        int idx;
-        double value,sum;
+        double value;
         // Read the distributions
     	for (size_t ic = 0; ic < number_ion_species; ic++){
     		for (int n = 0; n < Np; n++) {
-    			sum = 0.0;
+    			double sum = 0.0;
     			for (int q = 0; q < 7; q++) {
         			File.read((char *)&value, sizeof(value));
         			cDist[ic * 7 * Np +  q * Np + n] = value;
@@ -1221,24 +1016,30 @@ void ScaLBL_IonModel::Initialize() {
             break;
         case 1:
             if (rank == 0)
+                printf(
+                    "LB Ion Solver: outlet boundary for Ion %zu is bounce-back \n",
+                    i + 1);
+            break;   
+        case 2:
+            if (rank == 0)
                 printf("LB Ion Solver: inlet boundary for Ion %zu is "
                        "concentration = %.5g [mol/m^3] \n",
                        i + 1, Cin[i] / (h * h * h * 1.0e-18));
             break;
-        case 21:
+        case 3:
             if (rank == 0)
                 printf("LB Ion Solver: inlet boundary for Ion %zu is (inward) "
                        "flux = %.5g [mol/m^2/sec]; Diffusive flux only. \n",
                        i + 1, Cin[i] / (h * h * 1.0e-12) / time_conv[i]);
             break;
-        case 22:
+        case 4:
             if (rank == 0)
                 printf(
                     "LB Ion Solver: inlet boundary for Ion %zu is (inward) "
                     "flux = %.5g [mol/m^2/sec]; Diffusive + advective flux. \n",
                     i + 1, Cin[i] / (h * h * 1.0e-12) / time_conv[i]);
             break;
-        case 23:
+        case 5:
             if (rank == 0)
                 printf("LB Ion Solver: inlet boundary for Ion %zu is (inward) "
                        "flux = %.5g [mol/m^2/sec]; Diffusive + advective + "
@@ -1255,24 +1056,30 @@ void ScaLBL_IonModel::Initialize() {
             break;
         case 1:
             if (rank == 0)
-                printf("LB Ion Solver: outlet boundary for Ion %zu is "
-                       "concentration = %.5g [mol/m^3] \n",
-                       i + 1, Cout[i] / (h * h * h * 1.0e-18));
-            break;
-        case 21:
-            if (rank == 0)
+                printf(
+                    "LB Ion Solver: outlet boundary for Ion %zu is bounce-back \n",
+                    i + 1);
+            break;   
+        case 2:
+        	if (rank == 0)
+        		printf("LB Ion Solver: outlet boundary for Ion %zu is "
+        				"concentration = %.5g [mol/m^3] \n",
+        				i + 1, Cout[i] / (h * h * h * 1.0e-18));
+        	break;
+        case 3:
+        	if (rank == 0)
                 printf("LB Ion Solver: outlet boundary for Ion %zu is (inward) "
                        "flux = %.5g [mol/m^2/sec]; Diffusive flux only. \n",
                        i + 1, Cout[i] / (h * h * 1.0e-12) / time_conv[i]);
             break;
-        case 22:
+        case 4:
             if (rank == 0)
                 printf(
                     "LB Ion Solver: outlet boundary for Ion %zu is (inward) "
                     "flux = %.5g [mol/m^2/sec]; Diffusive + advective flux. \n",
                     i + 1, Cout[i] / (h * h * 1.0e-12) / time_conv[i]);
             break;
-        case 23:
+        case 5:
             if (rank == 0)
                 printf("LB Ion Solver: outlet boundary for Ion %zu is (inward) "
                        "flux = %.5g [mol/m^2/sec]; Diffusive + advective + "
@@ -1332,23 +1139,23 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField) {
             ScaLBL_Comm->RecvD3Q7AA(fq, ic); //WRITE INTO OPPOSITE
             ScaLBL_Comm->Barrier();
             //--------------------------------------- Set boundary conditions -------------------------------------//
-            if (BoundaryConditionInlet[ic] > 0) {
+            if (BoundaryConditionInlet[ic] > 1) {
                 switch (BoundaryConditionInlet[ic]) {
-                case 1:
+                case 2:
                     ScaLBL_Comm->D3Q7_Ion_Concentration_BC_z(
                         NeighborList, &fq[ic * Np * 7], Cin[ic], timestep);
                     break;
-                case 21:
+                case 3:
                     ScaLBL_Comm->D3Q7_Ion_Flux_Diff_BC_z(
                         NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],
                         &Velocity[2 * Np], timestep);
                     break;
-                case 22:
+                case 4:
                     ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvc_BC_z(
                         NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],
                         &Velocity[2 * Np], timestep);
                     break;
-                case 23:
+                case 5:
                     ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvcElec_BC_z(
                         NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],
                         &Velocity[2 * Np], &ElectricField[2 * Np],
@@ -1356,23 +1163,23 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField) {
                     break;
                 }
             }
-            if (BoundaryConditionOutlet[ic] > 0) {
+            if (BoundaryConditionOutlet[ic] > 1) {
                 switch (BoundaryConditionOutlet[ic]) {
-                case 1:
+                case 2:
                     ScaLBL_Comm->D3Q7_Ion_Concentration_BC_Z(
                         NeighborList, &fq[ic * Np * 7], Cout[ic], timestep);
                     break;
-                case 21:
+                case 3:
                     ScaLBL_Comm->D3Q7_Ion_Flux_Diff_BC_Z(
                         NeighborList, &fq[ic * Np * 7], Cout[ic], tau[ic],
                         &Velocity[2 * Np], timestep);
                     break;
-                case 22:
+                case 4:
                     ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvc_BC_Z(
                         NeighborList, &fq[ic * Np * 7], Cout[ic], tau[ic],
                         &Velocity[2 * Np], timestep);
                     break;
-                case 23:
+                case 5:
                     ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvcElec_BC_Z(
                         NeighborList, &fq[ic * Np * 7], Cout[ic], tau[ic],
                         &Velocity[2 * Np], &ElectricField[2 * Np],
@@ -1416,23 +1223,23 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField) {
             ScaLBL_Comm->RecvD3Q7AA(fq, ic); //WRITE INTO OPPOSITE
             ScaLBL_Comm->Barrier();
             //--------------------------------------- Set boundary conditions -------------------------------------//
-            if (BoundaryConditionInlet[ic] > 0) {
+            if (BoundaryConditionInlet[ic] > 1) {
                 switch (BoundaryConditionInlet[ic]) {
-                case 1:
+                case 2:
                     ScaLBL_Comm->D3Q7_Ion_Concentration_BC_z(
                         NeighborList, &fq[ic * Np * 7], Cin[ic], timestep);
                     break;
-                case 21:
+                case 3:
                     ScaLBL_Comm->D3Q7_Ion_Flux_Diff_BC_z(
                         NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],
                         &Velocity[2 * Np], timestep);
                     break;
-                case 22:
+                case 4:
                     ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvc_BC_z(
                         NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],
                         &Velocity[2 * Np], timestep);
                     break;
-                case 23:
+                case 5:
                     ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvcElec_BC_z(
                         NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],
                         &Velocity[2 * Np], &ElectricField[2 * Np],
@@ -1440,23 +1247,23 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField) {
                     break;
                 }
             }
-            if (BoundaryConditionOutlet[ic] > 0) {
+            if (BoundaryConditionOutlet[ic] > 1) {
                 switch (BoundaryConditionOutlet[ic]) {
-                case 1:
+                case 2:
                     ScaLBL_Comm->D3Q7_Ion_Concentration_BC_Z(
                         NeighborList, &fq[ic * Np * 7], Cout[ic], timestep);
                     break;
-                case 21:
+                case 3:
                     ScaLBL_Comm->D3Q7_Ion_Flux_Diff_BC_Z(
                         NeighborList, &fq[ic * Np * 7], Cout[ic], tau[ic],
                         &Velocity[2 * Np], timestep);
                     break;
-                case 22:
+                case 4:
                     ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvc_BC_Z(
                         NeighborList, &fq[ic * Np * 7], Cout[ic], tau[ic],
                         &Velocity[2 * Np], timestep);
                     break;
-                case 23:
+                case 5:
                     ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvcElec_BC_Z(
                         NeighborList, &fq[ic * Np * 7], Cout[ic], tau[ic],
                         &Velocity[2 * Np], &ElectricField[2 * Np],
@@ -1496,8 +1303,8 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField) {
         ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence[ic], ic,
                                       ScaLBL_Comm->FirstInterior(),
                                       ScaLBL_Comm->LastInterior(), Np);
-        ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence[ic], ic, 0,
-                                      ScaLBL_Comm->LastExterior(), Np);
+        ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence[ic], ic, 
+        		0, ScaLBL_Comm->LastExterior(), Np);
     }
     //************************************************************************/
     if (rank == 0)
@@ -1537,40 +1344,132 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
 	//double starttime,stoptime,cputime;
 	//ScaLBL_Comm->Barrier(); comm.barrier();
 	//auto t1 = std::chrono::system_clock::now();
-
+	
 	for (size_t ic = 0; ic < number_ion_species; ic++) {
+		
+		bool BounceBack = false;
+		if (BoundaryConditionInlet[ic]  > 0)
+			BounceBack = true;
 
 		/* set the mass transfer coefficients for the membrane */
-		IonMembrane->AssignCoefficients(dvcMap, Psi, ThresholdVoltage[ic],MassFractionIn[ic],
-				MassFractionOut[ic],ThresholdMassFractionIn[ic],ThresholdMassFractionOut[ic]);
+		if (USE_MEMBRANE)
+			IonMembrane->AssignCoefficients(dvcMap, Psi, ThresholdVoltage[ic],MassFractionIn[ic],
+					MassFractionOut[ic],ThresholdMassFractionIn[ic],ThresholdMassFractionOut[ic]);
 
 		timestep = 0;
 		while (timestep < timestepMax[ic]) {
 			//************************************************************************/
 			// *************ODD TIMESTEP*************//
 			timestep++;
+			timestepGlobal++;
 
 			//LB-Ion collison
 			IonMembrane->SendD3Q7AA(&fq[ic * Np * 7]); //READ FORM NORMAL
 
-			ScaLBL_D3Q7_AAodd_Ion(
-					IonMembrane->NeighborList, &fq[ic * Np * 7], &Ci[ic * Np],
-					&FluxDiffusive[3 * ic * Np], &FluxAdvective[3 * ic * Np],
-					&FluxElectrical[3 * ic * Np], Velocity, ElectricField,
-					IonDiffusivity[ic], IonValence[ic], rlx[ic], Vt,
-					ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+			if ( ic == pH_ion ){
+				ScaLBL_D3Q7_AAodd_pH_ionization(IonMembrane->NeighborList, fq,
+						Ci, ElectricField, Velocity,
+						 rlx[pH_ion], Vt, pH_ion, 
+						ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+			}
+			else {
+				ScaLBL_D3Q7_AAodd_Ion(
+						IonMembrane->NeighborList, &fq[ic * Np * 7], &Ci[ic * Np],
+						&FluxDiffusive[3 * ic * Np], &FluxAdvective[3 * ic * Np],
+						&FluxElectrical[3 * ic * Np], Velocity, ElectricField,
+						IonDiffusivity[ic], IonValence[ic], rlx[ic], Vt,
+						ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+			}
 
-			IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
+			IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7], BounceBack); //WRITE INTO OPPOSITE
+			/* SET BOUNDARY CONDITIONS */
+			/*
+			//--------------------------------------- Set boundary conditions -------------------------------------//
+			if ( ic != pH_ion ){
+				if (BoundaryConditionInlet[ic] == 2) {
+					double BC_value =  Cin[ic]*(1.0+BC_amplitude[ic]*sin(timestepGlobal*BC_frequency[ic]));
+					//printf("Setting inlet BC phase = %4.3e \n", BC_value);
+					IonMembrane->D3Q7_Ion_Concentration_BC_z(
+							NeighborList, &fq[ic * Np * 7],BC_value, timestep);
 
-			ScaLBL_D3Q7_AAodd_Ion(
-					IonMembrane->NeighborList, &fq[ic * Np * 7], &Ci[ic * Np],
-					&FluxDiffusive[3 * ic * Np], &FluxAdvective[3 * ic * Np],
-					&FluxElectrical[3 * ic * Np], Velocity, ElectricField,
-					IonDiffusivity[ic], IonValence[ic], rlx[ic], Vt, 0,
-					ScaLBL_Comm->LastExterior(), Np);
+				}
+				if (BoundaryConditionInlet[ic] == 2) {
+					double BC_value = Cout[ic]*(1.0-BC_amplitude[ic]*sin(timestepGlobal*BC_frequency[ic]));
+					//printf("Setting outlet BC phase = %4.3e \n", BC_value);
+					IonMembrane->D3Q7_Ion_Concentration_BC_Z(
+							NeighborList, &fq[ic * Np * 7], BC_value, timestep);
 
+				}
+			}
+			else {
+						*/
+			{
+	            if (BoundaryConditionInlet[ic] > 1) {
+	                switch (BoundaryConditionInlet[ic]) {
+	                case 2:
+	                	ScaLBL_Comm->D3Q7_Ion_Concentration_BC_z(
+	                        NeighborList, &fq[ic * Np * 7], Cin[ic], timestep);
+	                    break;
+	                case 3:
+	                	ScaLBL_Comm->D3Q7_Ion_Flux_Diff_BC_z(
+	                        NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],
+	                        &Velocity[2 * Np], timestep);
+	                    break;
+	                case 4:
+	                	ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvc_BC_z(
+	                        NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],
+	                        &Velocity[2 * Np], timestep);
+	                    break;
+	                case 5:
+	                	ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvcElec_BC_z(
+	                        NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],
+	                        &Velocity[2 * Np], &ElectricField[2 * Np],
+	                        IonDiffusivity[ic], IonValence[ic], Vt, timestep);
+	                    break;
+	                }
+	            }
+	            if (BoundaryConditionOutlet[ic] > 1) {
+	                switch (BoundaryConditionOutlet[ic]) {
+	                case 2:
+	                	ScaLBL_Comm->D3Q7_Ion_Concentration_BC_Z(
+	                        NeighborList, &fq[ic * Np * 7], Cout[ic], timestep);
+	                    break;
+	                case 3:
+	                	ScaLBL_Comm->D3Q7_Ion_Flux_Diff_BC_Z(
+	                        NeighborList, &fq[ic * Np * 7], Cout[ic], tau[ic],
+	                        &Velocity[2 * Np], timestep);
+	                    break;
+	                case 4:
+	                	ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvc_BC_Z(
+	                        NeighborList, &fq[ic * Np * 7], Cout[ic], tau[ic],
+	                        &Velocity[2 * Np], timestep);
+	                    break;
+	                case 5:
+	                	ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvcElec_BC_Z(
+	                        NeighborList, &fq[ic * Np * 7], Cout[ic], tau[ic],
+	                        &Velocity[2 * Np], &ElectricField[2 * Np],
+	                        IonDiffusivity[ic], IonValence[ic], Vt, timestep);
+	                    break;
+	                }
+	            }
+			}
 
-			IonMembrane->IonTransport(&fq[ic * Np * 7],&Ci[ic * Np]);
+			if ( ic == pH_ion ){
+				ScaLBL_D3Q7_AAodd_pH_ionization(IonMembrane->NeighborList, fq,
+						Ci, ElectricField, Velocity,
+						 rlx[pH_ion], Vt, pH_ion, 
+						0, ScaLBL_Comm->LastExterior(), Np);
+			}
+			else {
+				ScaLBL_D3Q7_AAodd_Ion(
+						IonMembrane->NeighborList, &fq[ic * Np * 7], &Ci[ic * Np],
+						&FluxDiffusive[3 * ic * Np], &FluxAdvective[3 * ic * Np],
+						&FluxElectrical[3 * ic * Np], Velocity, ElectricField,
+						IonDiffusivity[ic], IonValence[ic], rlx[ic], Vt, 0,
+						ScaLBL_Comm->LastExterior(), Np);
+			}
+			if (USE_MEMBRANE)
+				IonMembrane->IonTransport(&fq[ic * Np * 7],&Ci[ic * Np]);
 
 			/*           if (BoundaryConditionSolid == 1) {
                 //TODO IonSolid may also be species-dependent
@@ -1581,27 +1480,114 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
 			 */
 			// *************EVEN TIMESTEP*************//            
 			timestep++;
+			timestepGlobal++;
 
 			//LB-Ion collison
 			IonMembrane->SendD3Q7AA(&fq[ic * Np * 7]); //READ FORM NORMAL
 
-			ScaLBL_D3Q7_AAeven_Ion(
-					&fq[ic * Np * 7], &Ci[ic * Np], &FluxDiffusive[3 * ic * Np],
-					&FluxAdvective[3 * ic * Np], &FluxElectrical[3 * ic * Np],
-					Velocity, ElectricField, IonDiffusivity[ic], IonValence[ic],
-					rlx[ic], Vt, ScaLBL_Comm->FirstInterior(),
-					ScaLBL_Comm->LastInterior(), Np);
+			if ( ic == pH_ion ){
+				ScaLBL_D3Q7_AAeven_pH_ionization( fq,
+						Ci, ElectricField, Velocity,
+						rlx[pH_ion], Vt, pH_ion,   
+						ScaLBL_Comm->FirstInterior(),
+						ScaLBL_Comm->LastInterior(), Np);
+			}
+			else {
+				ScaLBL_D3Q7_AAeven_Ion(
+						&fq[ic * Np * 7], &Ci[ic * Np], &FluxDiffusive[3 * ic * Np],
+						&FluxAdvective[3 * ic * Np], &FluxElectrical[3 * ic * Np],
+						Velocity, ElectricField, IonDiffusivity[ic], IonValence[ic],
+						rlx[ic], Vt, ScaLBL_Comm->FirstInterior(),
+						ScaLBL_Comm->LastInterior(), Np);
+			}
 
+			IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7], BounceBack); //WRITE INTO OPPOSITE
+			/*
+			//--------------------------------------- Set boundary conditions -------------------------------------//
+			if ( ic != pH_ion ){
+				if (BoundaryConditionInlet[ic] == 2) {
+					double BC_value =  Cin[ic]*(1.0+BC_amplitude[ic]*sin(timestepGlobal*BC_frequency[ic]));
+					//printf("Setting inlet BC phase = %4.3e \n", BC_value);
+					IonMembrane->D3Q7_Ion_Concentration_BC_z(
+							NeighborList, &fq[ic * Np * 7],BC_value, timestep);
 
-			IonMembrane->RecvD3Q7AA(&fq[ic * Np * 7]); //WRITE INTO OPPOSITE
+				}
+				if (BoundaryConditionInlet[ic] == 2) {
+					double BC_value = Cout[ic]*(1.0-BC_amplitude[ic]*sin(timestepGlobal*BC_frequency[ic]));
+					//printf("Setting outlet BC phase = %4.3e \n", BC_value);
+					IonMembrane->D3Q7_Ion_Concentration_BC_Z(
+							NeighborList, &fq[ic * Np * 7], BC_value, timestep);
 
-			ScaLBL_D3Q7_AAeven_Ion(
-					&fq[ic * Np * 7], &Ci[ic * Np], &FluxDiffusive[3 * ic * Np],
-					&FluxAdvective[3 * ic * Np], &FluxElectrical[3 * ic * Np],
-					Velocity, ElectricField, IonDiffusivity[ic], IonValence[ic],
-					rlx[ic], Vt, 0, ScaLBL_Comm->LastExterior(), Np);
-
-			IonMembrane->IonTransport(&fq[ic * Np * 7],&Ci[ic * Np]);
+				}
+			}
+			else {*/
+			{
+	            if (BoundaryConditionInlet[ic] > 1) {
+	                switch (BoundaryConditionInlet[ic]) {
+	                case 2:
+	                	ScaLBL_Comm->D3Q7_Ion_Concentration_BC_z(
+	                        NeighborList, &fq[ic * Np * 7], Cin[ic], timestep);
+	                    break;
+	                case 3:
+	                	ScaLBL_Comm->D3Q7_Ion_Flux_Diff_BC_z(
+	                        NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],
+	                        &Velocity[2 * Np], timestep);
+	                    break;
+	                case 4:
+	                	ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvc_BC_z(
+	                        NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],
+	                        &Velocity[2 * Np], timestep);
+	                    break;
+	                case 5:
+	                	ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvcElec_BC_z(
+	                        NeighborList, &fq[ic * Np * 7], Cin[ic], tau[ic],
+	                        &Velocity[2 * Np], &ElectricField[2 * Np],
+	                        IonDiffusivity[ic], IonValence[ic], Vt, timestep);
+	                    break;
+	                }
+	            }
+	            if (BoundaryConditionOutlet[ic] > 1) {
+	                switch (BoundaryConditionOutlet[ic]) {
+	                case 2:
+	                	ScaLBL_Comm->D3Q7_Ion_Concentration_BC_Z(
+	                        NeighborList, &fq[ic * Np * 7], Cout[ic], timestep);
+	                    break;
+	                case 3:
+	                	ScaLBL_Comm->D3Q7_Ion_Flux_Diff_BC_Z(
+	                        NeighborList, &fq[ic * Np * 7], Cout[ic], tau[ic],
+	                        &Velocity[2 * Np], timestep);
+	                    break;
+	                case 4:
+	                	ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvc_BC_Z(
+	                        NeighborList, &fq[ic * Np * 7], Cout[ic], tau[ic],
+	                        &Velocity[2 * Np], timestep);
+	                    break;
+	                case 5:
+	                	ScaLBL_Comm->D3Q7_Ion_Flux_DiffAdvcElec_BC_Z(
+	                        NeighborList, &fq[ic * Np * 7], Cout[ic], tau[ic],
+	                        &Velocity[2 * Np], &ElectricField[2 * Np],
+	                        IonDiffusivity[ic], IonValence[ic], Vt, timestep);
+	                    break;
+	                }
+	            }
+			}
+			// End BC
+			
+			if ( ic == pH_ion ){
+				ScaLBL_D3Q7_AAeven_pH_ionization( fq,
+						Ci, ElectricField, Velocity,
+						rlx[pH_ion], Vt, pH_ion,   
+						0, ScaLBL_Comm->LastExterior(), Np);
+			}
+			else {
+				ScaLBL_D3Q7_AAeven_Ion(
+						&fq[ic * Np * 7], &Ci[ic * Np], &FluxDiffusive[3 * ic * Np],
+						&FluxAdvective[3 * ic * Np], &FluxElectrical[3 * ic * Np],
+						Velocity, ElectricField, IonDiffusivity[ic], IonValence[ic],
+						rlx[ic], Vt, 0, ScaLBL_Comm->LastExterior(), Np);
+			}
+			if (USE_MEMBRANE)
+				IonMembrane->IonTransport(&fq[ic * Np * 7],&Ci[ic * Np]);
 
 			ScaLBL_Comm->Barrier();
 			comm.barrier();
@@ -1617,17 +1603,17 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
 		}
 	}
 
-    //Compute charge density for Poisson equation
-    for (size_t ic = 0; ic < number_ion_species; ic++) {
-      int Valence = IonValence[ic];
-      ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, Valence, ic,
-                                      ScaLBL_Comm->FirstInterior(),
-                                      ScaLBL_Comm->LastInterior(), Np);
-        ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, Valence, ic, 0,
-                                      ScaLBL_Comm->LastExterior(), Np);
-    }
+	//Compute charge density for Poisson equation
+	for (size_t ic = 0; ic < number_ion_species; ic++) {
+		int Valence = IonValence[ic];
+		ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, Valence, ic,
+				ScaLBL_Comm->FirstInterior(),
+				ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, Valence, ic, 
+				0, ScaLBL_Comm->LastExterior(), Np);
+	}
 
-    /*    DoubleArray Charge(Nx,Ny,Nz);
+	/*    DoubleArray Charge(Nx,Ny,Nz);
     ScaLBL_Comm->RegularLayout(Map, ChargeDensity, Charge);
     double charge_sum=0.0;
     double charge_sum_total=0.0;
@@ -1662,13 +1648,76 @@ void ScaLBL_IonModel::RunMembrane(double *Velocity, double *ElectricField, doubl
     //if (rank==0) printf("********************************************************\n");
 }
 
+void ScaLBL_IonModel::TestGrotthus() {
+	/* Set up dummy electric field */
+	double * Psi;
+	double * ElectricField;
+	double * Velocity;
+	ScaLBL_AllocateDeviceMemory((void **) &Psi, sizeof(double)*Nx*Ny*Nz);
+	ScaLBL_AllocateDeviceMemory((void **) &ElectricField, 3*sizeof(double)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*sizeof(double)*Np);
+	
+	if (rank == 0) {
+		printf("   TestGrotthus: create dummy electric field... \n");
+	}	
+
+	double ALPHA = 0.001;
+	double *PSI, *EF, *VEL;
+	EF = new double [3*Np];
+	VEL = new double [3*Np];
+	PSI = new double [Nx*Ny*Nz];
+	
+	if (rank == 0) {
+		printf("   TestGrotthus: initialize variables (%i, %i, %i)... \n",Nx,Ny,Nz);
+	}
+	
+	int z = ScaLBL_Comm->kproc * (Nz-2); 
+	for (int k = 0; k < Nz; k++) {
+		for (int j = 0; j < Ny; j++) {
+			for (int i = 0; i < Nx; i++) {
+				int idx = Map(i, j, k);
+				int n = k * Nx * Ny + j * Nx + i;
+				double VALUE = (z + k - 1)*ALPHA;
+				Psi[n] = VALUE;
+				if (!(idx < 0)) {
+					EF[idx] = 0.0;
+					EF[Np + idx] = 0.0;
+					EF[2*Np + idx] = ALPHA;
+					
+					VEL[idx] = 0.0;
+					VEL[Np + idx] = 0.0;
+					VEL[2*Np + idx] = 0.0;
+				}
+			}
+		}
+	}
+	if (rank == 0) {
+		printf("   TestGrotthus: copy to GPU... \n");
+	}
+    ScaLBL_CopyToDevice(Psi, PSI, sizeof(double) * Nx * Ny * Nz);
+    ScaLBL_CopyToDevice(ElectricField, EF, sizeof(double) * 3 * Np);
+    ScaLBL_CopyToDevice(Velocity, VEL, sizeof(double) * 3 * Np);
+    
+	if (rank == 0) {
+		printf("   TestGrotthus: run model... \n");
+	}
+    RunMembrane(Velocity, ElectricField, Psi);
+    
+	delete(PSI);
+	delete(EF);
+	delete(VEL);
+	ScaLBL_FreeDeviceMemory(Psi);
+	ScaLBL_FreeDeviceMemory(Velocity);
+	ScaLBL_FreeDeviceMemory(ElectricField);
+}
+
+
 void ScaLBL_IonModel::Checkpoint(){
 
 	if (rank == 0) {
 		printf("   ION MODEL: Writing restart file! \n");
 	}
-	int idx;
-	double value,sum;
+	double value;
 	double*cDist;
 	cDist = new double[7 * number_ion_species * Np];
 	ScaLBL_CopyToHost(cDist, fq, 7 * Np * number_ion_species *sizeof(double));
