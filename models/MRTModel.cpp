@@ -263,7 +263,7 @@ void ScaLBL_MRTModel::Run() {
 
         if (WriteHeader) {
             log_file = fopen("Permeability.csv", "a+");
-            fprintf(log_file, "time Fx Fy Fz mu Vs As Js Xs vx vy vz absperm absperm_adjusted\n");
+            fprintf(log_file, "time Fx Fy Fz mu Vs As Js Xs vx vy vz absperm\n");
             fclose(log_file);
         }
     }
