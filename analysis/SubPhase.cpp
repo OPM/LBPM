@@ -416,7 +416,7 @@ void SubPhase::Basic() {
         if (Dm->BoundaryCondition == 1 || Dm->BoundaryCondition == 2 ||
             Dm->BoundaryCondition == 3 || Dm->BoundaryCondition == 4) {
             // compute the pressure drop
-            double pressure_drop = (Pressure(Nx * Ny + Nx + 1) - 1.0) / 3.0;
+            double pressure_drop = (Pressure(Nx * Ny + Nx + 1) - 1.0/ 3.0);
             double length = ((Nz - 2) * Dm->nprocz());
             force_mag -= pressure_drop / length;
         }
