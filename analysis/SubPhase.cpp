@@ -402,7 +402,7 @@ void SubPhase::Basic() {
         double dir_x = gwb.Px + gnb.Px;
         double dir_y = gwb.Py + gnb.Py;
         double dir_z = gwb.Pz + gnb.Pz;
-        double flow_magnitude = dir_x * dir_x + dir_y * dir_y + dir_z * dir_z;
+        double flow_magnitude = sqrt(dir_x * dir_x + dir_y * dir_y + dir_z * dir_z);
         double force_mag = sqrt(Fx * Fx + Fy * Fy + Fz * Fz);
         if (force_mag > 0.0) {
             dir_x = Fx / force_mag;
@@ -416,7 +416,7 @@ void SubPhase::Basic() {
         if (Dm->BoundaryCondition == 1 || Dm->BoundaryCondition == 2 ||
             Dm->BoundaryCondition == 3 || Dm->BoundaryCondition == 4) {
             // compute the pressure drop
-            double pressure_drop = (Pressure(Nx * Ny + Nx + 1) - 1.0) / 3.0;
+            double pressure_drop = (Pressure(Nx * Ny + Nx + 1) - 1.0/ 3.0);
             double length = ((Nz - 2) * Dm->nprocz());
             force_mag -= pressure_drop / length;
         }
