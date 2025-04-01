@@ -34,7 +34,7 @@ jobs:
        
         tar -xzvf zlib-1.2.11.tar.gz
         tar -xzvf hdf5-1.8.12.tar.gz
-        tar -xzvf silo-4.10.2.tar.gz
+        tar -xzvf Silo-4.10.3RC.modified.tar.gz
    
 
     - name: check out commit
