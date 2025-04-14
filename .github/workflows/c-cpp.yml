@@ -76,7 +76,7 @@ jobs:
 
     - name: install silo dependencies
       run: |
-        cd silo-4.10.2
+        cd Silo-4.10.3RC.modified
         CC=$MPI_DIR/bin/mpicc  CXX=$MPI_DIR/bin/mpicxx CXXFLAGS="-fPIC -O3 -std=c++14" \
         ./configure --prefix=$LBPM_SILO_DIR -with-hdf5="$LBPM_HDF5_DIR/include,$LBPM_HDF5_DIR/lib" --enable-static
         make 
