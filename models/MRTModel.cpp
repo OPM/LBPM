@@ -391,8 +391,7 @@ void ScaLBL_MRTModel::Run() {
             Xs = Dm->Comm.sumReduce(Xs);
 
             double h = Dm->voxel_length;
-            double absperm =
-                h * h * mu * Mask->Porosity() * Mask->Porosity() * flow_rate / force_mag;
+            double absperm = h * h * mu * Mask->Porosity() * flow_rate / force_mag;
 	    absperm *= 1013.0; // Convert to mDarcy
 
             if (rank == 0) {
