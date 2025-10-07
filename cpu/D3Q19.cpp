@@ -918,6 +918,51 @@ extern "C" void ScaLBL_D3Q19_Momentum(double *dist, double *vel, int Np) {
     }
 }
 
+extern "C" void ScaLBL_D3Q19_Momentum_2nd_order(double *dist, double *vel, int Np, double Fx, double Fy, double Fz) {
+    int n;
+    int N = Np;
+    // distributions
+    double f0, f1, f2, f3, f4, f5, f6, f7, f8, f9;
+    double f10, f11, f12, f13, f14, f15, f16, f17, f18;
+    double rho,vx, vy, vz, rho;
+
+    for (n = 0; n < N; n++) {
+        //........................................................................
+        // Registers to store the distributions
+        //........................................................................
+        f2 = dist[2 * N + n];
+        f4 = dist[4 * N + n];
+        f6 = dist[6 * N + n];
+        f8 = dist[8 * N + n];
+        f10 = dist[10 * N + n];
+        f12 = dist[12 * N + n];
+        f14 = dist[14 * N + n];
+        f16 = dist[16 * N + n];
+        f18 = dist[18 * N + n];
+        //........................................................................
+        f0 = dist[n];
+        f1 = dist[N + n];
+        f3 = dist[3 * N + n];
+        f5 = dist[5 * N + n];
+        f7 = dist[7 * N + n];
+        f9 = dist[9 * N + n];
+        f11 = dist[11 * N + n];
+        f13 = dist[13 * N + n];
+        f15 = dist[15 * N + n];
+        f17 = dist[17 * N + n];
+        //.................Compute the velocity...................................
+        rho = f0 + f1 + f2 + f3 + f4 + f5 + f6 + f7 + f8 + f9 + f10 + f11 + f12 + f13 + f14 + f15 + f16 + f17 +  f18;
+        vx = f1 - f2 + f7 - f8 + f9 - f10 + f11 - f12 + f13 - f14;
+        vy = f3 - f4 + f7 - f8 - f9 + f10 + f15 - f16 + f17 - f18;
+        vz = f5 - f6 + f11 - f12 - f13 + f14 + f15 - f16 - f17 + f18;
+        //..................Write the velocity.....................................
+        vel[n] = vx/rho - Fx*0.5;
+        vel[N + n] = vy/rho - Fy*0.5;
+        vel[2 * N + n] = vz/rho - Fz*0.5;
+        //........................................................................
+    }
+}
+
 extern "C" void ScaLBL_D3Q19_Pressure(double *dist, double *Pressure, int N) {
     for (int n = 0; n < N; n++) {
         //........................................................................

@@ -188,6 +188,8 @@ extern "C" void ScaLBL_D3Q19_Init(double *Dist, int Np);
 */
 extern "C" void ScaLBL_D3Q19_Momentum(double *dist, double *vel, int Np);
 
+extern "C" void ScaLBL_D3Q19_Momentum_2nd_order(double *dist, double *vel, int Np, double Fx, double Fy, double Fz);
+
 /**
 * \brief compute pressure from D3Q19 distribution
 * @param dist - D3Q19 distributions
