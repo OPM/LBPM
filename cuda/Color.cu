@@ -1311,7 +1311,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *A
 			// local density
 			rho0=rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
 			// local relaxation time
-			tau = (tauA+tauB)*0.5 + tanh(phi*180.0/3.14159265359)*(tauA-tauB)*0.5;
+			tau = (tauA+tauB)*0.5 + tanh(phi*60.)*(tauA-tauB)*0.5;
 			rlx_setA = 1.f/tau;
 			rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
 
@@ -1898,7 +1898,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double
 			// local density
 			rho0=rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
 			// local relaxation time
-			tau = (tauA+tauB)*0.5 + tanh(phi*180.0/3.14159265359)*(tauA-tauB)*0.5;
+			tau = (tauA+tauB)*0.5 + tanh(phi*60.)*(tauA-tauB)*0.5;
 			rlx_setA = 1.f/tau;
 			rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
 			
