@@ -3,6 +3,7 @@
 #include "IO/IOHelpers.h"
 #include "IO/Mesh.h"
 #include "IO/MeshDatabase.h"
+#include "IO/silo.h"
 #include "common/Utilities.h"
 
 #include <ProfilerApp.h>
