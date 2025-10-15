@@ -591,7 +591,7 @@ runAnalysis::runAnalysis(std::shared_ptr<Database> input_db,
     //std::string  format = "silo";
     format = vis_db->getWithDefault<string>("format", "silo");
 
-    IO::initialize("", format, "false");
+    IO::initialize("", format, false);
     // Create the MeshDataStruct
     d_meshData.resize(1);
 
@@ -736,7 +736,7 @@ runAnalysis::runAnalysis(ScaLBL_ColorModel &ColorModel)
 
     format = vis_db->getWithDefault<string>("format", "silo");
 
-    IO::initialize("", format, "false");
+    IO::initialize("", format, false);
     // Create the MeshDataStruct
     d_meshData.resize(1);
 
