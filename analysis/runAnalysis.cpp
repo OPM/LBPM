@@ -248,46 +248,53 @@ public:
 
         fillHalo<double> fillData(comm.comm, rank_info, n, {1, 1, 1}, 0, 1);
 
+        int varCounter = 0;
         if (vis_db->getWithDefault<bool>("save_phase_field", true)) {
-            ASSERT(visData[0].vars[0]->name == "phase");
-            Array<double> &PhaseData = visData[0].vars[0]->data;
+            ASSERT(visData[0].vars[varCounter]->name == "phase");
+            Array<double> &PhaseData = visData[0].vars[varCounter]->data;
             fillData.copy(Averages.Phi, PhaseData);
+            varCounter+=1;
         }
 
         if (vis_db->getWithDefault<bool>("save_pressure", false)) {
-            ASSERT(visData[0].vars[1]->name == "Pressure");
-            Array<double> &PressData = visData[0].vars[1]->data;
+            ASSERT(visData[0].vars[varCounter]->name == "Pressure");
+            Array<double> &PressData = visData[0].vars[varCounter]->data;
             fillData.copy(Averages.Pressure, PressData);
+            varCounter+=1;
         }
 
         if (vis_db->getWithDefault<bool>("save_velocity", false)) {
-            ASSERT(visData[0].vars[2]->name == "Velocity_x");
-            ASSERT(visData[0].vars[3]->name == "Velocity_y");
-            ASSERT(visData[0].vars[4]->name == "Velocity_z");
-            Array<double> &VelxData = visData[0].vars[2]->data;
-            Array<double> &VelyData = visData[0].vars[3]->data;
-            Array<double> &VelzData = visData[0].vars[4]->data;
+            ASSERT(visData[0].vars[varCounter]->name == "Velocity_x");
+            ASSERT(visData[0].vars[varCounter+1]->name == "Velocity_y");
+            ASSERT(visData[0].vars[varCounter+2]->name == "Velocity_z");
+            Array<double> &VelxData = visData[0].vars[varCounter]->data;
+            Array<double> &VelyData = visData[0].vars[varCounter+1]->data;
+            Array<double> &VelzData = visData[0].vars[varCounter+2]->data;
             fillData.copy(Averages.Vel_x, VelxData);
             fillData.copy(Averages.Vel_y, VelyData);
             fillData.copy(Averages.Vel_z, VelzData);
+            varCounter+=3;
         }
 
         if (vis_db->getWithDefault<bool>("save_dissipation", false)) {
-            ASSERT(visData[0].vars[5]->name == "ViscousDissipation");
-            Array<double> &ViscousDissipation = visData[0].vars[5]->data;
+            ASSERT(visData[0].vars[varCounter]->name == "ViscousDissipation");
+            Array<double> &ViscousDissipation = visData[0].vars[varCounter]->data;
             fillData.copy(Averages.Dissipation, ViscousDissipation);
+            varCounter+1;
         }
 
         if (vis_db->getWithDefault<bool>("save_distance", false)) {
-            ASSERT(visData[0].vars[6]->name == "SignDist");
-            Array<double> &SignData = visData[0].vars[6]->data;
+            ASSERT(visData[0].vars[varCounter]->name == "SignDist");
+            Array<double> &SignData = visData[0].vars[varCounter]->data;
             fillData.copy(Averages.SDs, SignData);
+            varCounter+=1;
         }
 
         if (vis_db->getWithDefault<bool>("save_connected_components", false)) {
-            ASSERT(visData[0].vars[7]->name == "BlobID");
-            Array<double> &BlobData = visData[0].vars[7]->data;
+            ASSERT(visData[0].vars[varCounter]->name == "BlobID");
+            Array<double> &BlobData = visData[0].vars[varCounter]->data;
             fillData.copy(Averages.morph_n->label, BlobData);
+            varCounter+=1;
         }
 
         if (vis_db->getWithDefault<bool>("write_silo", true))
