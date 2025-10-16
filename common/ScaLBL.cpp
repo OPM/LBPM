@@ -2402,6 +2402,7 @@ void ScaLBL_Communicator::BiSendD3Q7AA(double *Aq, double *Bq) {
     ScaLBL_D3Q19_Pack(2, dvcSendList_x, sendCount_x, sendCount_x, sendbuf_x, Bq,
                       N);
 
+    ScaLBL_DeviceBarrier();
     req1[0] =
         MPI_COMM_SCALBL.Isend(sendbuf_x, 2 * sendCount_x, rank_x, sendtag + 0);
     req2[0] =
@@ -2412,6 +2413,7 @@ void ScaLBL_Communicator::BiSendD3Q7AA(double *Aq, double *Bq) {
     ScaLBL_D3Q19_Pack(1, dvcSendList_X, sendCount_X, sendCount_X, sendbuf_X, Bq,
                       N);
 
+    ScaLBL_DeviceBarrier();
     req1[1] =
         MPI_COMM_SCALBL.Isend(sendbuf_X, 2 * sendCount_X, rank_X, sendtag + 1);
     req2[1] =
@@ -2422,6 +2424,7 @@ void ScaLBL_Communicator::BiSendD3Q7AA(double *Aq, double *Bq) {
     ScaLBL_D3Q19_Pack(4, dvcSendList_y, sendCount_y, sendCount_y, sendbuf_y, Bq,
                       N);
 
+    ScaLBL_DeviceBarrier();
     req1[2] =
         MPI_COMM_SCALBL.Isend(sendbuf_y, 2 * sendCount_y, rank_y, sendtag + 2);
     req2[2] =
@@ -2432,6 +2435,7 @@ void ScaLBL_Communicator::BiSendD3Q7AA(double *Aq, double *Bq) {
     ScaLBL_D3Q19_Pack(3, dvcSendList_Y, sendCount_Y, sendCount_Y, sendbuf_Y, Bq,
                       N);
 
+    ScaLBL_DeviceBarrier();
     req1[3] =
         MPI_COMM_SCALBL.Isend(sendbuf_Y, 2 * sendCount_Y, rank_Y, sendtag + 3);
     req2[3] =
@@ -2442,6 +2446,7 @@ void ScaLBL_Communicator::BiSendD3Q7AA(double *Aq, double *Bq) {
     ScaLBL_D3Q19_Pack(6, dvcSendList_z, sendCount_z, sendCount_z, sendbuf_z, Bq,
                       N);
 
+    ScaLBL_DeviceBarrier();
     req1[4] =
         MPI_COMM_SCALBL.Isend(sendbuf_z, 2 * sendCount_z, rank_z, sendtag + 4);
     req2[4] =
@@ -2454,6 +2459,7 @@ void ScaLBL_Communicator::BiSendD3Q7AA(double *Aq, double *Bq) {
 
     //...................................................................................
     // Send all the distributions
+    ScaLBL_DeviceBarrier();
     req1[5] =
         MPI_COMM_SCALBL.Isend(sendbuf_Z, 2 * sendCount_Z, rank_Z, sendtag + 5);
     req2[5] =
