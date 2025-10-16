@@ -328,7 +328,7 @@ void ScaLBL_MRTModel::Run() {
         //************************************************************************/
 
         if (timestep % ANALYSIS_INTERVAL == 0) {
-            ScaLBL_D3Q19_Momentum(fq, Velocity, Np);
+            ScaLBL_D3Q19_Momentum_2nd_order(fq, Velocity, Np, Fx, Fy, Fz);
             ScaLBL_DeviceBarrier();
             comm.barrier();
             ScaLBL_Comm->RegularLayout(Map, &Velocity[0], Velocity_x);
