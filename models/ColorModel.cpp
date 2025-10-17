@@ -1120,7 +1120,11 @@ void ScaLBL_ColorModel::Run() {
                          Map);
     //analysis.createThreads( analysis_method, 4 );
     auto t1 = std::chrono::system_clock::now();
-    while (timestep < timestepMax) {
+
+    double delta_sw = 1.0;
+    double sw_prev = -1.0;
+
+    while (timestep < timestepMax && delta_sw > tolerance) {
         PROFILE_START("Update");
 
         // *************ODD TIMESTEP*************
@@ -1217,13 +1221,24 @@ void ScaLBL_ColorModel::Run() {
         //************************************************************************
         PROFILE_STOP("Update");
 
-        if (rank == 0 && timestep % analysis_interval == 0 &&
-            BoundaryCondition == 4) {
-            printf("%i %f \n", timestep, din);
-        }
         // Run the analysis
         analysis.basic(timestep, current_db, *Averages, Phi, Pressure, Velocity,
                        fq, Den);
+
+        if (timestep % analysis_interval == 0){
+            analysis.finish();
+
+            double volA = Averages->gnb.V / Dm->Volume;
+            double volB = Averages->gwb.V / Dm->Volume;
+            double sw = volB / (volA + volB);
+
+            delta_sw = fabs(sw - sw_prev) / analysis_interval / sw;
+            if (rank == 0)
+                printf("timestep: %d, sw: %0.5e, previous: %0.5e, delta: %.5e\n",
+                    timestep, sw, sw_prev, delta_sw);
+
+            sw_prev = sw;
+        }
     }
     analysis.finish();
     PROFILE_STOP("Loop");

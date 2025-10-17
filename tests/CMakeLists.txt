@@ -2,6 +2,7 @@
 #ADD_LBPM_EXECUTABLE( lbpm_nonnewtonian_simulator ) 
 #ADD_LBPM_EXECUTABLE( lbpm_nondarcy_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_color_simulator )
+ADD_LBPM_EXECUTABLE( lbpm_color_unsteady_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_permeability_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_greyscale_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_greyscaleColor_simulator )
