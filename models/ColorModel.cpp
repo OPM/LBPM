@@ -111,6 +111,9 @@ void ScaLBL_ColorModel::ReadParams(string filename) {
     if (color_db->keyExists("flux")) {
         flux = color_db->getScalar<double>("flux");
     }
+    if (color_db->keyExists("timestep")) {
+        timestep = color_db->getScalar<int>("timestep");
+    }
     inletA = 1.f;
     inletB = 0.f;
     outletA = 0.f;
