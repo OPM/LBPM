@@ -27,8 +27,8 @@ void writeSiloSummary( const std::vector<IO::MeshDatabase> &, const std::string 
 std::vector<IO::MeshDatabase> writeMeshesHDF5(
     const std::vector<IO::MeshDataStruct> &, const std::string &, IO::FileFormat, int, Xdmf & );
 std::vector<IO::MeshDatabase> writeMeshesVti( const std::vector<IO::MeshDataStruct> &meshData,
-    const std::string &path, IO::FileFormat format, int rank );
-    void writeVtiSummary(
+    const std::string &path,  int rank );
+void writeVtiSummary(
         const std::vector<IO::MeshDatabase> &meshes_written,const IO::MeshDataStruct &meshData, const std::string &filename );
 
 /****************************************************
@@ -319,8 +319,8 @@ void IO::writeData( const std::string &subdir, const std::vector<IO::MeshDataStr
         // Write hdf5
         meshes_written = writeMeshesHDF5( meshData, path, IO::FileFormat::HDF5, rank, xmf );
     } else if ( global_IO_format == Format::VTK ) {
-        // Write silo
-        meshes_written = writeMeshesVti( meshData, path, IO::FileFormat::SILO, rank );        
+        // Write vti (vtk/xml)
+         meshes_written = writeMeshesVti( meshData, path, rank );        
     } else {
         ERROR( "Unknown format" );
     }

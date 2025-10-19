@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2025 Diogo Nardelli Siebert <diogo.siebert@ufsc.br>
+ *
+ * Licensed under either of
+ *   - Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
+ *   - GNU General Public License, Version 3.0 or later (https://www.gnu.org/licenses/gpl-3.0.html)
+ *
+ * SPDX-License-Identifier: (Apache-2.0 OR GPL-3.0-or-later)
+ */
+
 #include "xmlvtk.h"
 #include <iostream>
 #include <string>
@@ -7,54 +17,56 @@
 #include <algorithm>
 #include <cstring>
 #include <zlib.h>
-#include <stdint.h>
 
 using namespace std;
 
+/** @brief Indicates whether data compression is used by default **/
 bool Element::compress = false;
+/** @brief Default cache size used during data processing. */
 headerType cacheSize = 1500;
 
-unsigned char *spc_base64_encode(unsigned char *input, size_t len)
+/**
+ * @brief Formats a string using printf-style syntax.
+ * @tparam Args Variadic arguments for formatting.
+ * @param fmt Format string.
+ * @return Formatted string.
+ */
+template<typename... Args>
+std::string format_string(const char* fmt, Args&&... args)
 {
-	unsigned char *output, *p;
-	size_t        i = 0, mod = len % 3, toalloc;
+    int size = std::snprintf(nullptr, 0, fmt, std::forward<Args>(args)...);
+    if (size < 0) {
+        throw std::runtime_error("format_string: snprintf error");
+    }
+    std::vector<char> buf(size + 1);
+    int size2 = std::snprintf(buf.data(), buf.size(), fmt, std::forward<Args>(args)...);
+    if (size2 < 0) {
+        throw std::runtime_error("format_string: snprintf error");
+    }
+    
+    return std::string(buf.data(), buf.data() + size2);
+}
 
-	toalloc = (len / 3) * 4 + (3 - mod) % 3 + 1;
+/**
+ * @brief Encodes binary input to Base64 string representation.
+ * @param input Input binary data.
+ * @param len Length of input data.
+ * @return Encoded Base64 string.
+ */
+std::string spc_base64_encode(const unsigned char* input, size_t len)
+{
+    static const char table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string output;
+    output.reserve((len / 3 + (len % 3 != 0)) * 4);
 
-	p = output = (unsigned char *) malloc(((len / 3) + (mod ? 1 : 0)) * 4 + 1);
-	if (!p) return 0;
-	while (i < len - mod)
-	{
-		*p++ = b64table[input[i++] >> 2];
-		*p++ = b64table[((input[i - 1] << 4) | (input[i] >> 4)) & 0x3f];
-		*p++ = b64table[((input[i] << 2) | (input[i + 1] >> 6)) & 0x3f];
-		*p++ = b64table[input[i + 1] & 0x3f];
-		i += 2;
-	}
-	if (!mod)
-	{
-		*p = 0;
-		return output;
-	}
-	else
-	{
-		*p++ = b64table[input[i++] >> 2];
-		*p++ = b64table[((input[i - 1] << 4) | (input[i] >> 4)) & 0x3f];
-		if (mod == 1)
-		{
-		*p++ = '=';
-		*p++ = '=';
-		*p = 0;
-		return output;
-		}
-		else
-		{
-			*p++ = b64table[(input[i] << 2) & 0x3f];
-			*p++ = '=';
-			*p = 0;
-			return output;
-		}
-	}
+    for (size_t i = 0; i < len; i += 3) {
+        uint32_t n = (input[i] << 16) | (i + 1 < len ? input[i + 1] << 8 : 0) | (i + 2 < len ? input[i + 2] : 0);  // AAAAAABB BBBBCCCC CCDDDDDD
+        output.push_back(table[(n >> 18) & 0x3F]);
+        output.push_back(table[(n >> 12) & 0x3F]);
+        output.push_back(i + 1 < len ? table[(n >> 6) & 0x3F] : '=');
+        output.push_back(i + 2 < len ? table[n & 0x3F] : '=');
+    }
+    return output;
 }
 
 std::string CellData::header()
@@ -101,15 +113,10 @@ unsigned int AppendData::addData(unsigned char* pointer, unsigned int size)
     return offset;
 }
 
-DataArray::DataArray(const std::string&  name,const std::string&  type, const std::string&  format, int components, unsigned char* pointer, uint64_t points)
-{
-    this -> components = components;
-    this -> name = name;
-    this -> type = type;
-    this -> format = format;
-    this -> pointer = pointer;
-    this -> points = points;
+DataArray::DataArray(const std::string&  name_,const std::string&  type_, const std::string&  format_, int components_, unsigned char* pointer_, uint64_t points_)
+	: components(components_), name(name_), type(type_), format(format_), pointer(pointer_), points(points_)
 
+{
     if ( (this -> type == "Int8") || (this -> type == "UInt8") ) this -> typeSize = 1;
     else if ( (this -> type == "Int16") || (this -> type == "UInt16") ) this -> typeSize = 2;
     else if ( (this -> type == "Int32") || (this -> type == "UInt32") ||  (this -> type == "Float32") ) this -> typeSize = 4;
@@ -120,24 +127,9 @@ DataArray::DataArray(const std::string&  name,const std::string&  type, const st
 std::string DataArray::header()
 {
     std::ostringstream stringStream;
-    stringStream << "<DataArray Name=\"" <<  this-> name << "\"" << " type=\"";
-    stringStream << this -> type << "\"";
-
-    stringStream << " NumberOfComponents=\"" << this->components << "\"";
-
-    stringStream << " format=\"";
-    stringStream << this -> format << "\" ";
-
-    if (this->format == "appended")
-    {
-        stringStream  << " offset=\"" << this-> offset << "\" ";
-        stringStream << "/>";
-    }
-    else
-    {
-        stringStream << ">";
-    }
-
+    stringStream << format_string("<DataArray Name=\"%s\" type=\"%s\" NumberOfComponents=\"%d\" format=\"%s\" %s", 
+		    name.c_str(),  type.c_str() , components, format.c_str(), 
+		    (format == "appended") ? format_string(" offset=\"%d\" />", offset).c_str() : ">");
     return stringStream.str();
 }
 
@@ -151,38 +143,26 @@ void VTIWriter::setCompress()
     this->compress = true;
 }
 
-PVTIWriter::PVTIWriter(const std::string& filename)
+PVTIWriter::PVTIWriter(const std::string& filename_)
+	: filename(filename_), 
+	  originX(0), originY(0), originZ(0),
+	  wholeMinX(0), wholeMinY(0), wholeMinZ(0), wholeMaxX(0), wholeMaxY(0), wholeMaxZ(0), pieceCounter(0)
 {
-    this -> filename = filename;
-    this -> originX = 0;
-    this -> originY = 0;
-    this -> originZ = 0;
-    this -> wholeMinX = 0;
-    this -> wholeMaxX = 0;
-    this -> wholeMinY = 0;
-    this -> wholeMaxY = 0;
-    this -> wholeMinZ = 0;
-    this -> wholeMaxZ = 0;
-    this -> pieceCounter = 0;
 }
 
-VTIWriter::VTIWriter(const std::string& filename)
+VTIWriter::VTIWriter(const std::string& filename_)
+    : filename(filename_) ,  vtkVersion("0.1"),
+      originX(0), originY(0), originZ(0)
 {
-    this -> filename = filename;
-    this -> vtkVersion = 0.1;
-    this -> originX = 0;
-    this -> originY = 0;
-    this -> originZ = 0;
     this -> compress = false;
     if (sizeof(headerType) == 8) this -> headerTypeName = "UInt64";
     else if (sizeof(headerType) == 4) this -> headerTypeName = "UInt32";
-
     this -> byteOrder = "LittleEndian";
 }
 
 void VTIWriter::addPointData(const std::string&  name,const std::string&  type, const std::string&  format, int components, unsigned char* pointer)
 {
-    DataArray* data = new DataArray( name , type , format , components , (unsigned char*) pointer ,  pd.points  );
+    std::unique_ptr<DataArray> data = std::make_unique<DataArray>( name , type , format , components , (unsigned char*) pointer ,  pd.points  );
     data -> compress = this -> compress;
 
     if (format == "appended")
@@ -191,12 +171,12 @@ void VTIWriter::addPointData(const std::string&  name,const std::string&  type, 
         ad.compress = this->compress;
     }
 
-    pd.addChild( data );
+    pd.addChild( std::move(data) );
 }
 
 void VTIWriter::addCellData(const std::string&  name,const std::string&  type, const std::string&  format, int components, unsigned char* pointer)
 {
-    DataArray* data = new DataArray( name , type , format , components , (unsigned char*) pointer ,  cd.cells  );
+    std::unique_ptr<DataArray> data = std::make_unique<DataArray>( name , type , format , components , (unsigned char*) pointer ,  cd.cells  );
     data -> compress = this -> compress;
 
     if (format == "appended")
@@ -205,35 +185,18 @@ void VTIWriter::addCellData(const std::string&  name,const std::string&  type, c
         ad.compress = this->compress;
     }
 
-    cd.addChild( data );
+    cd.addChild( std::move(data) );
 }
-
-
-
 
 std::string VTIWriter::header()
 {
-    std::ostringstream stringStream;
+    std::ostringstream stringStream;    
     stringStream << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << endl;
-    stringStream << "<VTKFile type=\"ImageData\" version=\"1.0\" byte_order=\"" << this -> byteOrder << "\"";
-    stringStream << " header_type=\"" << this -> headerTypeName << "\"";
-    if ( this -> compress ) stringStream  << " compressor=\"vtkZLibDataCompressor\"";
-    stringStream << ">" << endl;
-
-    stringStream << "<ImageData WholeExtent=\"";
-    stringStream << " " << wholeMinX << " " << wholeMaxX;
-    stringStream << " " << wholeMinY << " " << wholeMaxY;
-    stringStream << " " << wholeMinZ << " " << wholeMaxZ;
-    stringStream << "\"";
-    stringStream << " Origin=\""  << this -> originX << " " << this -> originY << " " << this-> originZ << "\"";
-    stringStream << " Spacing=\"" << this-> spaceX << " " << this->spaceY << " " << this->spaceZ << "\">" << endl;
-
-    stringStream << "<Piece Extent= \"";
-    stringStream << " " << pieceMinX << " " << pieceMaxX;
-    stringStream << " " << pieceMinY << " " << pieceMaxY;
-    stringStream << " " << pieceMinZ << " " << pieceMaxZ;
-    stringStream << "\"";
-    stringStream << ">" << endl;
+    stringStream << format_string("<VTKFile type=\"ImageData\" version=\"%s\" byte_order=\"%s\" header_type=\"%s\" %s>", "1.0", byteOrder.c_str() , headerTypeName.c_str() , compress ? "compressor=\"vtkZLibDataCompressor\"" : "" ) << endl;
+    stringStream << format_string("<ImageData WholeExtent=\"%d %d %d %d %d %d\"", wholeMinX, wholeMaxX, wholeMinY, wholeMaxY, wholeMinZ, wholeMaxZ);
+    stringStream << format_string(" Origin=\"%f %f %f\"", originX, originY, originZ);
+    stringStream << format_string(" Spacing=\"%f %f %f \">", spaceX, spaceY, spaceZ) << endl;
+    stringStream << format_string("<Piece Extent= \" %d %d %d %d %d %d\">" ,  pieceMinX , pieceMaxX , pieceMinY , pieceMaxY, pieceMinZ , pieceMaxZ) << endl;
     return stringStream.str();
 }
 
@@ -241,44 +204,32 @@ std::string PVTIWriter::header()
 {
     std::ostringstream stringStream;
     stringStream << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << endl;
-    stringStream << "<VTKFile type=\"PImageData\" version=\"1.0\"";
-    stringStream << ">" << endl;
-
-    stringStream << "<PImageData WholeExtent=\"";
-    stringStream << " " << wholeMinX << " " << wholeMaxX;
-    stringStream << " " << wholeMinY << " " << wholeMaxY;
-    stringStream << " " << wholeMinZ << " " << wholeMaxZ;
-    stringStream << "\"";
-    stringStream << " Origin=\""  << this -> originX << " " << this -> originY << " " << this-> originZ << "\"";
-    stringStream << " Spacing=\"" << this-> spaceX << " " << this->spaceY << " " << this->spaceZ << "\">" << endl;
-
+    stringStream << "<VTKFile type=\"PImageData\" version=\"1.0\" >" <<  endl;
+    stringStream << format_string("<PImageData WholeExtent=\"%d %d %d %d %d %d\"", wholeMinX, wholeMaxX, wholeMinY, wholeMaxY, wholeMinZ, wholeMaxZ);
+    stringStream << format_string(" Origin=\"%f %f %f\"", originX, originY, originZ);
+    stringStream << format_string(" Spacing=\"%f %f %f\">", spaceX, spaceY, spaceZ) << endl;
+    
     return stringStream.str();
 }
 
 std::string VTIWriter::footer()
 {
-    std::ostringstream stringStream;
-	stringStream << "</VTKFile>" << endl;
-    return stringStream.str();
+    return "</VTKFile>\n";
 }
 
 std::string PVTIWriter::footer()
 {
-    std::ostringstream stringStream;
-    stringStream << "</PImageData>" << endl;
-	stringStream << "</VTKFile>" << endl;
-    return stringStream.str();
+    return "</PImageData>\n</VTKFile>\n";
 }
-
 
 void VTIWriter::setWholeExtent(int64_t minX_,int64_t minY_, int64_t minZ_,int64_t maxX_,int64_t maxY_, int64_t maxZ_)
 {
-    this -> wholeMinX = minX_;
-    this -> wholeMinY = minY_;
-    this -> wholeMinZ = minZ_;
-    this -> wholeMaxX = maxX_;
-    this -> wholeMaxY = maxY_;
-    this -> wholeMaxZ = maxZ_;
+    wholeMinX = minX_;
+    wholeMinY = minY_;
+    wholeMinZ = minZ_;
+    wholeMaxX = maxX_;
+    wholeMaxY = maxY_;
+    wholeMaxZ = maxZ_;
     setPiece(minX_,minY_,minZ_,maxX_,maxY_, maxZ_);
 }
 
@@ -288,7 +239,7 @@ std::ostream& operator<<(std::ostream& os, AppendData& obj)
     {
         os << obj.header();
         os << "_";
-        for (u_int64_t k = 0; k < obj.pointerList.size(); k++)
+        for (int k = 0; k < obj.pointerList.size(); k++)
         {
             if (obj.compress == false)
             {
@@ -299,42 +250,41 @@ std::ostream& operator<<(std::ostream& os, AppendData& obj)
             {
                 streampos beginPos = os.tellp();
 
-                char* compressedData = (char*) malloc(cacheSize);
+                std::vector<unsigned char>compressedData (cacheSize);
+
                 headerType totalByteSize = obj.sizeList[k];
                 headerType numberOfBlocks =  totalByteSize / cacheSize  +  (totalByteSize % cacheSize != 0 );
-                headerType* compressedInfo =  (headerType*) malloc( sizeof(headerType) * (3 + numberOfBlocks) );
+
+                size_t infoSize = sizeof(headerType) * (3 + numberOfBlocks);
+                std::vector<headerType>compressedInfo(infoSize );
 
                 compressedInfo[0] = numberOfBlocks;
                 compressedInfo[1] = (numberOfBlocks > 1) ?  cacheSize : totalByteSize;
                 compressedInfo[2] = (totalByteSize % cacheSize == 0) ? cacheSize : totalByteSize % cacheSize ;
 
-		os.write( (char*) compressedInfo, (3 + numberOfBlocks) *sizeof(headerType) );
+                os.write((char*) compressedInfo.data() , infoSize );
 
-                for (u_int64_t n = 1; n <= numberOfBlocks;  n++)
+                for (int n = 1; n <= numberOfBlocks;  n++)
                 {
                     uLongf compressedLength = cacheSize;
                     int numberOfBytesInBlock = (n < numberOfBlocks) ? compressedInfo[1] : compressedInfo[2];
-                    int ret = compress( (Bytef *) (compressedData), &compressedLength, obj.pointerList[k] + (n-1) * cacheSize, numberOfBytesInBlock );
+                    const Bytef* src = reinterpret_cast<const Bytef*>(    obj.pointerList[k] + (n - 1) * cacheSize );
+                    int ret = compress( (Bytef *) (compressedData.data() ), &compressedLength, src, numberOfBytesInBlock );
                     if (ret != Z_OK)
                     {
-                        cout << "Erro No: " << ret;
-                        exit(3);
+                        std::cerr << "Error compressing data , code =" << ret << std::endl;
+                        throw std::runtime_error("Failed compressing data using zlib in AppendData");
                     }
                     compressedInfo[n+2] = compressedLength;
 
-                    os.write( (char*) compressedData, compressedLength );
+                    os.write( reinterpret_cast<const char*>(  compressedData.data() ) , compressedLength );
                 }
 
                 streampos endPos = os.tellp();
 
                 os.seekp( beginPos );
-
-                os.write( (char*) compressedInfo, (3 + numberOfBlocks) *sizeof(headerType) );
-                
+                os.write( (char*) compressedInfo.data() , infoSize );
                 os.seekp( endPos );
-
-                delete compressedData;
-                delete compressedInfo;
             }
         }        
         os << endl;
@@ -350,7 +300,6 @@ std::ostream& operator<<(std::ostream& os, DataArray& obj)
 
     headerType totalByteSize = static_cast<headerType>( (obj.dataSize) * (obj.typeSize) );
     headerType count = min<headerType >( 12 - sizeof(headerType) , totalByteSize );
-    unsigned char* base64Data;
 
     if  (obj.format == "binary")
     {
@@ -378,9 +327,7 @@ std::ostream& operator<<(std::ostream& os, DataArray& obj)
                             else break;
                         }
 
-                        base64Data = spc_base64_encode( leftOverBuffer , leftOverSize );
-                        os << base64Data;
-                        free(base64Data);
+                        os << spc_base64_encode( leftOverBuffer , leftOverSize );
                         leftOverSize = 0;
                 }
 
@@ -391,16 +338,13 @@ std::ostream& operator<<(std::ostream& os, DataArray& obj)
                      leftOverBuffer[i] = pointer[size + i];
                 }
 
-                base64Data = spc_base64_encode( pointer , size );
-                os << base64Data;
-                free(base64Data);
+                os << spc_base64_encode( pointer , size );
+
             }
 
             if (leftOverSize > 0)
             {
-                base64Data = spc_base64_encode( leftOverBuffer , leftOverSize );           
-                os << base64Data;
-                free(base64Data);
+                os << spc_base64_encode( leftOverBuffer , leftOverSize );
                 leftOverSize = 0;
             }
         }
@@ -408,58 +352,52 @@ std::ostream& operator<<(std::ostream& os, DataArray& obj)
         {
             streampos beginPos = os.tellp();
 
-            char* compressedData = (char*) malloc(cacheSize + 3);
+            std::vector<unsigned char>compressedData (cacheSize + 3);
             int leftOver = 0;
 
             headerType numberOfBlocks =  totalByteSize / cacheSize  +  (totalByteSize % cacheSize != 0 );
-            headerType* compressedInfo =  (headerType*) malloc( sizeof(headerType) * (3 + numberOfBlocks) );
+            size_t infoSize = sizeof(headerType) * (3 + numberOfBlocks);
+            std::vector<headerType>compressedInfo(infoSize );
 
             compressedInfo[0] = numberOfBlocks;
             compressedInfo[1] = (numberOfBlocks > 1) ?  cacheSize : totalByteSize;
             compressedInfo[2] = (totalByteSize % cacheSize == 0) ? cacheSize : totalByteSize % cacheSize ;
 
-            base64Data =  spc_base64_encode( (unsigned char*) compressedInfo , (3 + numberOfBlocks) *sizeof(headerType) );
-            os << base64Data;
-            free(base64Data);
+            os << spc_base64_encode( reinterpret_cast<unsigned char*>(compressedInfo.data()) , infoSize );
 
-            for (u_int64_t n = 1; n <= numberOfBlocks;  n++)
+            for (int n = 1; n <= numberOfBlocks;  n++)
             {
                 uLongf compressedLength = cacheSize;
                 int numberOfBytesInBlock = (n < numberOfBlocks) ? compressedInfo[1] : compressedInfo[2];
-                compress( (Bytef *) (compressedData+3), &compressedLength, obj.pointer + (n-1) * cacheSize, numberOfBytesInBlock );
+                int ret = compress( reinterpret_cast<Bytef*>(compressedData.data() + 3) , &compressedLength, obj.pointer + (n-1) * cacheSize, numberOfBytesInBlock );
+                if (ret != Z_OK)
+                {
+                    std::cerr << "Error compressing data , code =" << ret << std::endl;
+                    throw std::runtime_error("Failed compressing data using zlib in AppendData");
+                }
                 compressedInfo[n+2] = compressedLength;
                 
                 int encodeSize = 3* ( (compressedLength + leftOver)/3 );
-                base64Data = spc_base64_encode( (unsigned char*) (compressedData + 3 - leftOver) , encodeSize );
-                os << base64Data;
-                free(base64Data);
-                
+                os << spc_base64_encode( compressedData.data() + 3 - leftOver , encodeSize );
+
                 int newLeftOver = compressedLength + leftOver - encodeSize ;
                 if (newLeftOver > 0) 
                 {
-                    memcpy( compressedData + 3 - newLeftOver, compressedData + 3 - leftOver + encodeSize, newLeftOver);
+                    memcpy( compressedData.data() + 3 - newLeftOver, compressedData.data() + 3 - leftOver + encodeSize, newLeftOver);
                 }
                 leftOver = newLeftOver;
             }
 
             if (leftOver > 0)
             {
-                base64Data = spc_base64_encode( (unsigned char*) (compressedData + 3 - leftOver) , leftOver );
-                os << base64Data;
-                free(base64Data);
+                os << spc_base64_encode(compressedData.data() + 3 - leftOver , leftOver );
             }
-
-            free(compressedData);              
 
             streampos endPos = os.tellp();
             os.seekp( beginPos );
 
-            base64Data =  spc_base64_encode( (unsigned char*) compressedInfo , (3 + numberOfBlocks) *sizeof(headerType) );                      
-            os << base64Data;
-            free(base64Data);
-            free(compressedInfo);
+            os << spc_base64_encode( reinterpret_cast<unsigned char*>(compressedInfo.data()) , infoSize );
             os.seekp( endPos );
-            
         }
 
         os << obj.footer();
@@ -470,31 +408,31 @@ std::ostream& operator<<(std::ostream& os, DataArray& obj)
 
 void VTIWriter::setPiece(int64_t minX_,int64_t minY_, int64_t minZ_,int64_t maxX_,int64_t maxY_, int64_t maxZ_)
 {
-    this -> pieceMinX = minX_;
-    this -> pieceMinY = minY_;
-    this -> pieceMinZ = minZ_;
-    this -> pieceMaxX = maxX_;
-    this -> pieceMaxY = maxY_;
-    this -> pieceMaxZ = maxZ_;
-    this -> sizeX = maxX_ - minX_ + 1;
-    this -> sizeY = maxY_ - minY_ + 1;
-    this -> sizeZ = maxZ_ - minZ_ + 1;
-    this -> pd.points = sizeX * sizeY * sizeZ;
-    this -> cd.cells  = (sizeX-1) * (sizeY-1) * (sizeZ-1);
+    pieceMinX = minX_;
+    pieceMinY = minY_;
+    pieceMinZ = minZ_;
+    pieceMaxX = maxX_;
+    pieceMaxY = maxY_;
+    pieceMaxZ = maxZ_;
+    sizeX = maxX_ - minX_ + 1;
+    sizeY = maxY_ - minY_ + 1;
+    sizeZ = maxZ_ - minZ_ + 1;
+    pd.points = sizeX * sizeY * sizeZ;
+    cd.cells  = (sizeX-1) * (sizeY-1) * (sizeZ-1);
 }
 
 void VTIWriter::setOrigin(double x_,double y_, double z_)
 {
-    this -> originX = x_;
-    this -> originY = y_;
-    this -> originZ = z_;
+    originX = x_;
+    originY = y_;
+    originZ = z_;
 }
 
 void VTIWriter::setSpacing(double sx_,double sy_, double sz_)
 {
-    this -> spaceX = sx_;
-    this -> spaceY = sy_;
-    this -> spaceZ = sz_;
+    spaceX = sx_;
+    spaceY = sy_;
+    spaceZ = sz_;
 }
 
 void PVTIWriter::write()
@@ -503,50 +441,24 @@ void PVTIWriter::write()
     file.open(this -> filename);
     file << header();
     
-    for (u_int64_t i = 0; i< cellDataName.size(); i++)
+    for (int i = 0; i< cellDataName.size(); i++)
     {
         if (i==0) file << "<PCellData>" << endl; 
-        file << "<PDataArray Name=\"";
-        file << cellDataName[i];       
-        file << "\" ";
-        file << "NumberOfComponents=\"";
-        file << cellDataComponents[i];
-        file << "\" ";
-        file << "type=\"";
-        file << cellDataType[i];
-        file << "\"";
-        file << " />" << endl;
+        file << format_string( "<PDataArray Name=\"%s\" NumberOfComponents=\"%d\" type=\"%s\" />" ,cellDataName[i].c_str() ,cellDataComponents[i] ,cellDataType[i].c_str() ) << endl;
         if (i== cellDataName.size()-1) file << "</PCellData>" << endl; 
     }
     
-    for (u_int64_t i = 0; i< pointDataName.size(); i++)
+    for (int i = 0; i< pointDataName.size(); i++)
     {
         if (i==0) file << "<PPointData>" << endl; 
-        file << "<PDataArray Name=\"";
-        file << pointDataName[i];       
-        file << "\" ";
-        file << "NumberOfComponents=\"";
-        file << pointDataComponents[i];
-        file << "\" ";
-        file << "type=\"";
-        file << pointDataType[i];
-        file << "\"";
-        file << " />" << endl;
+        file << format_string( "<PDataArray Name=\"%s\" NumberOfComponents=\"%d\" type=\"%s\" />" ,pointDataName[i].c_str() ,pointDataComponents[i] ,pointDataType[i].c_str() ) << endl;
         if (i== pointDataName.size()-1) file << "</PPointData>" << endl; 
     }
 
 
-    for (u_int64_t i = 0; i< pieceFilename.size(); i++)
+    for (int i = 0; i< pieceFilename.size(); i++)
     {
-        file << "<Piece Extent= \"";
-        file << " " << pieceMinX[i] << " " << pieceMaxX[i];
-        file << " " << pieceMinY[i] << " " << pieceMaxY[i];
-        file << " " << pieceMinZ[i] << " " << pieceMaxZ[i];
-        file << "\" ";
-        file << "Source=\"";
-        file << pieceFilename[i];
-        file << "\" ";
-        file << " />" << endl;
+        file << format_string("<Piece Extent= \"%d %d %d %d %d %d\" Source=\"%s\" />", pieceMinX[i], pieceMaxX[i], pieceMinY[i] , pieceMaxY[i] , pieceMinZ[i] , pieceMaxZ[i] , pieceFilename[i].c_str() ) << endl;
     }
 
     file << footer();

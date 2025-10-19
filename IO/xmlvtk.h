@@ -1,33 +1,60 @@
+/*
+ * Copyright (c) 2025 Diogo Nardelli Siebert <diogo.siebert@ufsc.br>
+ *
+ * Licensed under either of
+ *   - Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
+ *   - GNU General Public License, Version 3.0 or later (https://www.gnu.org/licenses/gpl-3.0.html)
+ *
+ * SPDX-License-Identifier: (Apache-2.0 OR GPL-3.0-or-later)
+ */
+
 #ifndef __XMLVTK_H_INCLUDED__
 #define __XMLVTK_H_INCLUDED__
-
-#define BASE_64 0
-#define APPEND_RAW_DATA 1
 
 #include <string>
 #include <vector>
 #include <fstream>
 #include <cstdint>
+#include <memory>
 
 #define headerType u_int64_t
 
-static char b64table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-unsigned char *spc_base64_encode(unsigned char *input, size_t len);
+/**
+ * @brief Encodes binary data into Base64 format.
+ * @param input Pointer to the input data.
+ * @param len Length of the input data.
+ * @return Base64-encoded string.
+ */
+std::string spc_base64_encode(const unsigned char* input, size_t len);
 
+/**
+ * @class Element
+ * @brief Represents a hierarchical XML-like element supporting compression and VTK serialization.
+ */
 class Element
 {
     public:
         static bool compress; 
+/** @brief Returns the parent element. */
         Element* getParent() { return parent ;}
-        Element* getChild(int n) { return this->child[n] ; }
-        void addChild( Element* e) { child.push_back(e); e->parent = this; }
+/** @brief Returns the nth child element. *//** ... */
+        Element* getChild(int n) { return this->child[n].get(); }
+/** @brief Adds a new child element and sets its parent. */
+    	void addChild(std::unique_ptr<Element> e) {
+        	e -> parent = this;
+	        child.push_back(std::move( e ) );
+        }
+
+/** @brief Returns the number of child elements. */
         int sizeChild( ) {  return child.size(); }
+/** @brief Generates a header string for VTK output. */
         virtual std::string header() = 0;
+/** @brief Generates a footer string for VTK output. */
         virtual std::string footer() = 0;
     private:
         Element* parent;
-        std::vector<Element*> child;
+        std::vector< std::unique_ptr<Element> > child;
 };
 
 class PointData: public Element
