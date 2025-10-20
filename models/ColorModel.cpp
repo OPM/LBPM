@@ -519,7 +519,7 @@ void ScaLBL_ColorModel::Initialize() {
         double capillary_number =
             color_db->getScalar<double>("capillary_number");
         if (rank == 0)
-            printf("   set flux to achieve Ca=%f \n", capillary_number);
+            printf("   set flux to achieve Ca=%0.3e\n", capillary_number);
         double MuB = rhoB * (tauB - 0.5) / 3.0;
         double IFT = 6.0 * alpha;
         double CrossSectionalArea =
@@ -527,7 +527,7 @@ void ScaLBL_ColorModel::Initialize() {
         flux = Mask->Porosity() * CrossSectionalArea * IFT *
                capillary_number / MuB;
         if (rank == 0)
-            printf("   flux=%f \n", flux);
+            printf("   flux=%0.3e\n", flux);
     }
     color_db->putScalar<double>("flux", flux);
 
@@ -824,13 +824,12 @@ double ScaLBL_ColorModel::Run(int returntime) {
                 timestep = INITIAL_TIMESTEP;
                 TRIGGER_FORCE_RESCALE = true;
                 if (rank == 0)
-                    printf("    Capillary number missed target value = %f "
-                           "(measured value was Ca = %f) \n ",
+                    printf("    Capillary number missed target value = %0.3e "
+                           "(measured value was Ca = %0.3e)\n",
                            capillary_number, Ca);
             }
 
-            if (RESCALE_FORCE == true && SET_CAPILLARY_NUMBER == true &&
-                CURRENT_TIMESTEP > RESCALE_FORCE_AFTER_TIMESTEP) {
+            if (RESCALE_FORCE && SET_CAPILLARY_NUMBER && CURRENT_TIMESTEP > RESCALE_FORCE_AFTER_TIMESTEP) {
                 TRIGGER_FORCE_RESCALE = true;
             }
 
@@ -872,7 +871,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
 
                 // rescale
                 if (rank == 0)
-                    printf("    -- Setting rescale factor via %s: %f\n", (bracket_found) ? "bracket" : "proportion", RESCALE_FORCE_FACTOR);
+                    printf("    -- Setting rescale factor via %s: %0.3e\n", (bracket_found) ? "bracket" : "proportion", RESCALE_FORCE_FACTOR);
                 Fx *= RESCALE_FORCE_FACTOR;
                 Fy *= RESCALE_FORCE_FACTOR;
                 Fz *= RESCALE_FORCE_FACTOR;
@@ -888,8 +887,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
                     bracket_found = false;
                 }
                 if (rank == 0)
-                    printf("    -- adjust force by factor %f, Fx: %f, Fy: %f, Fz: %f \n",
-                        RESCALE_FORCE_FACTOR, Fx, Fy, Fz);
+                    printf("    -- New force after rescaling, Fx: %0.3e, Fy: %0.3e, Fz: %0.3e\n", Fx, Fy, Fz);
                 Averages->SetParams(rhoA, rhoB, tauA, tauB, Fx, Fy, Fz, alpha, beta);
                 color_db->putVector<double>("F", {Fx, Fy, Fz});
             }
@@ -901,8 +899,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
                 analysis.finish();
 
                 if (rank == 0) {
-                    printf("** WRITE STEADY POINT *** ");
-                    printf("Ca = %f, (previous = %f) \n", Ca, Ca_previous);
+                    printf("Ca = %0.3e, (previous = %0.3e)\n", Ca, Ca_previous);
                     double h = Dm->voxel_length;
                     // pressures
                     double pA = Averages->gnb.p;
@@ -1090,7 +1087,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
 
                     }
 
-                    printf("  Measured capillary number %f \n ", Ca);
+                    printf("  Measured capillary number %0.3e\n", Ca);
                 }
                 if (SET_CAPILLARY_NUMBER) {
                     Fx *= capillary_number / Ca;
@@ -1102,7 +1099,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
                         Fz *= 1e-3 / force_mag;
                     }
                     if (rank == 0)
-                        printf("    -- adjust force by factor %f \n ",
+                        printf("    -- adjust force by factor %0.3e\n",
                                capillary_number / Ca);
                     Averages->SetParams(rhoA, rhoB, tauA, tauB, Fx, Fy, Fz,
                                         alpha, beta);
@@ -1113,8 +1110,8 @@ double ScaLBL_ColorModel::Run(int returntime) {
                     force_mag_bracket_previous = 0.0;
                 } else {
                     if (rank == 0) {
-                        printf("** Continue to simulate steady *** \n ");
-                        printf("Ca = %f, (previous = %f) \n", Ca, Ca_previous);
+                        printf("** Continue to simulate steady *** \n");
+                        printf("Ca = %0.3e, (previous = %0.3e)\n", Ca, Ca_previous);
                     }
                 }
 
