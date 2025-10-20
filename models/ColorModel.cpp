@@ -719,7 +719,6 @@ void ScaLBL_ColorModel::ForwardStep() {
 }
 
 double ScaLBL_ColorModel::Run(int returntime) {
-    int nprocs = nprocx * nprocy * nprocz;
     const RankInfoStruct rank_info(rank, nprocx, nprocy, nprocz);
     //************ MAIN ITERATION LOOP ***************************************/
     comm.barrier();
@@ -1147,7 +1146,6 @@ double ScaLBL_ColorModel::Run(int returntime) {
     if (rank == 0)
         printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
     return (MLUPS);
-    MLUPS *= nprocs;
 }
 
 void ScaLBL_ColorModel::Run() {
