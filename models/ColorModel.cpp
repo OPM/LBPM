@@ -645,6 +645,12 @@ double ScaLBL_ColorModel::Run(int returntime) {
     double Ca_previous = 0.0;
     double minCa = 8.0e-6;
     double maxCa = 1.0;
+
+    double force_mag_bracket_previous = 0.0;
+    double Ca_bracket_previous = 0.0;
+    double force_bracket_low, force_bracket_high, Ca_bracket_low;
+    bool bracket_found = false;
+
     if (color_db->keyExists("capillary_number")) {
         capillary_number = color_db->getScalar<double>("capillary_number");
         SET_CAPILLARY_NUMBER = true;
@@ -830,26 +836,61 @@ double ScaLBL_ColorModel::Run(int returntime) {
             if (TRIGGER_FORCE_RESCALE) {
             	RESCALE_FORCE = false;
             	TRIGGER_FORCE_RESCALE = false;
-            	double RESCALE_FORCE_FACTOR = capillary_number / Ca;
-            	if (RESCALE_FORCE_FACTOR > 2.0)
-            		RESCALE_FORCE_FACTOR = 2.0;
-            	if (RESCALE_FORCE_FACTOR < 0.5)
-            		RESCALE_FORCE_FACTOR = 0.5;
-            	Fx *= RESCALE_FORCE_FACTOR;
-            	Fy *= RESCALE_FORCE_FACTOR;
-            	Fz *= RESCALE_FORCE_FACTOR;
-            	force_mag = sqrt(Fx * Fx + Fy * Fy + Fz * Fz);
-            	if (force_mag > 1e-3) {
-            		Fx *= 1e-3 / force_mag; // impose ceiling for stability
-            		Fy *= 1e-3 / force_mag;
-            		Fz *= 1e-3 / force_mag;
-            	}
-            	if (rank == 0)
-            		printf("    -- adjust force by factor %f \n ",
-            				capillary_number / Ca);
-            	Averages->SetParams(rhoA, rhoB, tauA, tauB, Fx, Fy, Fz, alpha,
-            			beta);
-            	color_db->putVector<double>("F", {Fx, Fy, Fz});
+
+                if (bracket_found) {
+                    // update brackets based on new results
+                    if ((Ca - capillary_number) * (Ca_bracket_low - capillary_number) < 0) {
+                        // on opposite side of target from low bracket, replace high bracket
+                        force_bracket_high = force_mag;
+                    } else {
+                        // on same side of target as low bracket, replace low bracket
+                        force_bracket_low = force_mag;
+                        Ca_bracket_low = Ca;
+                    }
+                }
+
+                double RESCALE_FORCE_FACTOR;
+                if (!bracket_found) {
+                    // if previous iteration was on opposite side of target Ca than current, then save bracket
+                    if (force_mag_bracket_previous > 0 && (Ca_bracket_previous - capillary_number) * (Ca - capillary_number) < 0) {
+                        force_bracket_low = std::min(force_mag_bracket_previous, force_mag);
+                        force_bracket_high = std::max(force_mag_bracket_previous, force_mag);
+                        Ca_bracket_low = (force_bracket_low == force_mag_bracket_previous) ? Ca_bracket_previous : Ca;
+                        bracket_found = true;
+                    } else
+                        // still no bracket, fall back to proportional scaling
+                        RESCALE_FORCE_FACTOR = std::min(std::max(capillary_number / Ca, 0.5), 2.0);
+                }
+
+                if (bracket_found)
+                    RESCALE_FORCE_FACTOR = 0.5 * (force_bracket_low + force_bracket_high) / force_mag;
+
+                // save Ca and force for next iteration
+                force_mag_bracket_previous = force_mag;
+                Ca_bracket_previous = Ca;
+
+                // rescale
+                if (rank == 0)
+                    printf("    -- Setting rescale factor via %s: %f\n", (bracket_found) ? "bracket" : "proportion", RESCALE_FORCE_FACTOR);
+                Fx *= RESCALE_FORCE_FACTOR;
+                Fy *= RESCALE_FORCE_FACTOR;
+                Fz *= RESCALE_FORCE_FACTOR;
+                force_mag = sqrt(Fx * Fx + Fy * Fy + Fz * Fz);
+
+                if (force_mag > 1e-3 && Ca > minCa) {
+                    if (rank == 0)
+                        printf("    -- Body force ceiling reached. Target capillary number may be unreachable.\n");
+                    Fx *= 1e-3 / force_mag; // impose ceiling for stability
+                    Fy *= 1e-3 / force_mag;
+                    Fz *= 1e-3 / force_mag;
+                    force_mag = 1e-3;
+                    bracket_found = false;
+                }
+                if (rank == 0)
+                    printf("    -- adjust force by factor %f, Fx: %f, Fy: %f, Fz: %f \n",
+                        RESCALE_FORCE_FACTOR, Fx, Fy, Fz);
+                Averages->SetParams(rhoA, rhoB, tauA, tauB, Fx, Fy, Fz, alpha, beta);
+                color_db->putVector<double>("F", {Fx, Fy, Fz});
             }
             if (isSteady) {
                 Averages->Full();
@@ -1065,6 +1106,10 @@ double ScaLBL_ColorModel::Run(int returntime) {
                     Averages->SetParams(rhoA, rhoB, tauA, tauB, Fx, Fy, Fz,
                                         alpha, beta);
                     color_db->putVector<double>("F", {Fx, Fy, Fz});
+
+                    // reset bisection search method
+                    bracket_found = false;
+                    force_mag_bracket_previous = 0.0;
                 } else {
                     if (rank == 0) {
                         printf("** Continue to simulate steady *** \n ");
