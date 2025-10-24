@@ -630,7 +630,6 @@ double ScaLBL_ColorModel::Run(int returntime) {
     bool RESCALE_FORCE = false;
     bool SET_CAPILLARY_NUMBER = false;
     bool TRIGGER_FORCE_RESCALE = false;
-    double tolerance = 0.01;
     auto WettingConvention = color_db->getWithDefault<std::string>( "WettingConvention", "none" );
     auto current_db = db->cloneDatabase();
     auto flow_db = db->getDatabase("FlowAdaptor");
@@ -656,9 +655,8 @@ double ScaLBL_ColorModel::Run(int returntime) {
             color_db->getScalar<int>("rescale_force_after_timestep");
         RESCALE_FORCE = true;
     }
-    if (analysis_db->keyExists("tolerance")) {
-        tolerance = analysis_db->getScalar<double>("tolerance");
-    }
+    double tolerance = analysis_db->getWithDefault<double>("tolerance", 1e-5);
+    int analysis_interval = analysis_db->getWithDefault<int>("analysis_interval", 1000);
     
     runAnalysis analysis(current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular,
                          Map);
@@ -764,7 +762,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
             Den); // allow initial ramp-up to get closer to steady state
 
         CURRENT_TIMESTEP += 2;
-        if (CURRENT_TIMESTEP > MIN_STEADY_TIMESTEPS && BoundaryCondition == 0) {
+        if (CURRENT_TIMESTEP % analysis_interval == 0 && CURRENT_TIMESTEP > MIN_STEADY_TIMESTEPS && BoundaryCondition == 0) {
             analysis.finish();
 
             double volB = Averages->gwb.V;
@@ -801,7 +799,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
                 fabs(muA * flow_rate_A + muB * flow_rate_B) / (5.796 * alpha);
 
             bool isSteady = false;
-            if ((fabs((Ca - Ca_previous) / Ca) < tolerance &&
+            if ((fabs((Ca - Ca_previous) / analysis_interval / Ca) < tolerance &&
                  CURRENT_TIMESTEP > MIN_STEADY_TIMESTEPS))
                 isSteady = true;
             if (CURRENT_TIMESTEP >= MAX_STEADY_TIMESTEPS)
@@ -1071,7 +1069,12 @@ double ScaLBL_ColorModel::Run(int returntime) {
                         printf("Ca = %f, (previous = %f) \n", Ca, Ca_previous);
                     }
                 }
+
+                break; // steady-state achieved, exit.
             }
+
+            // save for convergence checks
+            Ca_previous = Ca;
         }
     }
     analysis.finish();
@@ -1100,11 +1103,9 @@ double ScaLBL_ColorModel::Run(int returntime) {
 void ScaLBL_ColorModel::Run() {
     int nprocs = nprocx * nprocy * nprocz;
     const RankInfoStruct rank_info(rank, nprocx, nprocy, nprocz);
-    int analysis_interval =
-        1000; // number of timesteps in between in situ analysis
-    if (analysis_db->keyExists("analysis_interval")) {
-        analysis_interval = analysis_db->getScalar<int>("analysis_interval");
-    }
+
+    int analysis_interval = analysis_db->getWithDefault<int>("analysis_interval", 1000);
+    double tolerance = analysis_db->getWithDefault<double>("tolerance", 0.0);
 
     //************ MAIN ITERATION LOOP ***************************************/
     comm.barrier();
