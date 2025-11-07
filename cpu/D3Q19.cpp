@@ -924,7 +924,7 @@ extern "C" void ScaLBL_D3Q19_Momentum_2nd_order(double *dist, double *vel, int N
     // distributions
     double f0, f1, f2, f3, f4, f5, f6, f7, f8, f9;
     double f10, f11, f12, f13, f14, f15, f16, f17, f18;
-    double rho,vx, vy, vz, rho;
+    double rho,vx, vy, vz;
 
     for (n = 0; n < N; n++) {
         //........................................................................
