@@ -188,7 +188,9 @@ extern "C" void ScaLBL_D3Q19_Init(double *Dist, int Np);
 */
 extern "C" void ScaLBL_D3Q19_Momentum(double *dist, double *vel, int Np);
 
-extern "C" void ScaLBL_D3Q19_Momentum_2nd_order(double *dist, double *vel, int Np, double Fx, double Fy, double Fz);
+extern "C" void ScaLBL_D3Q19_Momentum_2nd_order(double *dist, double *vel,
+                                                int Np, double Fx, double Fy,
+                                                double Fz);
 
 /**
 * \brief compute pressure from D3Q19 distribution
@@ -295,37 +297,38 @@ extern "C" void ScaLBL_D3Q7_Membrane_Unpack(int q, int *d3q7_recvlist,
 
 extern "C" void ScaLBL_D3Q19_GreyIMRT_Init(double *Dist, int Np, double Den);
 
-extern "C" void
-ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int finish, int Np,
-                              double rlx, double rlx_eff, double Fx, double Fy,
-                              double Fz, double *Poros, double *Perm,
-                              double *Velocity, double *Pressure);
+extern "C" void ScaLBL_D3Q19_AAeven_Greyscale(
+    double *dist, int start, int finish, int Np, double rlx, double rlx_eff,
+    double Fx, double Fy, double Fz, double *Poros, double *Perm,
+    double *Velocity, double *Pressure, bool Forchheimer);
 
-extern "C" void
-ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist, int start,
-                             int finish, int Np, double rlx, double rlx_eff,
-                             double Fx, double Fy, double Fz, double *Poros,
-                             double *Perm, double *Velocity, double *Pressure);
+extern "C" void ScaLBL_D3Q19_AAodd_Greyscale(
+    int *neighborList, double *dist, int start, int finish, int Np, double rlx,
+    double rlx_eff, double Fx, double Fy, double Fz, double *Poros,
+    double *Perm, double *Velocity, double *Pressure, bool Forchheimer);
 
 extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_IMRT(
     double *dist, int start, int finish, int Np, double rlx, double rlx_eff,
     double Fx, double Fy, double Fz, double *Poros, double *Perm,
-    double *Velocity, double Den, double *Pressure);
+    double *Velocity, double Den, double *Pressure, bool Forchheimer);
 
 extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_IMRT(
     int *neighborList, double *dist, int start, int finish, int Np, double rlx,
     double rlx_eff, double Fx, double Fy, double Fz, double *Poros,
-    double *Perm, double *Velocity, double Den, double *Pressure);
+    double *Perm, double *Velocity, double Den, double *Pressure,
+    bool Forchheimer);
 
 extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_MRT(
     double *dist, int start, int finish, int Np, double rlx, double rlx_eff,
     double Fx, double Fy, double Fz, double *Poros, double *Perm,
-    double *Velocity, double Den, double *Pressure);
+    double *Velocity, double Den, double *Pressure, bool Forchheimer);
 
-extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_MRT(
-    int *neighborList, double *dist, int start, int finish, int Np, double rlx,
-    double rlx_eff, double Fx, double Fy, double Fz, double *Poros,
-    double *Perm, double *Velocity, double Den, double *Pressure);
+extern "C" void
+ScaLBL_D3Q19_AAodd_Greyscale_MRT(int *neighborList, double *dist, int start,
+                                 int finish, int Np, double rlx, double rlx_eff,
+                                 double Fx, double Fy, double Fz, double *Poros,
+                                 double *Perm, double *Velocity, double Den,
+                                 double *Pressure, bool Forchheimer);
 
 extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(
     int *Map, double *dist, double *Aq, double *Bq, double *Den, double *Phi,

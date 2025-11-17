@@ -29,7 +29,8 @@ ScaLBL_GreyscaleModel::ScaLBL_GreyscaleModel(int RANK, int NP,
     : rank(RANK), nprocs(NP), Restart(0), timestep(0), timestepMax(0), tau(0),
       tau_eff(0), Den(0), Fx(0), Fy(0), Fz(0), flux(0), din(0), dout(0),
       GreyPorosity(0), Nx(0), Ny(0), Nz(0), N(0), Np(0), nprocx(0), nprocy(0),
-      nprocz(0), BoundaryCondition(0), Lx(0), Ly(0), Lz(0), comm(COMM) {
+      nprocz(0), BoundaryCondition(0), Lx(0), Ly(0), Lz(0), comm(COMM),
+      Forchheimer(0) {
     SignDist.resize(Nx, Ny, Nz);
     SignDist.fill(0);
 }
@@ -55,6 +56,7 @@ void ScaLBL_GreyscaleModel::ReadParams(string filename) {
     flux = 0.0;
     dp = 10.0;         //unit of 'dp': voxel
     CollisionType = 1; //1: IMRT; 2: BGK; 3: MRT
+    Forchheimer = true;
 
     // ---------------------- Greyscale Model parameters -----------------------//
     if (greyscale_db->keyExists("timestepMax")) {
@@ -77,6 +79,9 @@ void ScaLBL_GreyscaleModel::ReadParams(string filename) {
     }
     if (greyscale_db->keyExists("Restart")) {
         Restart = greyscale_db->getScalar<bool>("Restart");
+    }
+    if (greyscale_db->keyExists("Forchheimer")) {
+        Forchheimer = greyscale_db->getScalar<bool>("Forchheimer");
     }
     if (greyscale_db->keyExists("din")) {
         din = greyscale_db->getScalar<double>("din");
@@ -566,25 +571,28 @@ void ScaLBL_GreyscaleModel::Run() {
             ScaLBL_D3Q19_AAodd_Greyscale_IMRT(
                 NeighborList, fq, ScaLBL_Comm->FirstInterior(),
                 ScaLBL_Comm->LastInterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,
-                Porosity, Permeability, Velocity, Den, Pressure_dvc);
+                Porosity, Permeability, Velocity, Den, Pressure_dvc,
+                Forchheimer);
             break;
         case 2:
             ScaLBL_D3Q19_AAodd_Greyscale(
                 NeighborList, fq, ScaLBL_Comm->FirstInterior(),
                 ScaLBL_Comm->LastInterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,
-                Porosity, Permeability, Velocity, Pressure_dvc);
+                Porosity, Permeability, Velocity, Pressure_dvc, Forchheimer);
             break;
         case 3:
             ScaLBL_D3Q19_AAodd_Greyscale_MRT(
                 NeighborList, fq, ScaLBL_Comm->FirstInterior(),
                 ScaLBL_Comm->LastInterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,
-                Porosity, Permeability, Velocity, Den, Pressure_dvc);
+                Porosity, Permeability, Velocity, Den, Pressure_dvc,
+                Forchheimer);
             break;
         default:
             ScaLBL_D3Q19_AAodd_Greyscale_IMRT(
                 NeighborList, fq, ScaLBL_Comm->FirstInterior(),
                 ScaLBL_Comm->LastInterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,
-                Porosity, Permeability, Velocity, Den, Pressure_dvc);
+                Porosity, Permeability, Velocity, Den, Pressure_dvc,
+                Forchheimer);
             break;
         }
         ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
@@ -599,25 +607,25 @@ void ScaLBL_GreyscaleModel::Run() {
             ScaLBL_D3Q19_AAodd_Greyscale_IMRT(
                 NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx,
                 rlx_eff, Fx, Fy, Fz, Porosity, Permeability, Velocity, Den,
-                Pressure_dvc);
+                Pressure_dvc, Forchheimer);
             break;
         case 2:
-            ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq, 0,
-                                         ScaLBL_Comm->LastExterior(), Np, rlx,
-                                         rlx_eff, Fx, Fy, Fz, Porosity,
-                                         Permeability, Velocity, Pressure_dvc);
+            ScaLBL_D3Q19_AAodd_Greyscale(
+                NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx,
+                rlx_eff, Fx, Fy, Fz, Porosity, Permeability, Velocity,
+                Pressure_dvc, Forchheimer);
             break;
         case 3:
             ScaLBL_D3Q19_AAodd_Greyscale_MRT(
                 NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx,
                 rlx_eff, Fx, Fy, Fz, Porosity, Permeability, Velocity, Den,
-                Pressure_dvc);
+                Pressure_dvc, Forchheimer);
             break;
         default:
             ScaLBL_D3Q19_AAodd_Greyscale_IMRT(
                 NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx,
                 rlx_eff, Fx, Fy, Fz, Porosity, Permeability, Velocity, Den,
-                Pressure_dvc);
+                Pressure_dvc, Forchheimer);
             break;
         }
         ScaLBL_DeviceBarrier();
@@ -631,25 +639,25 @@ void ScaLBL_GreyscaleModel::Run() {
             ScaLBL_D3Q19_AAeven_Greyscale_IMRT(
                 fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(),
                 Np, rlx, rlx_eff, Fx, Fy, Fz, Porosity, Permeability, Velocity,
-                Den, Pressure_dvc);
+                Den, Pressure_dvc, Forchheimer);
             break;
         case 2:
-            ScaLBL_D3Q19_AAeven_Greyscale(fq, ScaLBL_Comm->FirstInterior(),
-                                          ScaLBL_Comm->LastInterior(), Np, rlx,
-                                          rlx_eff, Fx, Fy, Fz, Porosity,
-                                          Permeability, Velocity, Pressure_dvc);
+            ScaLBL_D3Q19_AAeven_Greyscale(
+                fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(),
+                Np, rlx, rlx_eff, Fx, Fy, Fz, Porosity, Permeability, Velocity,
+                Pressure_dvc, Forchheimer);
             break;
         case 3:
             ScaLBL_D3Q19_AAeven_Greyscale_MRT(
                 fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(),
                 Np, rlx, rlx_eff, Fx, Fy, Fz, Porosity, Permeability, Velocity,
-                Den, Pressure_dvc);
+                Den, Pressure_dvc, Forchheimer);
             break;
         default:
             ScaLBL_D3Q19_AAeven_Greyscale_IMRT(
                 fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(),
                 Np, rlx, rlx_eff, Fx, Fy, Fz, Porosity, Permeability, Velocity,
-                Den, Pressure_dvc);
+                Den, Pressure_dvc, Forchheimer);
             break;
         }
         ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
@@ -663,22 +671,26 @@ void ScaLBL_GreyscaleModel::Run() {
         case 1:
             ScaLBL_D3Q19_AAeven_Greyscale_IMRT(
                 fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, rlx_eff, Fx, Fy,
-                Fz, Porosity, Permeability, Velocity, Den, Pressure_dvc);
+                Fz, Porosity, Permeability, Velocity, Den, Pressure_dvc,
+                Forchheimer);
             break;
         case 2:
-            ScaLBL_D3Q19_AAeven_Greyscale(
-                fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, rlx_eff, Fx, Fy,
-                Fz, Porosity, Permeability, Velocity, Pressure_dvc);
+            ScaLBL_D3Q19_AAeven_Greyscale(fq, 0, ScaLBL_Comm->LastExterior(),
+                                          Np, rlx, rlx_eff, Fx, Fy, Fz,
+                                          Porosity, Permeability, Velocity,
+                                          Pressure_dvc, Forchheimer);
             break;
         case 3:
             ScaLBL_D3Q19_AAeven_Greyscale_MRT(
                 fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, rlx_eff, Fx, Fy,
-                Fz, Porosity, Permeability, Velocity, Den, Pressure_dvc);
+                Fz, Porosity, Permeability, Velocity, Den, Pressure_dvc,
+                Forchheimer);
             break;
         default:
             ScaLBL_D3Q19_AAeven_Greyscale_IMRT(
                 fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, rlx_eff, Fx, Fy,
-                Fz, Porosity, Permeability, Velocity, Den, Pressure_dvc);
+                Fz, Porosity, Permeability, Velocity, Den, Pressure_dvc,
+                Forchheimer);
             break;
         }
         ScaLBL_DeviceBarrier();
