@@ -692,8 +692,6 @@ void ScaLBL_GreyscaleModel::Run() {
             //ScaLBL_Comm->RegularLayout(Map,Porosity,PorosityMap);
             //ScaLBL_Comm->RegularLayout(Map,Pressure_dvc,Pressure);
 
-            double count_loc = 0;
-            double count;
             double vax, vay, vaz;
             double vax_loc, vay_loc, vaz_loc;
             //double px_loc,py_loc,pz_loc;
@@ -730,7 +728,6 @@ void ScaLBL_GreyscaleModel::Run() {
                             vax_loc += Velocity_x(i, j, k);
                             vay_loc += Velocity_y(i, j, k);
                             vaz_loc += Velocity_z(i, j, k);
-                            count_loc += 1.0;
                         }
                     }
                 }
@@ -738,11 +735,10 @@ void ScaLBL_GreyscaleModel::Run() {
             vax = Dm->Comm.sumReduce(vax_loc);
             vay = Dm->Comm.sumReduce(vay_loc);
             vaz = Dm->Comm.sumReduce(vaz_loc);
-            count = Dm->Comm.sumReduce(count_loc);
 
-            vax /= count;
-            vay /= count;
-            vaz /= count;
+            vax /= double((Nx - 2) * (Ny - 2) * (Nz - 2) * nprocs);
+            vay /= double((Nx - 2) * (Ny - 2) * (Nz - 2) * nprocs);
+            vaz /= double((Nx - 2) * (Ny - 2) * (Nz - 2) * nprocs);
 
             double force_mag = sqrt(Fx * Fx + Fy * Fy + Fz * Fz);
             double dir_x = Fx / force_mag;
@@ -776,7 +772,7 @@ void ScaLBL_GreyscaleModel::Run() {
 
             double h = Dm->voxel_length;
             //double absperm = h*h*mu*Mask->Porosity()*flow_rate / force_mag;
-            double absperm = h * h * mu * GreyPorosity * flow_rate / force_mag;
+            double absperm = h * h * mu * flow_rate / force_mag;
 
             if (rank == 0) {
                 printf("     AbsPerm = %.5g [micron^2]\n", absperm);
