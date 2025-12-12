@@ -819,17 +819,26 @@ double ScaLBL_ColorModel::Run(int returntime) {
 
             if (isSteady && (Ca > maxCa || Ca < minCa) &&
                 SET_CAPILLARY_NUMBER) {
-                /* re-run the point if the actual Ca is too far from the target Ca */
-                isSteady = false;
-                RESCALE_FORCE = true;
-                t1 = std::chrono::system_clock::now();
-                CURRENT_TIMESTEP = 0;
-                timestep = INITIAL_TIMESTEP;
-                TRIGGER_FORCE_RESCALE = true;
-                if (rank == 0)
-                    printf("    Capillary number missed target value = %0.3e "
-                           "(measured value was Ca = %0.3e)\n",
-                           capillary_number, Ca);
+                if ((fabs(Ca - Ca_bracket_previous) / Ca) < 0.01) {
+                    // Capillary no longer changing. Quit trying to rescale.
+                    if (rank == 0)
+                        printf("    WARNING: Target capillary number (%0.3e) is "
+                            "unreachable. Continuing at current (%0.3e)\n",
+                            capillary_number, Ca);
+                }
+                else {
+                    // re-run the point if the actual Ca is too far from the target Ca
+                    isSteady = false;
+                    RESCALE_FORCE = true;
+                    t1 = std::chrono::system_clock::now();
+                    CURRENT_TIMESTEP = 0;
+                    timestep = INITIAL_TIMESTEP;
+                    TRIGGER_FORCE_RESCALE = true;
+                    if (rank == 0)
+                        printf("    Capillary number missed target value = %0.3e "
+                               "(measured value was Ca = %0.3e)\n",
+                               capillary_number, Ca);
+                }
             }
 
             if (RESCALE_FORCE && SET_CAPILLARY_NUMBER && CURRENT_TIMESTEP > RESCALE_FORCE_AFTER_TIMESTEP) {
@@ -1111,6 +1120,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
                     // reset bisection search method
                     bracket_found = false;
                     force_mag_bracket_previous = 0.0;
+                    Ca_bracket_previous = 0.0;
                 } else {
                     if (rank == 0) {
                         printf("** Continue to simulate steady *** \n");
