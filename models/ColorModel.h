@@ -89,6 +89,11 @@ public:
     void Initialize();
 
     /**
+    * \brief Forward propagation step
+    */
+    void ForwardStep();
+
+    /**
     * \brief Run the simulation
     */
     void Run();
