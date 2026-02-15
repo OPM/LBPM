@@ -66,7 +66,8 @@ int main( int argc, char **argv )
 		// structure and allocate variables
 		ColorModel.Initialize(); // initializing the model will set initial conditions for variables
 
-		if (SimulationMode == "legacy"){
+		auto PROTOCOL = ColorModel.color_db->getWithDefault<std::string>( "protocol", "default" );
+		if (PROTOCOL == "sw_steady") {
 			ColorModel.Run();        
 		}
 		else {
@@ -75,7 +76,6 @@ int main( int argc, char **argv )
 			bool ContinueSimulation = true;
 			
 			/* Variables for simulation protocols */
-			auto PROTOCOL = ColorModel.color_db->getWithDefault<std::string>( "protocol", "default" );
 			/* image sequence protocol */
 			int IMAGE_INDEX = 0;
 			int IMAGE_COUNT = 0;
