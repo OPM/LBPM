@@ -1652,7 +1652,9 @@ int main( int argc, char *argv[] )
         }
 
         // Test GPU aware MPI
+#ifdef USE_CUDA
         test_GPU_aware( &ut );
+#endif
 
     } // Limit the scope so objects are destroyed
 
