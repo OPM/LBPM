@@ -5,6 +5,7 @@
 #include <exception>
 #include <stdexcept>
 #include <fstream>
+#include <cstdint>
 
 using namespace std;
 
