@@ -483,7 +483,7 @@ void ScaLBL_MRTModel::VelocityField() {
         auto VzVar = std::make_shared<IO::Variable>();
         auto SignDistVar = std::make_shared<IO::Variable>();
 
-        IO::initialize("", format, "false");
+        IO::initialize("", format, false);
         // Create the MeshDataStruct
         visData.resize(1);
         visData[0].meshName = "domain";
@@ -526,7 +526,7 @@ void ScaLBL_MRTModel::VelocityField() {
         fillData.copy(Velocity_x, VelxData);
         fillData.copy(Velocity_y, VelyData);
         fillData.copy(Velocity_z, VelzData);
-
+        
         IO::writeData(timestep, visData, Dm->Comm);
     }
 }

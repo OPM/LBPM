@@ -23,7 +23,7 @@ using namespace std;
 /** @brief Indicates whether data compression is used by default **/
 bool Element::compress = false;
 /** @brief Default cache size used during data processing. */
-headerType cacheSize = 1500;
+headerType cacheSize = 10000;
 
 /**
  * @brief Formats a string using printf-style syntax.
@@ -250,8 +250,6 @@ std::ostream& operator<<(std::ostream& os, AppendData& obj)
             {
                 streampos beginPos = os.tellp();
 
-                std::vector<unsigned char>compressedData (cacheSize);
-
                 headerType totalByteSize = obj.sizeList[k];
                 headerType numberOfBlocks =  totalByteSize / cacheSize  +  (totalByteSize % cacheSize != 0 );
 
@@ -266,8 +264,11 @@ std::ostream& operator<<(std::ostream& os, AppendData& obj)
 
                 for (int n = 1; n <= numberOfBlocks;  n++)
                 {
-                    uLongf compressedLength = cacheSize;
                     int numberOfBytesInBlock = (n < numberOfBlocks) ? compressedInfo[1] : compressedInfo[2];
+                    
+		    uLongf compressedLength =  compressBound(numberOfBytesInBlock);    
+		    std::vector<unsigned char>compressedData (compressedLength);
+
                     const Bytef* src = reinterpret_cast<const Bytef*>(    obj.pointerList[k] + (n - 1) * cacheSize );
                     int ret = compress( (Bytef *) (compressedData.data() ), &compressedLength, src, numberOfBytesInBlock );
                     if (ret != Z_OK)
