@@ -598,6 +598,8 @@ std::string getString( FileFormat type )
         return "silo";
     else if ( type == FileFormat::HDF5 )
         return "hdf5";
+    else if ( type == FileFormat::VTK )
+        return "vtk";
     else
         ERROR( "Invalid type" );
     return "";
