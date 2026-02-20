@@ -1266,7 +1266,7 @@ __global__  void dvc_ScaLBL_CopySlice_z(double *Phi, int Nx, int Ny, int Nz, int
 }
 
 
-__global__  void dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
+__global__  void dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *Aq, double *Bq, double *Den, double *Phi, signed char *IDSolid,
 		double *Velocity, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
 	int ijk,nn,n;
@@ -1281,6 +1281,9 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *A
 	double C,nx,ny,nz; //color gradient magnitude and direction
 	double ux,uy,uz;
 	double phi,tau,rho0,rlx_setA,rlx_setB;
+	signed char id1, id2, id3, id4, id5, id6, id7, id8, id9, id10, id11, id12, id13, id14, id15, id16, id17, id18;
+    double nsx, nsy, nsz; // Rock Fluid interface normal vector
+    double npx, npy, npz; // contact angle vector 
 
 	const double mrt_V1=0.05263157894736842;
 	const double mrt_V2=0.012531328320802;
@@ -1323,57 +1326,75 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *A
 			//........................................................................
 			nn = ijk-1;							// neighbor index (get convention)
 			m1 = Phi[nn];						// get neighbor for phi - 1
+			id1 = IDSolid[nn];
 			//........................................................................
 			nn = ijk+1;							// neighbor index (get convention)
 			m2 = Phi[nn];						// get neighbor for phi - 2
+			id2 = IDSolid[nn];
 			//........................................................................
 			nn = ijk-strideY;							// neighbor index (get convention)
 			m3 = Phi[nn];					// get neighbor for phi - 3
+			id3 = IDSolid[nn];
 			//........................................................................
 			nn = ijk+strideY;							// neighbor index (get convention)
 			m4 = Phi[nn];					// get neighbor for phi - 4
+			id4 = IDSolid[nn];
 			//........................................................................
 			nn = ijk-strideZ;						// neighbor index (get convention)
 			m5 = Phi[nn];					// get neighbor for phi - 5
+			id5 = IDSolid[nn];
 			//........................................................................
 			nn = ijk+strideZ;						// neighbor index (get convention)
 			m6 = Phi[nn];					// get neighbor for phi - 6
+			id6 = IDSolid[nn];
 			//........................................................................
 			nn = ijk-strideY-1;						// neighbor index (get convention)
 			m7 = Phi[nn];					// get neighbor for phi - 7
+			id7 = IDSolid[nn];
 			//........................................................................
 			nn = ijk+strideY+1;						// neighbor index (get convention)
 			m8 = Phi[nn];					// get neighbor for phi - 8
+			id8 = IDSolid[nn];
 			//........................................................................
 			nn = ijk+strideY-1;						// neighbor index (get convention)
 			m9 = Phi[nn];					// get neighbor for phi - 9
+			id9 = IDSolid[nn];
 			//........................................................................
 			nn = ijk-strideY+1;						// neighbor index (get convention)
 			m10 = Phi[nn];					// get neighbor for phi - 10
+			id10 = IDSolid[nn];
 			//........................................................................
 			nn = ijk-strideZ-1;						// neighbor index (get convention)
 			m11 = Phi[nn];					// get neighbor for phi - 11
+			id11 = IDSolid[nn];
 			//........................................................................
 			nn = ijk+strideZ+1;						// neighbor index (get convention)
 			m12 = Phi[nn];					// get neighbor for phi - 12
+			id12 = IDSolid[nn];
 			//........................................................................
 			nn = ijk+strideZ-1;						// neighbor index (get convention)
 			m13 = Phi[nn];					// get neighbor for phi - 13
+			id13 = IDSolid[nn];
 			//........................................................................
 			nn = ijk-strideZ+1;						// neighbor index (get convention)
 			m14 = Phi[nn];					// get neighbor for phi - 14
+			id14 = IDSolid[nn];
 			//........................................................................
 			nn = ijk-strideZ-strideY;					// neighbor index (get convention)
 			m15 = Phi[nn];					// get neighbor for phi - 15
+			id15 = IDSolid[nn];
 			//........................................................................
 			nn = ijk+strideZ+strideY;					// neighbor index (get convention)
 			m16 = Phi[nn];					// get neighbor for phi - 16
+			id16 = IDSolid[nn];
 			//........................................................................
 			nn = ijk+strideZ-strideY;					// neighbor index (get convention)
 			m17 = Phi[nn];					// get neighbor for phi - 17
+			id17 = IDSolid[nn];
 			//........................................................................
 			nn = ijk-strideZ+strideY;					// neighbor index (get convention)
 			m18 = Phi[nn];					// get neighbor for phi - 18
+			id18 = IDSolid[nn];
 			//............Compute the Color Gradient...................................
 			nx = -(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
 			ny = -(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
@@ -1386,6 +1407,40 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *A
 			nx = nx/ColorMag;
 			ny = ny/ColorMag;
 			nz = nz/ColorMag;		
+
+			//...........Correct wettability vector for Mass Balance.................................
+			if (id1 == 0 || id2 == 0 || id3 == 0 || id4 == 0 || id5 == 0 || id6 == 0 || id7 == 0 || id8 == 0 || id9 == 0 || id10 == 0 ||
+				id11 == 0 || id12 == 0 || id13 == 0 || id14 == 0 || id15 == 0 || id16 == 0 || id17 == 0 || id18 == 0){
+
+				int int_nsx = (id1 - id2) * 2 + (id7 - id8 + id9 - id10 + id11 - id12 + id13 - id14);
+				int int_nsy = (id3 - id4) * 2 + (id7 - id8 - id9 + id10 + id15 - id16 + id17 - id18);
+				int int_nsz = (id5 - id6) * 2 + (id11 - id12 - id13 + id14 + id15 - id16 - id17 + id18);
+
+				double Mag = sqrt(double(int_nsx * int_nsx + int_nsy * int_nsy + int_nsz * int_nsz));
+				if (Mag == 0.0)
+					Mag = 1.0f;
+				nsx = -int_nsx / Mag;
+				nsy = -int_nsy / Mag;
+				nsz = -int_nsz / Mag;
+			
+				int countid =   id1 + id2 + id3 + id4 + id5 + id6 + id7 + id8 + id9 + id10 + id11 + id12 + id13 + id14 + id15 + id16 + id17 + id18;
+
+				double aff = (m1*(id1-1) + m2*(id2-1) + m3*(id3-1) + m4*(id4-1) + m5*(id5-1) + m6*(id6-1) + m7*(id7-1) + m8*(id8-1) +
+				m9*(id9-1) + m10*(id10-1) + m11*(id11-1) + m12*(id12-1) + m13*(id13-1) + m14*(id14-1) + m15*(id15-1) +
+				m16*(id16-1) + m17*(id17-1) + m18*(id18-1)) / (18.0f - double(countid));
+
+				Mag = 1.0f-(nx*nsx + ny*nsy + nz*nsz)*(nx*nsx + ny*nsy + nz*nsz);
+            	Mag = (Mag > 0.0f) ? sqrtf(Mag) : 1.0f;
+
+				npx = (nx - nsx*(nx*nsx + ny*nsy + nz*nsz))*sqrt(1.0f-aff*aff)/Mag + nsx*aff;
+				npy = (ny - nsy*(nx*nsx + ny*nsy + nz*nsz))*sqrt(1.0f-aff*aff)/Mag + nsy*aff;
+				npz = (nz - nsz*(nx*nsx + ny*nsy + nz*nsz))*sqrt(1.0f-aff*aff)/Mag + nsz*aff;
+			}else{
+				npx = nx;
+				npy = ny;
+				npz = nz;
+			}
+
 
 			// q=0
 			fq = dist[n];
@@ -1802,7 +1857,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *A
 			//...............................................
 			// q = 0,2,4
 			// Cq = {1,0,0}, {0,1,0}, {0,0,1}
-			delta = beta*nA*nB*nAB*0.1111111111111111*nx;
+			delta = beta*nA*nB*nAB*0.1111111111111111*npx;
 			if (!(nA*nB*nAB>0)) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*ux))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*ux))-delta;
@@ -1817,7 +1872,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *A
 			//...............................................
 			// q = 2
 			// Cq = {0,1,0}
-			delta = beta*nA*nB*nAB*0.1111111111111111*ny;
+			delta = beta*nA*nB*nAB*0.1111111111111111*npy;
 			if (!(nA*nB*nAB>0)) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*uy))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*uy))-delta;
@@ -1831,7 +1886,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *A
 			//...............................................
 			// q = 4
 			// Cq = {0,0,1}
-			delta = beta*nA*nB*nAB*0.1111111111111111*nz;
+			delta = beta*nA*nB*nAB*0.1111111111111111*npz;
 			if (!(nA*nB*nAB>0)) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*uz))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*uz))-delta;
@@ -1850,7 +1905,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *A
 
 
 __global__ void dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den,
-		 double *Phi, double *Velocity, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
+		 double *Phi, signed char *IDSolid, double *Velocity, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
 
 	int n,nn,ijk,nread;
@@ -1869,6 +1924,9 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double
 	double C,nx,ny,nz; //color gradient magnitude and direction
 	double ux,uy,uz;
 	double phi,tau,rho0,rlx_setA,rlx_setB;
+	signed char id1, id2, id3, id4, id5, id6, id7, id8, id9, id10, id11, id12, id13, id14, id15, id16, id17, id18;
+	double nsx, nsy, nsz; // Rock Fluid interface normal vector
+    double npx, npy, npz; // contact angle vector 
 
 	const double mrt_V1=0.05263157894736842;
 	const double mrt_V2=0.012531328320802;
@@ -1910,57 +1968,75 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double
 			//........................................................................
 			nn = ijk-1;							// neighbor index (get convention)
 			m1 = Phi[nn];						// get neighbor for phi - 1
+			id1 = IDSolid[nn]; // 0 if Rock 1 if Fluid
 			//........................................................................
 			nn = ijk+1;							// neighbor index (get convention)
 			m2 = Phi[nn];						// get neighbor for phi - 2
+			id2 = IDSolid[nn];
 			//........................................................................
 			nn = ijk-strideY;							// neighbor index (get convention)
 			m3 = Phi[nn];					// get neighbor for phi - 3
+			id3 = IDSolid[nn];
 			//........................................................................
 			nn = ijk+strideY;							// neighbor index (get convention)
 			m4 = Phi[nn];					// get neighbor for phi - 4
+			id4 = IDSolid[nn];
 			//........................................................................
 			nn = ijk-strideZ;						// neighbor index (get convention)
 			m5 = Phi[nn];					// get neighbor for phi - 5
+			id5 = IDSolid[nn];
 			//........................................................................
 			nn = ijk+strideZ;						// neighbor index (get convention)
 			m6 = Phi[nn];					// get neighbor for phi - 6
+			id6 = IDSolid[nn];
 			//........................................................................
 			nn = ijk-strideY-1;						// neighbor index (get convention)
 			m7 = Phi[nn];					// get neighbor for phi - 7
+			id7 = IDSolid[nn];
 			//........................................................................
 			nn = ijk+strideY+1;						// neighbor index (get convention)
 			m8 = Phi[nn];					// get neighbor for phi - 8
+			id8 = IDSolid[nn];
 			//........................................................................
 			nn = ijk+strideY-1;						// neighbor index (get convention)
 			m9 = Phi[nn];					// get neighbor for phi - 9
+			id9 = IDSolid[nn];
 			//........................................................................
 			nn = ijk-strideY+1;						// neighbor index (get convention)
 			m10 = Phi[nn];					// get neighbor for phi - 10
+			id10 = IDSolid[nn];
 			//........................................................................
 			nn = ijk-strideZ-1;						// neighbor index (get convention)
 			m11 = Phi[nn];					// get neighbor for phi - 11
+			id11 = IDSolid[nn];
 			//........................................................................
 			nn = ijk+strideZ+1;						// neighbor index (get convention)
 			m12 = Phi[nn];					// get neighbor for phi - 12
+			id12 = IDSolid[nn];
 			//........................................................................
 			nn = ijk+strideZ-1;						// neighbor index (get convention)
 			m13 = Phi[nn];					// get neighbor for phi - 13
+			id13 = IDSolid[nn];
 			//........................................................................
 			nn = ijk-strideZ+1;						// neighbor index (get convention)
 			m14 = Phi[nn];					// get neighbor for phi - 14
+			id14 = IDSolid[nn];
 			//........................................................................
 			nn = ijk-strideZ-strideY;					// neighbor index (get convention)
 			m15 = Phi[nn];					// get neighbor for phi - 15
+			id15 = IDSolid[nn];
 			//........................................................................
 			nn = ijk+strideZ+strideY;					// neighbor index (get convention)
 			m16 = Phi[nn];					// get neighbor for phi - 16
+			id16 = IDSolid[nn];
 			//........................................................................
 			nn = ijk+strideZ-strideY;					// neighbor index (get convention)
 			m17 = Phi[nn];					// get neighbor for phi - 17
+			id17 = IDSolid[nn];
 			//........................................................................
 			nn = ijk-strideZ+strideY;					// neighbor index (get convention)
 			m18 = Phi[nn];					// get neighbor for phi - 18
+			id18 = IDSolid[nn];
 			//............Compute the Color Gradient...................................
 			nx = -(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
 			ny = -(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
@@ -1972,7 +2048,40 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double
 			if (C==0.0) ColorMag=1.0;
 			nx = nx/ColorMag;
 			ny = ny/ColorMag;
-			nz = nz/ColorMag;		
+			nz = nz/ColorMag;
+
+			//...........Correct wettability vector for Mass Balance.................................
+			if (id1 == 0 || id2 == 0 || id3 == 0 || id4 == 0 || id5 == 0 || id6 == 0 || id7 == 0 || id8 == 0 || id9 == 0 || id10 == 0 ||
+				id11 == 0 || id12 == 0 || id13 == 0 || id14 == 0 || id15 == 0 || id16 == 0 || id17 == 0 || id18 == 0){
+
+				int int_nsx = (id1 - id2) * 2 + (id7 - id8 + id9 - id10 + id11 - id12 + id13 - id14);
+				int int_nsy = (id3 - id4) * 2 + (id7 - id8 - id9 + id10 + id15 - id16 + id17 - id18);
+				int int_nsz = (id5 - id6) * 2 + (id11 - id12 - id13 + id14 + id15 - id16 - id17 + id18);
+
+				double Mag = sqrt(double(int_nsx * int_nsx + int_nsy * int_nsy + int_nsz * int_nsz));
+				if (Mag == 0.0)
+					Mag = 1.0f;
+				nsx = -int_nsx / Mag;
+				nsy = -int_nsy / Mag;
+				nsz = -int_nsz / Mag;
+			
+				int countid =   id1 + id2 + id3 + id4 + id5 + id6 + id7 + id8 + id9 + id10 + id11 + id12 + id13 + id14 + id15 + id16 + id17 + id18;
+
+				double aff = (m1*(id1-1) + m2*(id2-1) + m3*(id3-1) + m4*(id4-1) + m5*(id5-1) + m6*(id6-1) + m7*(id7-1) + m8*(id8-1) +
+				m9*(id9-1) + m10*(id10-1) + m11*(id11-1) + m12*(id12-1) + m13*(id13-1) + m14*(id14-1) + m15*(id15-1) +
+				m16*(id16-1) + m17*(id17-1) + m18*(id18-1)) / (18.0f - double(countid));
+
+				Mag = 1.0f-(nx*nsx + ny*nsy + nz*nsz)*(nx*nsx + ny*nsy + nz*nsz);
+            	Mag = (Mag > 0.0f) ? sqrtf(Mag) : 1.0f;
+				
+				npx = (nx - nsx*(nx*nsx + ny*nsy + nz*nsz))*sqrt(1.0f-aff*aff)/Mag + nsx*aff;
+				npy = (ny - nsy*(nx*nsx + ny*nsy + nz*nsz))*sqrt(1.0f-aff*aff)/Mag + nsy*aff;
+				npz = (nz - nsz*(nx*nsx + ny*nsy + nz*nsz))*sqrt(1.0f-aff*aff)/Mag + nsz*aff;
+			}else{
+				npx = nx;
+				npy = ny;
+				npz = nz;
+			}
 
 			// q=0
 			fq = dist[n];
@@ -2451,7 +2560,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double
 			//...............................................
 			// q = 0,2,4
 			// Cq = {1,0,0}, {0,1,0}, {0,0,1}
-			delta = beta*nA*nB*nAB*0.1111111111111111*nx;
+			delta = beta*nA*nB*nAB*0.1111111111111111*npx;
 			if (!(nA*nB*nAB>0)) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*ux))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*ux))-delta;
@@ -2469,7 +2578,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double
 
 			//...............................................
 			// Cq = {0,1,0}
-			delta = beta*nA*nB*nAB*0.1111111111111111*ny;
+			delta = beta*nA*nB*nAB*0.1111111111111111*npy;
 			if (!(nA*nB*nAB>0)) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*uy))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*uy))-delta;
@@ -2488,7 +2597,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double
 			//...............................................
 			// q = 4
 			// Cq = {0,0,1}
-			delta = beta*nA*nB*nAB*0.1111111111111111*nz;
+			delta = beta*nA*nB*nAB*0.1111111111111111*npz;
 			if (!(nA*nB*nAB>0)) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*uz))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*uz))-delta;
@@ -4007,14 +4116,14 @@ extern "C" void ScaLBL_D3Q7_ColorCollideMass(char *ID, double *A_even, double *A
 }
 // Pressure Boundary Conditions Functions
 
-extern "C" void ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
+extern "C" void ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *Aq, double *Bq, double *Den, double *Phi, signed char *IDSolid,
 		double *Vel, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
 
 	cudaProfilerStart();
 	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_Color, cudaFuncCachePreferL1);
 
-	dvc_ScaLBL_D3Q19_AAeven_Color<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB, 
+	dvc_ScaLBL_D3Q19_AAeven_Color<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, IDSolid, Vel, rhoA, rhoB, tauA, tauB, 
 			alpha, beta, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -4025,13 +4134,13 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *Aq, do
 }
 
 extern "C" void ScaLBL_D3Q19_AAodd_Color(int *d_neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-		double *Phi, double *Vel, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
+		double *Phi, signed char *IDSolid, double *Vel, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
 
 	cudaProfilerStart();
 	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_Color, cudaFuncCachePreferL1);
 	
-	dvc_ScaLBL_D3Q19_AAodd_Color<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi, Vel, 
+	dvc_ScaLBL_D3Q19_AAodd_Color<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi, IDSolid, Vel, 
 			rhoA, rhoB, tauA, tauB, alpha, beta, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
 
 	cudaError_t err = cudaGetLastError();
