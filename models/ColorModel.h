@@ -137,7 +137,7 @@ public:
     std::shared_ptr<Database> vis_db;
 
     IntArray Map;
-    signed char *id;
+    signed char *id, *IDSolid;
     int *NeighborList;
     int *dvcMap;
     double *fq, *Aq, *Bq;
