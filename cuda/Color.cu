@@ -4125,7 +4125,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *Aq, do
 	cudaProfilerStart();
 	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_Color, cudaFuncCachePreferL1);
 
-	dvc_ScaLBL_D3Q19_AAeven_Color<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, IDSolid, Vel, rhoA, rhoB, tauA, tauB, 
+	dvc_ScaLBL_D3Q19_AAeven_Color<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, NeighborSolid, Vel, rhoA, rhoB, tauA, tauB, 
 			alpha, beta, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -4142,7 +4142,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(int *d_neighborList, int *Map, double *
 	cudaProfilerStart();
 	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_Color, cudaFuncCachePreferL1);
 	
-	dvc_ScaLBL_D3Q19_AAodd_Color<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi, IDSolid, Vel, 
+	dvc_ScaLBL_D3Q19_AAodd_Color<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi, NeighborSolid, Vel, 
 			rhoA, rhoB, tauA, tauB, alpha, beta, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
 
 	cudaError_t err = cudaGetLastError();
