@@ -448,7 +448,8 @@ void ScaLBL_ColorModel::Create() {
     ScaLBL_AllocateDeviceMemory((void **)&Pressure, sizeof(double) * Np);
     ScaLBL_AllocateDeviceMemory((void **)&Velocity, 3 * sizeof(double) * Np);
     ScaLBL_AllocateDeviceMemory((void **)&ColorGrad, 3 * sizeof(double) * Np);
-    ScaLBL_AllocateDeviceMemory((void **)&IDSolid, sizeof(signed char) * Nx * Ny * Nz);
+    ScaLBL_AllocateDeviceMemory((void **)&NeighborSolid, sizeof(unsigned int) * Np);
+    
     //...........................................................................
     // Update GPU data structures
     if (rank == 0)
@@ -505,26 +506,42 @@ void ScaLBL_ColorModel::Create() {
       printf("Model created \n");
     delete[] PhaseLabel;
 
-    // Initialize solid-fluid id
-    signed char *TmpID;
-    TmpID = new signed char[Nx * Ny * Nz];
-    for (int k = 0; k < Nz; k++) {
-        for (int j = 0; j < Ny; j++) {
-            for (int i = 0; i < Nx; i++) {
-                int idx = k * Nx * Ny + j * Nx + i;
-                if (id[idx] <= 0){
-                    TmpID[idx] = 0;
-                }
-                else{
-                    TmpID[idx] = 1;
+    unsigned int *TmpSolid = new unsigned int[Np];
+
+    for (int k = 1; k < Nz - 1; k++) {
+        for (int j = 1; j < Ny - 1; j++) {
+            for (int i = 1; i < Nx - 1; i++) {
+                int idx = Map(i, j, k);
+                unsigned int data = 0;
+                if (!(idx < 0)) {
+                    if ((Map(i - 1 , j, k) >= 0) ) data |= (1u << 1);
+                    if ((Map(i + 1 , j, k) >= 0) ) data |= (1u << 2);
+                    if ((Map(i , j - 1, k) >= 0) ) data |= (1u << 3);
+                    if ((Map(i , j + 1, k) >= 0) ) data |= (1u << 4);
+                    if ((Map(i , j, k - 1) >= 0) ) data |= (1u << 5);
+                    if ((Map(i , j, k + 1) >= 0) ) data |= (1u << 6);
+                    if ((Map(i - 1 , j - 1, k) >= 0) ) data |= (1u << 7);
+                    if ((Map(i + 1 , j + 1, k) >= 0) ) data |= (1u << 8);
+                    if ((Map(i - 1 , j + 1, k) >= 0) ) data |= (1u << 9);
+                    if ((Map(i + 1,  j - 1, k) >= 0) ) data |= (1u << 10);
+                    if ((Map(i - 1 , j, k - 1) >= 0) ) data |= (1u << 11);
+                    if ((Map(i + 1 , j, k + 1) >= 0) ) data |= (1u << 12);
+                    if ((Map(i - 1 , j, k + 1) >= 0) ) data |= (1u << 13);
+                    if ((Map(i + 1 , j, k - 1) >= 0) ) data |= (1u << 14);
+                    if ((Map(i , j - 1, k - 1) >= 0) ) data |= (1u << 15);
+                    if ((Map(i , j + 1, k + 1) >= 0) ) data |= (1u << 16);
+                    if ((Map(i , j - 1, k + 1) >= 0) ) data |= (1u << 17);
+                    if ((Map(i , j + 1, k - 1) >= 0) ) data |= (1u << 18);
+                    TmpSolid[idx] = data;
                 }
             }
         }
     }
 
-    ScaLBL_CopyToDevice(IDSolid, TmpID, sizeof(signed char) * Nx * Ny * Nz);
+    ScaLBL_CopyToDevice(NeighborSolid, TmpSolid, sizeof(unsigned int) * Np);
     ScaLBL_Comm->Barrier();
-    delete[] TmpID;
+    delete[] TmpSolid;
+
 }
 
 /********************************************************
@@ -1209,7 +1226,7 @@ void ScaLBL_ColorModel::Run() {
             ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
         }
         ScaLBL_Comm_Regular->SendHalo(Phi);
-        ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, IDSolid, Velocity, rhoA,
+        ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, NeighborSolid, Velocity, rhoA,
                                   rhoB, tauA, tauB, alpha, beta, Fx, Fy, Fz, Nx,
                                   Nx * Ny, ScaLBL_Comm->FirstInterior(),
                                   ScaLBL_Comm->LastInterior(), Np);
@@ -1228,7 +1245,7 @@ void ScaLBL_ColorModel::Run() {
             ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
             ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
         }
-        ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, IDSolid, Velocity, rhoA,
+        ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi,  NeighborSolid, Velocity, rhoA,
                                   rhoB, tauA, tauB, alpha, beta, Fx, Fy, Fz, Nx,
                                   Nx * Ny, 0, ScaLBL_Comm->LastExterior(), Np);
         ScaLBL_Comm->Barrier();

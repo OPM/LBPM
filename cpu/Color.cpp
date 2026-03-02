@@ -1429,7 +1429,7 @@ extern "C" void ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny,
 //		double *ColorGrad, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 //		double Fx, double Fy, double Fz, int start, int finish, int Np){
 extern "C" void ScaLBL_D3Q19_AAeven_Color(
-    int *Map, double *dist, double *Aq, double *Bq, double *Den, double *Phi, signed char *IDSolid,
+    int *Map, double *dist, double *Aq, double *Bq, double *Den, double *Phi, unsigned int* NeighborSolid,
     double *Vel, double rhoA, double rhoB, double tauA, double tauB,
     double alpha, double beta, double Fx, double Fy, double Fz, int strideY,
     int strideZ, int start, int finish, int Np) {
@@ -1479,6 +1479,8 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(
         rlx_setA = 1.f / tau;
         rlx_setB = 8.f * (2.f - rlx_setA) / (8.f - rlx_setA);
 
+
+        unsigned int data = NeighborSolid[n];
         // Get the 1D index based on regular data layout
         ijk = Map[n];
         //					COMPUTE THE COLOR GRADIENT
@@ -1487,75 +1489,75 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(
         //........................................................................
         nn = ijk - 1; // neighbor index (get convention)
         m1 = Phi[nn]; // get neighbor for phi - 1
-        id1 = IDSolid[nn];
+        id1 = (data >> 1) & 1u;
         //........................................................................
         nn = ijk + 1; // neighbor index (get convention)
         m2 = Phi[nn]; // get neighbor for phi - 2
-        id2 = IDSolid[nn];
+        id2 = (data >> 2) & 1u;
         //........................................................................
         nn = ijk - strideY; // neighbor index (get convention)
         m3 = Phi[nn];       // get neighbor for phi - 3
-        id3 = IDSolid[nn];
+        id3 = (data >> 3) & 1u;
         //........................................................................
         nn = ijk + strideY; // neighbor index (get convention)
         m4 = Phi[nn];       // get neighbor for phi - 4
-        id4 = IDSolid[nn];
+        id4 = (data >> 4) & 1u;
         //........................................................................
         nn = ijk - strideZ; // neighbor index (get convention)
         m5 = Phi[nn];       // get neighbor for phi - 5
-        id5 = IDSolid[nn];
+        id5 = (data >> 5) & 1u;
         //........................................................................
         nn = ijk + strideZ; // neighbor index (get convention)
         m6 = Phi[nn];       // get neighbor for phi - 6
-        id6 = IDSolid[nn];
+        id6 = (data >> 6) & 1u;
         //........................................................................
         nn = ijk - strideY - 1; // neighbor index (get convention)
         m7 = Phi[nn];           // get neighbor for phi - 7
-        id7 = IDSolid[nn];
+        id7 = (data >> 7) & 1u;
         //........................................................................
         nn = ijk + strideY + 1; // neighbor index (get convention)
         m8 = Phi[nn];           // get neighbor for phi - 8
-        id8 = IDSolid[nn];
+        id8 = (data >> 8) & 1u;
         //........................................................................
         nn = ijk + strideY - 1; // neighbor index (get convention)
         m9 = Phi[nn];           // get neighbor for phi - 9
-        id9 = IDSolid[nn];
+        id9 = (data >> 9) & 1u;
         //........................................................................
         nn = ijk - strideY + 1; // neighbor index (get convention)
         m10 = Phi[nn];          // get neighbor for phi - 10
-        id10 = IDSolid[nn];
+        id10 = (data >> 10) & 1u;
         //........................................................................
         nn = ijk - strideZ - 1; // neighbor index (get convention)
         m11 = Phi[nn];          // get neighbor for phi - 11
-        id11 = IDSolid[nn];
+        id11 = (data >> 11) & 1u;
         //........................................................................
         nn = ijk + strideZ + 1; // neighbor index (get convention)
         m12 = Phi[nn];          // get neighbor for phi - 12
-        id12 = IDSolid[nn];
+        id12 = (data >> 12) & 1u;
         //........................................................................
         nn = ijk + strideZ - 1; // neighbor index (get convention)
         m13 = Phi[nn];          // get neighbor for phi - 13
-        id13 = IDSolid[nn];
+        id13 = (data >> 13) & 1u;
         //........................................................................
         nn = ijk - strideZ + 1; // neighbor index (get convention)
         m14 = Phi[nn];          // get neighbor for phi - 14
-        id14 = IDSolid[nn];
+        id14 = (data >> 14) & 1u;
         //........................................................................
         nn = ijk - strideZ - strideY; // neighbor index (get convention)
         m15 = Phi[nn];                // get neighbor for phi - 15
-        id15 = IDSolid[nn];
+        id15 = (data >> 15) & 1u;
         //........................................................................
         nn = ijk + strideZ + strideY; // neighbor index (get convention)
         m16 = Phi[nn];                // get neighbor for phi - 16
-        id16 = IDSolid[nn];
+        id16 = (data >> 16) & 1u;
         //........................................................................
         nn = ijk + strideZ - strideY; // neighbor index (get convention)
         m17 = Phi[nn];                // get neighbor for phi - 17
-        id17 = IDSolid[nn];
+        id17 = (data >> 17) & 1u;
         //........................................................................
         nn = ijk - strideZ + strideY; // neighbor index (get convention)
         m18 = Phi[nn];                // get neighbor for phi - 18
-        id18 = IDSolid[nn];
+        id18 = (data >> 18) & 1u;
         //............Compute the Color Gradient...................................
         nx = -(m1 - m2 + 0.5 * (m7 - m8 + m9 - m10 + m11 - m12 + m13 - m14));
         ny = -(m3 - m4 + 0.5 * (m7 - m8 - m9 + m10 + m15 - m16 + m17 - m18));
@@ -1569,11 +1571,9 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(
         nx = nx / ColorMag;
         ny = ny / ColorMag;
         nz = nz / ColorMag;
-
+        
         //...........Correct wettability vector for Mass Balance.................................
-        if (id1 == 0 || id2 == 0 || id3 == 0 || id4 == 0 || id5 == 0 || id6 == 0 || id7 == 0 || id8 == 0 || id9 == 0 || id10 == 0 ||
-            id11 == 0 || id12 == 0 || id13 == 0 || id14 == 0 || id15 == 0 || id16 == 0 || id17 == 0 || id18 == 0){
-
+        if ( data != 524286) {
             int int_nsx = (id1 - id2) * 2 + (id7 - id8 + id9 - id10 + id11 - id12 + id13 - id14);
             int int_nsy = (id3 - id4) * 2 + (id7 - id8 - id9 + id10 + id15 - id16 + id17 - id18);
             int int_nsz = (id5 - id6) * 2 + (id11 - id12 - id13 + id14 + id15 - id16 - id17 + id18);
@@ -2095,7 +2095,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(
 //		double Fx, double Fy, double Fz, int start, int finish, int Np){
 extern "C" void ScaLBL_D3Q19_AAodd_Color(
     int *neighborList, int *Map, double *dist, double *Aq, double *Bq,
-    double *Den, double *Phi, signed char *IDSolid, double *Vel, double rhoA, double rhoB,
+    double *Den, double *Phi,  unsigned int* NeighborSolid, double *Vel, double rhoA, double rhoB,
     double tauA, double tauB, double alpha, double beta, double Fx, double Fy,
     double Fz, int strideY, int strideZ, int start, int finish, int Np) {
 
@@ -2149,6 +2149,8 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(
         rlx_setB = 8.f * (2.f - rlx_setA) / (8.f - rlx_setA);
 
         // Get the 1D index based on regular data layout
+        unsigned int data = NeighborSolid[n];
+        // Get the 1D index based on regular data layout
         ijk = Map[n];
         //					COMPUTE THE COLOR GRADIENT
         //........................................................................
@@ -2156,75 +2158,75 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(
         //........................................................................
         nn = ijk - 1; // neighbor index (get convention)
         m1 = Phi[nn]; // get neighbor for phi - 1
-        id1 = IDSolid[nn]; // 0 if Rock 1 if Fluid
+        id1 = (data >> 1) & 1u;
         //........................................................................
         nn = ijk + 1; // neighbor index (get convention)
         m2 = Phi[nn]; // get neighbor for phi - 2
-        id2 = IDSolid[nn];
+        id2 = (data >> 2) & 1u;
         //........................................................................
         nn = ijk - strideY; // neighbor index (get convention)
         m3 = Phi[nn];       // get neighbor for phi - 3
-        id3 = IDSolid[nn];
+        id3 = (data >> 3) & 1u;
         //........................................................................
         nn = ijk + strideY; // neighbor index (get convention)
         m4 = Phi[nn];       // get neighbor for phi - 4
-        id4 = IDSolid[nn];
+        id4 = (data >> 4) & 1u;
         //........................................................................
         nn = ijk - strideZ; // neighbor index (get convention)
         m5 = Phi[nn];       // get neighbor for phi - 5
-        id5 = IDSolid[nn];
+        id5 = (data >> 5) & 1u;
         //........................................................................
         nn = ijk + strideZ; // neighbor index (get convention)
         m6 = Phi[nn];       // get neighbor for phi - 6
-        id6 = IDSolid[nn];
+        id6 = (data >> 6) & 1u;
         //........................................................................
         nn = ijk - strideY - 1; // neighbor index (get convention)
         m7 = Phi[nn];           // get neighbor for phi - 7
-        id7 = IDSolid[nn];
+        id7 = (data >> 7) & 1u;
         //........................................................................
         nn = ijk + strideY + 1; // neighbor index (get convention)
         m8 = Phi[nn];           // get neighbor for phi - 8
-        id8 = IDSolid[nn];
+        id8 = (data >> 8) & 1u;
         //........................................................................
         nn = ijk + strideY - 1; // neighbor index (get convention)
         m9 = Phi[nn];           // get neighbor for phi - 9
-        id9 = IDSolid[nn];
+        id9 = (data >> 9) & 1u;
         //........................................................................
         nn = ijk - strideY + 1; // neighbor index (get convention)
         m10 = Phi[nn];          // get neighbor for phi - 10
-        id10 = IDSolid[nn];
+        id10 = (data >> 10) & 1u;
         //........................................................................
         nn = ijk - strideZ - 1; // neighbor index (get convention)
         m11 = Phi[nn];          // get neighbor for phi - 11
-        id11 = IDSolid[nn];
+        id11 = (data >> 11) & 1u;
         //........................................................................
         nn = ijk + strideZ + 1; // neighbor index (get convention)
         m12 = Phi[nn];          // get neighbor for phi - 12
-        id12 = IDSolid[nn];
+        id12 = (data >> 12) & 1u;
         //........................................................................
         nn = ijk + strideZ - 1; // neighbor index (get convention)
         m13 = Phi[nn];          // get neighbor for phi - 13
-        id13 = IDSolid[nn];
+        id13 = (data >> 13) & 1u;
         //........................................................................
         nn = ijk - strideZ + 1; // neighbor index (get convention)
         m14 = Phi[nn];          // get neighbor for phi - 14
-        id14 = IDSolid[nn];
+        id14 = (data >> 14) & 1u;
         //........................................................................
         nn = ijk - strideZ - strideY; // neighbor index (get convention)
         m15 = Phi[nn];                // get neighbor for phi - 15
-        id15 = IDSolid[nn];
+        id15 = (data >> 15) & 1u;
         //........................................................................
         nn = ijk + strideZ + strideY; // neighbor index (get convention)
         m16 = Phi[nn];                // get neighbor for phi - 16
-        id16 = IDSolid[nn];
+        id16 = (data >> 16) & 1u;
         //........................................................................
         nn = ijk + strideZ - strideY; // neighbor index (get convention)
         m17 = Phi[nn];                // get neighbor for phi - 17
-        id17 = IDSolid[nn];
+        id17 = (data >> 17) & 1u;
         //........................................................................
         nn = ijk - strideZ + strideY; // neighbor index (get convention)
         m18 = Phi[nn];                // get neighbor for phi - 18
-        id18 = IDSolid[nn];
+        id18 = (data >> 18) & 1u;
         //............Compute the Color Gradient...................................
         nx = -(m1 - m2 + 0.5 * (m7 - m8 + m9 - m10 + m11 - m12 + m13 - m14));
         ny = -(m3 - m4 + 0.5 * (m7 - m8 - m9 + m10 + m15 - m16 + m17 - m18));
@@ -2240,9 +2242,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(
         nz = nz / ColorMag;
 
         //...........Correct wettability vector.................................
-        if (id1 == 0 || id2 == 0 || id3 == 0 || id4 == 0 || id5 == 0 || id6 == 0 || id7 == 0 || id8 == 0 || id9 == 0 || id10 == 0 ||
-            id11 == 0 || id12 == 0 || id13 == 0 || id14 == 0 || id15 == 0 || id16 == 0 || id17 == 0 || id18 == 0){
-
+        if ( data != 524286) {
             int int_nsx = (id1 - id2) * 2 + (id7 - id8 + id9 - id10 + id11 - id12 + id13 - id14);
             int int_nsy = (id3 - id4) * 2 + (id7 - id8 - id9 + id10 + id15 - id16 + id17 - id18);
             int int_nsz = (id5 - id6) * 2 + (id11 - id12 - id13 + id14 + id15 - id16 - id17 + id18);
