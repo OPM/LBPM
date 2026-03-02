@@ -1403,11 +1403,16 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *A
 
 			//...........Normalize the Color Gradient.................................
 			C = sqrt(nx*nx+ny*ny+nz*nz);
-			double ColorMag = C;
-			if (C==0.0) ColorMag=1.0;
-			nx = nx/ColorMag;
-			ny = ny/ColorMag;
-			nz = nz/ColorMag;
+			if (C > 0.0)
+			{
+				nx /= C;
+				ny /= C;
+				nz /= C;
+			}
+			else
+			{
+				nx = ny = nz = 0.0;
+			}
 
 			// q=0
 			fq = dist[n];
@@ -2038,12 +2043,26 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double
 
 			//...........Normalize the Color Gradient.................................
 			C = sqrt(nx*nx+ny*ny+nz*nz);
-			double ColorMag = C;
-			if (C==0.0) ColorMag=1.0;
-			nx = nx/ColorMag;
-			ny = ny/ColorMag;
-			nz = nz/ColorMag;
+			if (C > 0.0)
+			{
+				nx /= C;
+				ny /= C;
+				nz /= C;
+			}
+			else
+			{
+				nx = ny = nz = 0.0;
+			}
 
+			double len2 = nx*nx + ny*ny + nz*nz;
+
+			if (len2 > 0.0)
+			{
+				double invLen = 1.0 / sqrt(len2);
+				nx *= invLen;
+				ny *= invLen;
+				nz *= invLen;
+			}			
 			// q=0
 			fq = dist[n];
 			rho = fq;
@@ -2368,7 +2387,6 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double
 			//........................................................................
 			//..............carry out relaxation process..............................
 			//..........Toelke, Fruediger et. al. 2006................................
-			if (C == 0.0)	nx = ny = nz = 0.0;
 			m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)/rho0 - 11*rho) -19*alpha*C - m1);
 			m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)/rho0)- m2);
 			m4 = m4 + rlx_setB*((-0.6666666666666666*jx)- m4);
