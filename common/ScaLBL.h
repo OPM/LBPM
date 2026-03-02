@@ -628,7 +628,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_MRT(int *neighborList, double *dist,
 * @param Np - size of local sub-domain (derived from Domain structure)
 */
 extern "C" void ScaLBL_D3Q19_AAeven_Color(
-    int *Map, double *dist, double *Aq, double *Bq, double *Den, double *Phi,, unsigned int *NeighborSolid,
+    int *Map, double *dist, double *Aq, double *Bq, double *Den, double *Phi, unsigned int *NeighborSolid,
     double *Vel, double rhoA, double rhoB, double tauA, double tauB,
     double alpha, double beta, double Fx, double Fy, double Fz, int strideY,
     int strideZ, int start, int finish, int Np);

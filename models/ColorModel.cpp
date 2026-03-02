@@ -1181,7 +1181,7 @@ void ScaLBL_ColorModel::Run() {
         ScaLBL_Comm_Regular->SendHalo(Phi);
 
         ScaLBL_D3Q19_AAodd_Color(
-            NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, IDSolid, Velocity, rhoA, rhoB,
+            NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, NeighborSolid, Velocity, rhoA, rhoB,
             tauA, tauB, alpha, beta, Fx, Fy, Fz, Nx, Nx * Ny,
             ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         ScaLBL_Comm_Regular->RecvHalo(Phi);
@@ -1200,7 +1200,7 @@ void ScaLBL_ColorModel::Run() {
             ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
             ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
         }
-        ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, IDSolid,
+        ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, NeighborSolid,
                                  Velocity, rhoA, rhoB, tauA, tauB, alpha, beta,
                                  Fx, Fy, Fz, Nx, Nx * Ny, 0,
                                  ScaLBL_Comm->LastExterior(), Np);
