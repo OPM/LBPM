@@ -1448,7 +1448,6 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(
     double phi, tau, rho0, rlx_setA, rlx_setB;
     signed char id1, id2, id3, id4, id5, id6, id7, id8, id9, id10, id11, id12, id13, id14, id15, id16, id17, id18;
     double nsx, nsy, nsz; // Rock Fluid interface normal vector
-    double npx, npy, npz; // contact angle vector 
 
     const double mrt_V1 = 0.05263157894736842;
     const double mrt_V2 = 0.012531328320802;
@@ -1572,37 +1571,6 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(
         ny = ny / ColorMag;
         nz = nz / ColorMag;
         
-        //...........Correct wettability vector for Mass Balance.................................
-        if ( data != 524286) {
-            int int_nsx = (id1 - id2) * 2 + (id7 - id8 + id9 - id10 + id11 - id12 + id13 - id14);
-            int int_nsy = (id3 - id4) * 2 + (id7 - id8 - id9 + id10 + id15 - id16 + id17 - id18);
-            int int_nsz = (id5 - id6) * 2 + (id11 - id12 - id13 + id14 + id15 - id16 - id17 + id18);
-
-            double Mag = sqrt(double(int_nsx * int_nsx + int_nsy * int_nsy + int_nsz * int_nsz));
-            if (Mag == 0.0)
-                Mag = 1.0f;
-            nsx = -int_nsx / Mag;
-            nsy = -int_nsy / Mag;
-            nsz = -int_nsz / Mag;
-        
-            int countid =   id1 + id2 + id3 + id4 + id5 + id6 + id7 + id8 + id9 + id10 + id11 + id12 + id13 + id14 + id15 + id16 + id17 + id18;
-
-            double aff = (m1*(id1-1) + m2*(id2-1) + m3*(id3-1) + m4*(id4-1) + m5*(id5-1) + m6*(id6-1) + m7*(id7-1) + m8*(id8-1) +
-            m9*(id9-1) + m10*(id10-1) + m11*(id11-1) + m12*(id12-1) + m13*(id13-1) + m14*(id14-1) + m15*(id15-1) +
-            m16*(id16-1) + m17*(id17-1) + m18*(id18-1)) / (18.0f - double(countid));
-
-            Mag = 1.0f-(nx*nsx + ny*nsy + nz*nsz)*(nx*nsx + ny*nsy + nz*nsz);
-            Mag = (Mag > 0.0f) ? sqrtf(Mag) : 1.0f;
-
-            npx = (nx - nsx*(nx*nsx + ny*nsy + nz*nsz))*sqrt(1.0f-aff*aff)/Mag + nsx*aff;
-            npy = (ny - nsy*(nx*nsx + ny*nsy + nz*nsz))*sqrt(1.0f-aff*aff)/Mag + nsy*aff;
-            npz = (nz - nsz*(nx*nsx + ny*nsy + nz*nsz))*sqrt(1.0f-aff*aff)/Mag + nsz*aff;
-        }else{
-            npx = nx;
-            npy = ny;
-            npz = nz;
-        }
-
         // q=0
         fq = dist[n];
         rho = fq;
@@ -2040,10 +2008,38 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(
         Aq[n] = 0.3333333333333333 * nA;
         Bq[n] = 0.3333333333333333 * nB;
 
+        //...........Correct wettability vector.................................
+        if ( data != 524286) {
+            int int_nsx = (id1 - id2) * 2 + (id7 - id8 + id9 - id10 + id11 - id12 + id13 - id14);
+            int int_nsy = (id3 - id4) * 2 + (id7 - id8 - id9 + id10 + id15 - id16 + id17 - id18);
+            int int_nsz = (id5 - id6) * 2 + (id11 - id12 - id13 + id14 + id15 - id16 - id17 + id18);
+
+            double Mag = sqrt(double(int_nsx * int_nsx + int_nsy * int_nsy + int_nsz * int_nsz));
+            if (Mag == 0.0)
+                Mag = 1.0f;
+            nsx = -int_nsx / Mag;
+            nsy = -int_nsy / Mag;
+            nsz = -int_nsz / Mag;
+        
+            int countid =   id1 + id2 + id3 + id4 + id5 + id6 + id7 + id8 + id9 + id10 + id11 + id12 + id13 + id14 + id15 + id16 + id17 + id18;
+
+            double aff = (m1*(id1-1) + m2*(id2-1) + m3*(id3-1) + m4*(id4-1) + m5*(id5-1) + m6*(id6-1) + m7*(id7-1) + m8*(id8-1) +
+            m9*(id9-1) + m10*(id10-1) + m11*(id11-1) + m12*(id12-1) + m13*(id13-1) + m14*(id14-1) + m15*(id15-1) +
+            m16*(id16-1) + m17*(id17-1) + m18*(id18-1)) / (18.0f - double(countid));
+
+            Mag = 1.0f-(nx*nsx + ny*nsy + nz*nsz)*(nx*nsx + ny*nsy + nz*nsz);
+            Mag = (Mag > 0.0f) ? sqrtf(Mag) : 1.0f;
+
+            double nAstDotnS = nsx*(nx*nsx + ny*nsy + nz*nsz);
+            nx = (nx - nsx*nAstDotnS )*sqrt(1.0f-aff*aff)/Mag + nsx*aff;
+            ny = (ny - nsy*nAstDotnS )*sqrt(1.0f-aff*aff)/Mag + nsy*aff;
+            nz = (nz - nsz*nAstDotnS )*sqrt(1.0f-aff*aff)/Mag + nsz*aff;
+        }
+
         //...............................................
         // q = 0,2,4
         // Cq = {1,0,0}, {0,1,0}, {0,0,1}
-        delta = beta * nA * nB * nAB * 0.1111111111111111 * npx;
+        delta = beta * nA * nB * nAB * 0.1111111111111111 * nx;
         if (!(nA * nB * nAB > 0))
             delta = 0;
         a1 = nA * (0.1111111111111111 * (1 + 4.5 * ux)) + delta;
@@ -2059,7 +2055,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(
         //...............................................
         // q = 2
         // Cq = {0,1,0}
-        delta = beta * nA * nB * nAB * 0.1111111111111111 * npy;
+        delta = beta * nA * nB * nAB * 0.1111111111111111 * ny;
         if (!(nA * nB * nAB > 0))
             delta = 0;
         a1 = nA * (0.1111111111111111 * (1 + 4.5 * uy)) + delta;
@@ -2074,7 +2070,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(
         //...............................................
         // q = 4
         // Cq = {0,0,1}
-        delta = beta * nA * nB * nAB * 0.1111111111111111 * npz;
+        delta = beta * nA * nB * nAB * 0.1111111111111111 * nz;
         if (!(nA * nB * nAB > 0))
             delta = 0;
         a1 = nA * (0.1111111111111111 * (1 + 4.5 * uz)) + delta;
@@ -2117,7 +2113,6 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(
     double phi, tau, rho0, rlx_setA, rlx_setB;
     signed char id1, id2, id3, id4, id5, id6, id7, id8, id9, id10, id11, id12, id13, id14, id15, id16, id17, id18;
     double nsx, nsy, nsz; // Rock Fluid interface normal vector
-    double npx, npy, npz; // contact angle vector 
 
     const double mrt_V1 = 0.05263157894736842;
     const double mrt_V2 = 0.012531328320802;
@@ -2240,37 +2235,6 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(
         nx = nx / ColorMag;
         ny = ny / ColorMag;
         nz = nz / ColorMag;
-
-        //...........Correct wettability vector.................................
-        if ( data != 524286) {
-            int int_nsx = (id1 - id2) * 2 + (id7 - id8 + id9 - id10 + id11 - id12 + id13 - id14);
-            int int_nsy = (id3 - id4) * 2 + (id7 - id8 - id9 + id10 + id15 - id16 + id17 - id18);
-            int int_nsz = (id5 - id6) * 2 + (id11 - id12 - id13 + id14 + id15 - id16 - id17 + id18);
-
-            double Mag = sqrt(double(int_nsx * int_nsx + int_nsy * int_nsy + int_nsz * int_nsz));
-            if (Mag == 0.0)
-                Mag = 1.0f;
-            nsx = -int_nsx / Mag;
-            nsy = -int_nsy / Mag;
-            nsz = -int_nsz / Mag;
-        
-            int countid =   id1 + id2 + id3 + id4 + id5 + id6 + id7 + id8 + id9 + id10 + id11 + id12 + id13 + id14 + id15 + id16 + id17 + id18;
-
-            double aff = (m1*(id1-1) + m2*(id2-1) + m3*(id3-1) + m4*(id4-1) + m5*(id5-1) + m6*(id6-1) + m7*(id7-1) + m8*(id8-1) +
-            m9*(id9-1) + m10*(id10-1) + m11*(id11-1) + m12*(id12-1) + m13*(id13-1) + m14*(id14-1) + m15*(id15-1) +
-            m16*(id16-1) + m17*(id17-1) + m18*(id18-1)) / (18.0f - double(countid));
-
-            Mag = 1.0f-(nx*nsx + ny*nsy + nz*nsz)*(nx*nsx + ny*nsy + nz*nsz);
-            Mag = (Mag > 0.0f) ? sqrtf(Mag) : 1.0f;
-
-            npx = (nx - nsx*(nx*nsx + ny*nsy + nz*nsz))*sqrt(1.0f-aff*aff)/Mag + nsx*aff;
-            npy = (ny - nsy*(nx*nsx + ny*nsy + nz*nsz))*sqrt(1.0f-aff*aff)/Mag + nsy*aff;
-            npz = (nz - nsz*(nx*nsx + ny*nsy + nz*nsz))*sqrt(1.0f-aff*aff)/Mag + nsz*aff;
-        }else{
-            npx = nx;
-            npy = ny;
-            npz = nz;
-        }
 
         // q=0
         fq = dist[n];
@@ -2771,10 +2735,38 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(
         Aq[n] = 0.3333333333333333 * nA;
         Bq[n] = 0.3333333333333333 * nB;
 
+        //...........Correct wettability vector.................................
+        if ( data != 524286) {
+            int int_nsx = (id1 - id2) * 2 + (id7 - id8 + id9 - id10 + id11 - id12 + id13 - id14);
+            int int_nsy = (id3 - id4) * 2 + (id7 - id8 - id9 + id10 + id15 - id16 + id17 - id18);
+            int int_nsz = (id5 - id6) * 2 + (id11 - id12 - id13 + id14 + id15 - id16 - id17 + id18);
+
+            double Mag = sqrt(double(int_nsx * int_nsx + int_nsy * int_nsy + int_nsz * int_nsz));
+            if (Mag == 0.0)
+                Mag = 1.0f;
+            nsx = -int_nsx / Mag;
+            nsy = -int_nsy / Mag;
+            nsz = -int_nsz / Mag;
+        
+            int countid =   id1 + id2 + id3 + id4 + id5 + id6 + id7 + id8 + id9 + id10 + id11 + id12 + id13 + id14 + id15 + id16 + id17 + id18;
+
+            double aff = (m1*(id1-1) + m2*(id2-1) + m3*(id3-1) + m4*(id4-1) + m5*(id5-1) + m6*(id6-1) + m7*(id7-1) + m8*(id8-1) +
+            m9*(id9-1) + m10*(id10-1) + m11*(id11-1) + m12*(id12-1) + m13*(id13-1) + m14*(id14-1) + m15*(id15-1) +
+            m16*(id16-1) + m17*(id17-1) + m18*(id18-1)) / (18.0f - double(countid));
+
+            Mag = 1.0f-(nx*nsx + ny*nsy + nz*nsz)*(nx*nsx + ny*nsy + nz*nsz);
+            Mag = (Mag > 0.0f) ? sqrtf(Mag) : 1.0f;
+
+            double nAstDotnS = nsx*(nx*nsx + ny*nsy + nz*nsz);
+            nx = (nx - nsx*nAstDotnS )*sqrt(1.0f-aff*aff)/Mag + nsx*aff;
+            ny = (ny - nsy*nAstDotnS )*sqrt(1.0f-aff*aff)/Mag + nsy*aff;
+            nz = (nz - nsz*nAstDotnS )*sqrt(1.0f-aff*aff)/Mag + nsz*aff;
+        }
+
         //...............................................
         // q = 0,2,4
         // Cq = {1,0,0}, {0,1,0}, {0,0,1}
-        delta = beta * nA * nB * nAB * 0.1111111111111111 * npx;
+        delta = beta * nA * nB * nAB * 0.1111111111111111 * nx;
         if (!(nA * nB * nAB > 0))
             delta = 0;
         a1 = nA * (0.1111111111111111 * (1 + 4.5 * ux)) + delta;
@@ -2793,7 +2785,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(
 
         //...............................................
         // Cq = {0,1,0}
-        delta = beta * nA * nB * nAB * 0.1111111111111111 * npy;
+        delta = beta * nA * nB * nAB * 0.1111111111111111 * ny;
         if (!(nA * nB * nAB > 0))
             delta = 0;
         a1 = nA * (0.1111111111111111 * (1 + 4.5 * uy)) + delta;
@@ -2813,7 +2805,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(
         //...............................................
         // q = 4
         // Cq = {0,0,1}
-        delta = beta * nA * nB * nAB * 0.1111111111111111 * npz;
+        delta = beta * nA * nB * nAB * 0.1111111111111111 * nz;
         if (!(nA * nB * nAB > 0))
             delta = 0;
         a1 = nA * (0.1111111111111111 * (1 + 4.5 * uz)) + delta;
