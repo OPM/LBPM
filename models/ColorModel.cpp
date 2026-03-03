@@ -514,24 +514,24 @@ void ScaLBL_ColorModel::Create() {
                 int idx = Map(i, j, k);
                 unsigned int data = 0;
                 if (!(idx < 0)) {
-                    if ((Map(i - 1 , j, k) >= 0) ) data |= (1u << 1);
-                    if ((Map(i + 1 , j, k) >= 0) ) data |= (1u << 2);
-                    if ((Map(i , j - 1, k) >= 0) ) data |= (1u << 3);
-                    if ((Map(i , j + 1, k) >= 0) ) data |= (1u << 4);
-                    if ((Map(i , j, k - 1) >= 0) ) data |= (1u << 5);
-                    if ((Map(i , j, k + 1) >= 0) ) data |= (1u << 6);
-                    if ((Map(i - 1 , j - 1, k) >= 0) ) data |= (1u << 7);
-                    if ((Map(i + 1 , j + 1, k) >= 0) ) data |= (1u << 8);
-                    if ((Map(i - 1 , j + 1, k) >= 0) ) data |= (1u << 9);
-                    if ((Map(i + 1,  j - 1, k) >= 0) ) data |= (1u << 10);
-                    if ((Map(i - 1 , j, k - 1) >= 0) ) data |= (1u << 11);
-                    if ((Map(i + 1 , j, k + 1) >= 0) ) data |= (1u << 12);
-                    if ((Map(i - 1 , j, k + 1) >= 0) ) data |= (1u << 13);
-                    if ((Map(i + 1 , j, k - 1) >= 0) ) data |= (1u << 14);
-                    if ((Map(i , j - 1, k - 1) >= 0) ) data |= (1u << 15);
-                    if ((Map(i , j + 1, k + 1) >= 0) ) data |= (1u << 16);
-                    if ((Map(i , j - 1, k + 1) >= 0) ) data |= (1u << 17);
-                    if ((Map(i , j + 1, k - 1) >= 0) ) data |= (1u << 18);
+                    if ((Map(i - 1 , j, k) < 0) ) data |= (1u << 1);
+                    if ((Map(i + 1 , j, k) < 0) ) data |= (1u << 2);
+                    if ((Map(i , j - 1, k) < 0) ) data |= (1u << 3);
+                    if ((Map(i , j + 1, k) < 0) ) data |= (1u << 4);
+                    if ((Map(i , j, k - 1) < 0) ) data |= (1u << 5);
+                    if ((Map(i , j, k + 1) < 0) ) data |= (1u << 6);
+                    if ((Map(i - 1 , j - 1, k) < 0) ) data |= (1u << 7);
+                    if ((Map(i + 1 , j + 1, k) < 0) ) data |= (1u << 8);
+                    if ((Map(i - 1 , j + 1, k) < 0) ) data |= (1u << 9);
+                    if ((Map(i + 1,  j - 1, k) < 0) ) data |= (1u << 10);
+                    if ((Map(i - 1 , j, k - 1) < 0) ) data |= (1u << 11);
+                    if ((Map(i + 1 , j, k + 1) < 0) ) data |= (1u << 12);
+                    if ((Map(i - 1 , j, k + 1) < 0) ) data |= (1u << 13);
+                    if ((Map(i + 1 , j, k - 1) < 0) ) data |= (1u << 14);
+                    if ((Map(i , j - 1, k - 1) < 0) ) data |= (1u << 15);
+                    if ((Map(i , j + 1, k + 1) < 0) ) data |= (1u << 16);
+                    if ((Map(i , j - 1, k + 1) < 0) ) data |= (1u << 17);
+                    if ((Map(i , j + 1, k - 1) < 0) ) data |= (1u << 18);
                     TmpSolid[idx] = data;
                 }
             }
