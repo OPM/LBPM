@@ -1506,9 +1506,9 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *A
 				if (m3 == 0.0)
 					m3 = 1.0f;
 
-				nspx = nspx / m3;
-				nspy = nspy / m3;
-				nspz = nspz / m3;
+				nspx = -nspx / m3;
+				nspy = -nspy / m3;
+				nspz = -nspz / m3;
 			
 				m1 = m1 / countSolid;
 				m2 = (nx*nspx + ny*nspy + nz*nspz);
@@ -2237,9 +2237,9 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double
 				if (m3 == 0.0)
 					m3 = 1.0f;
 
-				nspx = nspx / m3;
-				nspy = nspy / m3;
-				nspz = nspz / m3;
+				nspx = -nspx / m3;
+				nspy = -nspy / m3;
+				nspz = -nspz / m3;
 			
 				m1 = m1 / countSolid;
 				m2 = (nx*nspx + ny*nspy + nz*nspz);
