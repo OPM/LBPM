@@ -1693,15 +1693,6 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(
 				nspx = nspy = nspz  = 0.0;
 				nx = ny = nz = 0;
 			} 	
-
-        //...........Normalize the Color Gradient.................................
-        C = sqrt(nx * nx + ny * ny + nz * nz);
-        double ColorMag = C;
-        if (C == 0.0)
-            ColorMag = 1.0;
-        nx = nx / ColorMag;
-        ny = ny / ColorMag;
-        nz = nz / ColorMag;
         
         // q=0
         fq = dist[n];
