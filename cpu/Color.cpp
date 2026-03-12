@@ -2453,10 +2453,6 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(
             m3 = 1.0f-m2*m2;
             m3 = (m3 > 0.0f) ? sqrtf(m3) : 1.0f;
             
-            // double pm = -std::copysign(1.0, m2*m1);
-            // nspx = pm*(nx - nspx*m2)*sqrt(1.0f-m1*m1)/m3 + nspx*m1;
-            // nspy = pm*(ny - nspy*m2)*sqrt(1.0f-m1*m1)/m3 + nspy*m1;
-            // nspz = pm*(nz - nspz*m2)*sqrt(1.0f-m1*m1)/m3 + nspz*m1;
             double nspxp = (nx - nspx*m2)*sqrt(1.0f-m1*m1)/m3 + nspx*m1;
             double nspyp = (ny - nspy*m2)*sqrt(1.0f-m1*m1)/m3 + nspy*m1;
             double nspzp = (nz - nspz*m2)*sqrt(1.0f-m1*m1)/m3 + nspz*m1;
