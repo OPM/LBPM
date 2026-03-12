@@ -1516,9 +1516,26 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *A
 				m3 = 1.0f-m2*m2;
             	m3 = (m3 > 0.0f) ? sqrtf(m3) : 1.0f;
 				
-				nspx = (nx - nspx*m2)*sqrt(1.0f-m1*m1)/m3 + nspx*m1;
-				nspy = (ny - nspy*m2)*sqrt(1.0f-m1*m1)/m3 + nspy*m1;
-				nspz = (nz - nspz*m2)*sqrt(1.0f-m1*m1)/m3 + nspz*m1;
+				double nspxp = (nx - nspx*m2)*sqrt(1.0f-m1*m1)/m3 + nspx*m1;
+				double nspyp = (ny - nspy*m2)*sqrt(1.0f-m1*m1)/m3 + nspy*m1;
+				double nspzp = (nz - nspz*m2)*sqrt(1.0f-m1*m1)/m3 + nspz*m1;
+
+				double nspxm = -(nx - nspx*m2)*sqrt(1.0f-m1*m1)/m3 + nspx*m1;
+				double nspym = -(ny - nspy*m2)*sqrt(1.0f-m1*m1)/m3 + nspy*m1;
+				double nspzm = -(nz - nspz*m2)*sqrt(1.0f-m1*m1)/m3 + nspz*m1;
+
+				double dotp = nx*nspxp + ny*nspyp + nz*nspzp;
+				double dotm = nx*nspxm + ny*nspym + nz*nspzm;
+
+				if (dotp > dotm) {
+					nspx = nspxp;
+					nspy = nspyp;
+					nspz = nspzp;
+				} else {
+					nspx = nspxm;
+					nspy = nspym;
+					nspz = nspzm;
+				}
 			}
 			else
 			{
@@ -2247,9 +2264,26 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double
 				m3 = 1.0f-m2*m2;
             	m3 = (m3 > 0.0f) ? sqrtf(m3) : 1.0f;
 				
-				nspx = (nx - nspx*m2)*sqrt(1.0f-m1*m1)/m3 + nspx*m1;
-				nspy = (ny - nspy*m2)*sqrt(1.0f-m1*m1)/m3 + nspy*m1;
-				nspz = (nz - nspz*m2)*sqrt(1.0f-m1*m1)/m3 + nspz*m1;
+				double nspxp = (nx - nspx*m2)*sqrt(1.0f-m1*m1)/m3 + nspx*m1;
+				double nspyp = (ny - nspy*m2)*sqrt(1.0f-m1*m1)/m3 + nspy*m1;
+				double nspzp = (nz - nspz*m2)*sqrt(1.0f-m1*m1)/m3 + nspz*m1;
+
+				double nspxm = -(nx - nspx*m2)*sqrt(1.0f-m1*m1)/m3 + nspx*m1;
+				double nspym = -(ny - nspy*m2)*sqrt(1.0f-m1*m1)/m3 + nspy*m1;
+				double nspzm = -(nz - nspz*m2)*sqrt(1.0f-m1*m1)/m3 + nspz*m1;
+
+				double dotp = nx*nspxp + ny*nspyp + nz*nspzp;
+				double dotm = nx*nspxm + ny*nspym + nz*nspzm;
+
+				if (dotp > dotm) {
+					nspx = nspxp;
+					nspy = nspyp;
+					nspz = nspzp;
+				} else {
+					nspx = nspxm;
+					nspy = nspym;
+					nspz = nspzm;
+				}
 			}
 			else
 			{
