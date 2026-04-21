@@ -17,6 +17,7 @@
 #include <math.h>
 
 #define STOKES
+#define f64_eps 1E-12
 
 extern "C" void ScaLBL_Color_Init(char *ID, double *Den, double *Phi,
                                   double das, double dbs, int Nx, int Ny,
@@ -1429,7 +1430,7 @@ extern "C" void ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny,
 //		double *ColorGrad, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 //		double Fx, double Fy, double Fz, int start, int finish, int Np){
 extern "C" void ScaLBL_D3Q19_AAeven_Color(
-    int *Map, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
+    int *Map, double *dist, double *Aq, double *Bq, double *Den, double *Phi, unsigned int* NeighborSolid,
     double *Vel, double rhoA, double rhoB, double tauA, double tauB,
     double alpha, double beta, double Fx, double Fy, double Fz, int strideY,
     int strideZ, int start, int finish, int Np) {
@@ -1446,6 +1447,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(
     double C, nx, ny, nz; //color gradient magnitude and direction
     double ux, uy, uz;
     double phi, tau, rho0, rlx_setA, rlx_setB;
+    double nspx, nspy, nspz; // Rock Fluid interface normal vector
 
     const double mrt_V1 = 0.05263157894736842;
     const double mrt_V2 = 0.012531328320802;
@@ -1476,79 +1478,239 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(
         rlx_setA = 1.f / tau;
         rlx_setB = 8.f * (2.f - rlx_setA) / (8.f - rlx_setA);
 
-        // Get the 1D index based on regular data layout
-        ijk = Map[n];
-        //					COMPUTE THE COLOR GRADIENT
-        //........................................................................
-        //.................Read Phase Indicator Values............................
-        //........................................................................
-        nn = ijk - 1; // neighbor index (get convention)
-        m1 = Phi[nn]; // get neighbor for phi - 1
-        //........................................................................
-        nn = ijk + 1; // neighbor index (get convention)
-        m2 = Phi[nn]; // get neighbor for phi - 2
-        //........................................................................
-        nn = ijk - strideY; // neighbor index (get convention)
-        m3 = Phi[nn];       // get neighbor for phi - 3
-        //........................................................................
-        nn = ijk + strideY; // neighbor index (get convention)
-        m4 = Phi[nn];       // get neighbor for phi - 4
-        //........................................................................
-        nn = ijk - strideZ; // neighbor index (get convention)
-        m5 = Phi[nn];       // get neighbor for phi - 5
-        //........................................................................
-        nn = ijk + strideZ; // neighbor index (get convention)
-        m6 = Phi[nn];       // get neighbor for phi - 6
-        //........................................................................
-        nn = ijk - strideY - 1; // neighbor index (get convention)
-        m7 = Phi[nn];           // get neighbor for phi - 7
-        //........................................................................
-        nn = ijk + strideY + 1; // neighbor index (get convention)
-        m8 = Phi[nn];           // get neighbor for phi - 8
-        //........................................................................
-        nn = ijk + strideY - 1; // neighbor index (get convention)
-        m9 = Phi[nn];           // get neighbor for phi - 9
-        //........................................................................
-        nn = ijk - strideY + 1; // neighbor index (get convention)
-        m10 = Phi[nn];          // get neighbor for phi - 10
-        //........................................................................
-        nn = ijk - strideZ - 1; // neighbor index (get convention)
-        m11 = Phi[nn];          // get neighbor for phi - 11
-        //........................................................................
-        nn = ijk + strideZ + 1; // neighbor index (get convention)
-        m12 = Phi[nn];          // get neighbor for phi - 12
-        //........................................................................
-        nn = ijk + strideZ - 1; // neighbor index (get convention)
-        m13 = Phi[nn];          // get neighbor for phi - 13
-        //........................................................................
-        nn = ijk - strideZ + 1; // neighbor index (get convention)
-        m14 = Phi[nn];          // get neighbor for phi - 14
-        //........................................................................
-        nn = ijk - strideZ - strideY; // neighbor index (get convention)
-        m15 = Phi[nn];                // get neighbor for phi - 15
-        //........................................................................
-        nn = ijk + strideZ + strideY; // neighbor index (get convention)
-        m16 = Phi[nn];                // get neighbor for phi - 16
-        //........................................................................
-        nn = ijk + strideZ - strideY; // neighbor index (get convention)
-        m17 = Phi[nn];                // get neighbor for phi - 17
-        //........................................................................
-        nn = ijk - strideZ + strideY; // neighbor index (get convention)
-        m18 = Phi[nn];                // get neighbor for phi - 18
-        //............Compute the Color Gradient...................................
-        nx = -(m1 - m2 + 0.5 * (m7 - m8 + m9 - m10 + m11 - m12 + m13 - m14));
-        ny = -(m3 - m4 + 0.5 * (m7 - m8 - m9 + m10 + m15 - m16 + m17 - m18));
-        nz = -(m5 - m6 + 0.5 * (m11 - m12 - m13 + m14 + m15 - m16 - m17 + m18));
 
-        //...........Normalize the Color Gradient.................................
-        C = sqrt(nx * nx + ny * ny + nz * nz);
-        double ColorMag = C;
-        if (C == 0.0)
-            ColorMag = 1.0;
-        nx = nx / ColorMag;
-        ny = ny / ColorMag;
-        nz = nz / ColorMag;
+			ijk = Map[n];
 
+			nn = ijk - 1; // neighbor index (get convention)
+			m1 = Phi[nn]; // get neighbor for phi - 1
+			
+			nn = ijk + 1; // neighbor index (get convention)
+			m2 = Phi[nn]; // get neighbor for phi - 2
+			
+			nn = ijk - strideY; // neighbor index (get convention)
+			m3 = Phi[nn];       // get neighbor for phi - 3
+			
+			nn = ijk + strideY; // neighbor index (get convention)
+			m4 = Phi[nn];       // get neighbor for phi - 4
+			
+			nn = ijk - strideZ; // neighbor index (get convention)
+			m5 = Phi[nn];       // get neighbor for phi - 5
+			
+			nn = ijk + strideZ; // neighbor index (get convention)
+			m6 = Phi[nn];       // get neighbor for phi - 6
+			
+			nn = ijk - strideY - 1; // neighbor index (get convention)
+			m7 = Phi[nn];           // get neighbor for phi - 7
+			
+			nn = ijk + strideY + 1; // neighbor index (get convention)
+			m8 = Phi[nn];           // get neighbor for phi - 8
+			
+			nn = ijk + strideY - 1; // neighbor index (get convention)
+			m9 = Phi[nn];           // get neighbor for phi - 9
+			
+			nn = ijk - strideY + 1; // neighbor index (get convention)
+			m10 = Phi[nn];          // get neighbor for phi - 10
+			
+			nn = ijk - strideZ - 1; // neighbor index (get convention)
+			m11 = Phi[nn];          // get neighbor for phi - 11
+			
+			nn = ijk + strideZ + 1; // neighbor index (get convention)
+			m12 = Phi[nn];          // get neighbor for phi - 12
+			
+			nn = ijk + strideZ - 1; // neighbor index (get convention)
+			m13 = Phi[nn];          // get neighbor for phi - 13
+			
+			nn = ijk - strideZ + 1; // neighbor index (get convention)
+			m14 = Phi[nn];          // get neighbor for phi - 14
+			
+			nn = ijk - strideZ - strideY; // neighbor index (get convention)
+			m15 = Phi[nn];                // get neighbor for phi - 15
+			
+			nn = ijk + strideZ + strideY; // neighbor index (get convention)
+			m16 = Phi[nn];                // get neighbor for phi - 16
+			
+			nn = ijk + strideZ - strideY; // neighbor index (get convention)
+			m17 = Phi[nn];                // get neighbor for phi - 17
+			
+			nn = ijk - strideZ + strideY; // neighbor index (get convention)
+			m18 = Phi[nn];                // get neighbor for phi - 18			
+			
+			//............Compute the Color Gradient...................................
+			nx = -(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+			ny = -(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+			nz = -(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+
+			//...........Normalize the Color Gradient.................................
+			C = sqrt(nx*nx+ny*ny+nz*nz);
+			if (C > f64_eps) 
+			{
+				nx = nx/C;
+				ny = ny/C;
+				nz = nz/C;
+			}
+			//...........Correct wettability vector for Mass Balance.................................
+
+			unsigned int data = NeighborSolid[n];
+			if ( (data != 0) ) 
+			{
+				char isNeighborSolid;
+				char countSolid = 0;
+				
+				nspx = 0;
+				nspy = 0;
+				nspz = 0;
+
+				isNeighborSolid = (data >> 1) & 1u;
+				countSolid += isNeighborSolid;
+				m1 = isNeighborSolid * m1;
+				nspx += 2 * isNeighborSolid;
+
+				isNeighborSolid = (data >> 2) & 1u;				
+				countSolid += isNeighborSolid;
+				m1 += isNeighborSolid * m2;
+				nspx -= 2 * isNeighborSolid;
+
+				isNeighborSolid = (data >> 3) & 1u;					
+				countSolid += isNeighborSolid;	
+				m1 += isNeighborSolid * m3;
+				nspy += 2 * isNeighborSolid;
+
+				isNeighborSolid = (data >> 4) & 1u;
+				countSolid += isNeighborSolid;
+				m1 += isNeighborSolid * m4;
+				nspy -= 2 * isNeighborSolid;
+
+				isNeighborSolid = (data >> 5) & 1u;		
+				countSolid += isNeighborSolid;
+				m1 += isNeighborSolid * m5;
+				nspz += 2 * isNeighborSolid;	
+
+				isNeighborSolid = (data >> 6) & 1u;	
+				countSolid += isNeighborSolid;
+				m1 += isNeighborSolid * m6;
+				nspz -= 2 * isNeighborSolid;	
+
+				isNeighborSolid = (data >> 7) & 1u;		
+				countSolid += isNeighborSolid;
+				m1 += isNeighborSolid * m7;
+				nspx += isNeighborSolid;
+				nspy += isNeighborSolid;
+
+				isNeighborSolid = (data >> 8) & 1u;			
+				countSolid += isNeighborSolid;
+				m1 += isNeighborSolid * m8;
+				nspx -= isNeighborSolid;
+				nspy -= isNeighborSolid;
+
+				isNeighborSolid = (data >> 9) & 1u;			
+				countSolid += isNeighborSolid;
+				m1 += isNeighborSolid * m9;
+				nspx += isNeighborSolid;
+				nspy -= isNeighborSolid;
+
+				isNeighborSolid = (data >> 10) & 1u;
+				countSolid += isNeighborSolid;
+				m1 += isNeighborSolid * m10;
+				nspx -= isNeighborSolid;
+				nspy += isNeighborSolid;
+
+				isNeighborSolid = (data >> 11) & 1u;
+				countSolid += isNeighborSolid;
+				m1 += isNeighborSolid * m11;
+				nspx += isNeighborSolid;
+				nspz += isNeighborSolid;
+
+				isNeighborSolid = (data >> 12) & 1u;
+				countSolid += isNeighborSolid;
+				m1 += isNeighborSolid * m12;
+				nspx -= isNeighborSolid;
+				nspz -= isNeighborSolid;
+
+				isNeighborSolid = (data >> 13) & 1u;
+				countSolid += isNeighborSolid;
+				m1 += isNeighborSolid * m13;
+				nspx += isNeighborSolid;
+				nspz -= isNeighborSolid;
+
+				isNeighborSolid = (data >> 14) & 1u;
+				countSolid += isNeighborSolid;
+				m1 += isNeighborSolid * m14;
+				nspx -= isNeighborSolid;
+				nspz += isNeighborSolid;
+
+				isNeighborSolid = (data >> 15) & 1u;		
+				countSolid += isNeighborSolid;
+				m1 += isNeighborSolid * m15;
+				nspy += isNeighborSolid;
+				nspz += isNeighborSolid;
+
+				isNeighborSolid = (data >> 16) & 1u;
+				countSolid += isNeighborSolid;
+				m1 += isNeighborSolid * m16;
+				nspy -= isNeighborSolid;
+				nspz -= isNeighborSolid;
+
+				isNeighborSolid = (data >> 17) & 1u;
+				countSolid += isNeighborSolid;
+				m1 += isNeighborSolid * m17;
+				nspy += isNeighborSolid;
+				nspz -= isNeighborSolid;
+
+				isNeighborSolid = (data >> 18) & 1u;
+				countSolid += isNeighborSolid;
+				m1 += isNeighborSolid * m18;
+				nspy -= isNeighborSolid;
+				nspz += isNeighborSolid;
+
+				m3 = sqrt( nspx * nspx + nspy * nspy + nspz * nspz);
+
+				if (m3 == 0.0)
+					m3 = 1.0f;
+
+				nspx = -nspx / m3;
+				nspy = -nspy / m3;
+				nspz = -nspz / m3;
+			
+				m1 = m1 / countSolid;
+				m2 = (nx*nspx + ny*nspy + nz*nspz);
+
+				m3 = 1.0f-m2*m2;
+            	m3 = (m3 > 0.0f) ? sqrtf(m3) : 1.0f;
+				
+                double nspxp = (nx - nspx*m2)*sqrt(1.0f-m1*m1)/m3 + nspx*m1;
+				double nspyp = (ny - nspy*m2)*sqrt(1.0f-m1*m1)/m3 + nspy*m1;
+				double nspzp = (nz - nspz*m2)*sqrt(1.0f-m1*m1)/m3 + nspz*m1;
+
+                double nspxm = -(nx - nspx*m2)*sqrt(1.0f-m1*m1)/m3 + nspx*m1;
+				double nspym = -(ny - nspy*m2)*sqrt(1.0f-m1*m1)/m3 + nspy*m1;
+				double nspzm = -(nz - nspz*m2)*sqrt(1.0f-m1*m1)/m3 + nspz*m1;
+
+                double dotp = nx*nspxp + ny*nspyp + nz*nspzp;
+                double dotm = nx*nspxm + ny*nspym + nz*nspzm;
+
+                if (dotp > dotm) {
+                    nspx = nspxp;
+                    nspy = nspyp;
+                    nspz = nspzp;
+                } else {
+                    nspx = nspxm;
+                    nspy = nspym;
+                    nspz = nspzm;
+                }
+			}
+			else
+			{
+				nspx = nx;
+				nspy = ny;
+				nspz = nz;
+			}
+			
+			if (C < f64_eps) 
+			{
+				nspx = nspy = nspz  = 0.0;
+				nx = ny = nz = 0;
+			} 	
+        
         // q=0
         fq = dist[n];
         rho = fq;
@@ -1989,7 +2151,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(
         //...............................................
         // q = 0,2,4
         // Cq = {1,0,0}, {0,1,0}, {0,0,1}
-        delta = beta * nA * nB * nAB * 0.1111111111111111 * nx;
+        delta = beta * nA * nB * nAB * 0.1111111111111111 * nspx;
         if (!(nA * nB * nAB > 0))
             delta = 0;
         a1 = nA * (0.1111111111111111 * (1 + 4.5 * ux)) + delta;
@@ -2005,7 +2167,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(
         //...............................................
         // q = 2
         // Cq = {0,1,0}
-        delta = beta * nA * nB * nAB * 0.1111111111111111 * ny;
+        delta = beta * nA * nB * nAB * 0.1111111111111111 * nspy;
         if (!(nA * nB * nAB > 0))
             delta = 0;
         a1 = nA * (0.1111111111111111 * (1 + 4.5 * uy)) + delta;
@@ -2020,7 +2182,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(
         //...............................................
         // q = 4
         // Cq = {0,0,1}
-        delta = beta * nA * nB * nAB * 0.1111111111111111 * nz;
+        delta = beta * nA * nB * nAB * 0.1111111111111111 * nspz;
         if (!(nA * nB * nAB > 0))
             delta = 0;
         a1 = nA * (0.1111111111111111 * (1 + 4.5 * uz)) + delta;
@@ -2041,7 +2203,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(
 //		double Fx, double Fy, double Fz, int start, int finish, int Np){
 extern "C" void ScaLBL_D3Q19_AAodd_Color(
     int *neighborList, int *Map, double *dist, double *Aq, double *Bq,
-    double *Den, double *Phi, double *Vel, double rhoA, double rhoB,
+    double *Den, double *Phi,  unsigned int* NeighborSolid, double *Vel, double rhoA, double rhoB,
     double tauA, double tauB, double alpha, double beta, double Fx, double Fy,
     double Fz, int strideY, int strideZ, int start, int finish, int Np) {
 
@@ -2061,6 +2223,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(
     double C, nx, ny, nz; //color gradient magnitude and direction
     double ux, uy, uz;
     double phi, tau, rho0, rlx_setA, rlx_setB;
+    double nspx, nspy, nspz; 
 
     const double mrt_V1 = 0.05263157894736842;
     const double mrt_V2 = 0.012531328320802;
@@ -2091,78 +2254,238 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(
         rlx_setA = 1.f / tau;
         rlx_setB = 8.f * (2.f - rlx_setA) / (8.f - rlx_setA);
 
-        // Get the 1D index based on regular data layout
+    // Get the 1D index based on regular data layout
         ijk = Map[n];
-        //					COMPUTE THE COLOR GRADIENT
-        //........................................................................
-        //.................Read Phase Indicator Values............................
-        //........................................................................
+
         nn = ijk - 1; // neighbor index (get convention)
         m1 = Phi[nn]; // get neighbor for phi - 1
-        //........................................................................
+        
         nn = ijk + 1; // neighbor index (get convention)
         m2 = Phi[nn]; // get neighbor for phi - 2
-        //........................................................................
+        
         nn = ijk - strideY; // neighbor index (get convention)
         m3 = Phi[nn];       // get neighbor for phi - 3
-        //........................................................................
+        
         nn = ijk + strideY; // neighbor index (get convention)
         m4 = Phi[nn];       // get neighbor for phi - 4
-        //........................................................................
+        
         nn = ijk - strideZ; // neighbor index (get convention)
         m5 = Phi[nn];       // get neighbor for phi - 5
-        //........................................................................
+        
         nn = ijk + strideZ; // neighbor index (get convention)
         m6 = Phi[nn];       // get neighbor for phi - 6
-        //........................................................................
+        
         nn = ijk - strideY - 1; // neighbor index (get convention)
         m7 = Phi[nn];           // get neighbor for phi - 7
-        //........................................................................
+        
         nn = ijk + strideY + 1; // neighbor index (get convention)
         m8 = Phi[nn];           // get neighbor for phi - 8
-        //........................................................................
+        
         nn = ijk + strideY - 1; // neighbor index (get convention)
         m9 = Phi[nn];           // get neighbor for phi - 9
-        //........................................................................
+        
         nn = ijk - strideY + 1; // neighbor index (get convention)
         m10 = Phi[nn];          // get neighbor for phi - 10
-        //........................................................................
+        
         nn = ijk - strideZ - 1; // neighbor index (get convention)
         m11 = Phi[nn];          // get neighbor for phi - 11
-        //........................................................................
+        
         nn = ijk + strideZ + 1; // neighbor index (get convention)
         m12 = Phi[nn];          // get neighbor for phi - 12
-        //........................................................................
+        
         nn = ijk + strideZ - 1; // neighbor index (get convention)
         m13 = Phi[nn];          // get neighbor for phi - 13
-        //........................................................................
+        
         nn = ijk - strideZ + 1; // neighbor index (get convention)
         m14 = Phi[nn];          // get neighbor for phi - 14
-        //........................................................................
+        
         nn = ijk - strideZ - strideY; // neighbor index (get convention)
         m15 = Phi[nn];                // get neighbor for phi - 15
-        //........................................................................
+        
         nn = ijk + strideZ + strideY; // neighbor index (get convention)
         m16 = Phi[nn];                // get neighbor for phi - 16
-        //........................................................................
+        
         nn = ijk + strideZ - strideY; // neighbor index (get convention)
         m17 = Phi[nn];                // get neighbor for phi - 17
-        //........................................................................
+        
         nn = ijk - strideZ + strideY; // neighbor index (get convention)
-        m18 = Phi[nn];                // get neighbor for phi - 18
+        m18 = Phi[nn];                // get neighbor for phi - 18			
+        
         //............Compute the Color Gradient...................................
-        nx = -(m1 - m2 + 0.5 * (m7 - m8 + m9 - m10 + m11 - m12 + m13 - m14));
-        ny = -(m3 - m4 + 0.5 * (m7 - m8 - m9 + m10 + m15 - m16 + m17 - m18));
-        nz = -(m5 - m6 + 0.5 * (m11 - m12 - m13 + m14 + m15 - m16 - m17 + m18));
+        nx = -(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+        ny = -(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+        nz = -(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
 
         //...........Normalize the Color Gradient.................................
-        C = sqrt(nx * nx + ny * ny + nz * nz);
-        double ColorMag = C;
-        if (C == 0.0)
-            ColorMag = 1.0;
-        nx = nx / ColorMag;
-        ny = ny / ColorMag;
-        nz = nz / ColorMag;
+        C = sqrt(nx*nx+ny*ny+nz*nz);
+        if (C > f64_eps) 
+        {
+            nx = nx/C;
+            ny = ny/C;
+            nz = nz/C;
+        }
+        //...........Correct wettability vector for Mass Balance.................................
+
+        unsigned int data = NeighborSolid[n];
+        if ( (data != 0) ) 
+        {
+            char isNeighborSolid;
+            char countSolid = 0;
+            
+            nspx = 0;
+            nspy = 0;
+            nspz = 0;
+
+            isNeighborSolid = (data >> 1) & 1u;
+            countSolid += isNeighborSolid;
+            m1 = isNeighborSolid * m1;
+            nspx += 2 * isNeighborSolid;
+
+            isNeighborSolid = (data >> 2) & 1u;				
+            countSolid += isNeighborSolid;
+            m1 += isNeighborSolid * m2;
+            nspx -= 2 * isNeighborSolid;
+
+            isNeighborSolid = (data >> 3) & 1u;					
+            countSolid += isNeighborSolid;	
+            m1 += isNeighborSolid * m3;
+            nspy += 2 * isNeighborSolid;
+
+            isNeighborSolid = (data >> 4) & 1u;
+            countSolid += isNeighborSolid;
+            m1 += isNeighborSolid * m4;
+            nspy -= 2 * isNeighborSolid;
+
+            isNeighborSolid = (data >> 5) & 1u;		
+            countSolid += isNeighborSolid;
+            m1 += isNeighborSolid * m5;
+            nspz += 2 * isNeighborSolid;	
+
+            isNeighborSolid = (data >> 6) & 1u;	
+            countSolid += isNeighborSolid;
+            m1 += isNeighborSolid * m6;
+            nspz -= 2 * isNeighborSolid;	
+
+            isNeighborSolid = (data >> 7) & 1u;		
+            countSolid += isNeighborSolid;
+            m1 += isNeighborSolid * m7;
+            nspx += isNeighborSolid;
+            nspy += isNeighborSolid;
+
+            isNeighborSolid = (data >> 8) & 1u;			
+            countSolid += isNeighborSolid;
+            m1 += isNeighborSolid * m8;
+            nspx -= isNeighborSolid;
+            nspy -= isNeighborSolid;
+
+            isNeighborSolid = (data >> 9) & 1u;			
+            countSolid += isNeighborSolid;
+            m1 += isNeighborSolid * m9;
+            nspx += isNeighborSolid;
+            nspy -= isNeighborSolid;
+
+            isNeighborSolid = (data >> 10) & 1u;
+            countSolid += isNeighborSolid;
+            m1 += isNeighborSolid * m10;
+            nspx -= isNeighborSolid;
+            nspy += isNeighborSolid;
+
+            isNeighborSolid = (data >> 11) & 1u;
+            countSolid += isNeighborSolid;
+            m1 += isNeighborSolid * m11;
+            nspx += isNeighborSolid;
+            nspz += isNeighborSolid;
+
+            isNeighborSolid = (data >> 12) & 1u;
+            countSolid += isNeighborSolid;
+            m1 += isNeighborSolid * m12;
+            nspx -= isNeighborSolid;
+            nspz -= isNeighborSolid;
+
+            isNeighborSolid = (data >> 13) & 1u;
+            countSolid += isNeighborSolid;
+            m1 += isNeighborSolid * m13;
+            nspx += isNeighborSolid;
+            nspz -= isNeighborSolid;
+
+            isNeighborSolid = (data >> 14) & 1u;
+            countSolid += isNeighborSolid;
+            m1 += isNeighborSolid * m14;
+            nspx -= isNeighborSolid;
+            nspz += isNeighborSolid;
+
+            isNeighborSolid = (data >> 15) & 1u;		
+            countSolid += isNeighborSolid;
+            m1 += isNeighborSolid * m15;
+            nspy += isNeighborSolid;
+            nspz += isNeighborSolid;
+
+            isNeighborSolid = (data >> 16) & 1u;
+            countSolid += isNeighborSolid;
+            m1 += isNeighborSolid * m16;
+            nspy -= isNeighborSolid;
+            nspz -= isNeighborSolid;
+
+            isNeighborSolid = (data >> 17) & 1u;
+            countSolid += isNeighborSolid;
+            m1 += isNeighborSolid * m17;
+            nspy += isNeighborSolid;
+            nspz -= isNeighborSolid;
+
+            isNeighborSolid = (data >> 18) & 1u;
+            countSolid += isNeighborSolid;
+            m1 += isNeighborSolid * m18;
+            nspy -= isNeighborSolid;
+            nspz += isNeighborSolid;
+
+            m3 = sqrt( nspx * nspx + nspy * nspy + nspz * nspz);
+
+            if (m3 == 0.0)
+                m3 = 1.0f;
+
+            nspx = -nspx / m3;
+            nspy = -nspy / m3;
+            nspz = -nspz / m3;
+        
+            m1 = m1 / countSolid;
+            m2 = (nx*nspx + ny*nspy + nz*nspz);
+
+            m3 = 1.0f-m2*m2;
+            m3 = (m3 > 0.0f) ? sqrtf(m3) : 1.0f;
+            
+            double nspxp = (nx - nspx*m2)*sqrt(1.0f-m1*m1)/m3 + nspx*m1;
+            double nspyp = (ny - nspy*m2)*sqrt(1.0f-m1*m1)/m3 + nspy*m1;
+            double nspzp = (nz - nspz*m2)*sqrt(1.0f-m1*m1)/m3 + nspz*m1;
+
+            double nspxm = -(nx - nspx*m2)*sqrt(1.0f-m1*m1)/m3 + nspx*m1;
+            double nspym = -(ny - nspy*m2)*sqrt(1.0f-m1*m1)/m3 + nspy*m1;
+            double nspzm = -(nz - nspz*m2)*sqrt(1.0f-m1*m1)/m3 + nspz*m1;
+
+            double dotp = nx*nspxp + ny*nspyp + nz*nspzp;
+            double dotm = nx*nspxm + ny*nspym + nz*nspzm;
+
+            if (dotp > dotm) {
+                nspx = nspxp;
+                nspy = nspyp;
+                nspz = nspzp;
+            } else {
+                nspx = nspxm;
+                nspy = nspym;
+                nspz = nspzm;
+            }
+        }
+        else
+        {
+            nspx = nx;
+            nspy = ny;
+            nspz = nz;
+        }
+        
+        if (C < f64_eps) 
+        {
+            nspx = nspy = nspz  = 0.0;
+            nx = ny = nz = 0;
+        } 	
 
         // q=0
         fq = dist[n];
@@ -2666,7 +2989,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(
         //...............................................
         // q = 0,2,4
         // Cq = {1,0,0}, {0,1,0}, {0,0,1}
-        delta = beta * nA * nB * nAB * 0.1111111111111111 * nx;
+        delta = beta * nA * nB * nAB * 0.1111111111111111 * nspx;
         if (!(nA * nB * nAB > 0))
             delta = 0;
         a1 = nA * (0.1111111111111111 * (1 + 4.5 * ux)) + delta;
@@ -2685,7 +3008,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(
 
         //...............................................
         // Cq = {0,1,0}
-        delta = beta * nA * nB * nAB * 0.1111111111111111 * ny;
+        delta = beta * nA * nB * nAB * 0.1111111111111111 * nspy;
         if (!(nA * nB * nAB > 0))
             delta = 0;
         a1 = nA * (0.1111111111111111 * (1 + 4.5 * uy)) + delta;
@@ -2705,7 +3028,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(
         //...............................................
         // q = 4
         // Cq = {0,0,1}
-        delta = beta * nA * nB * nAB * 0.1111111111111111 * nz;
+        delta = beta * nA * nB * nAB * 0.1111111111111111 * nspz;
         if (!(nA * nB * nAB > 0))
             delta = 0;
         a1 = nA * (0.1111111111111111 * (1 + 4.5 * uz)) + delta;
