@@ -508,7 +508,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id,
 
     // total Global is the number of nodes in the pore-space
     totalGlobal = Dm->Comm.sumReduce(count);
-    maxdistGlobal = Dm->Comm.sumReduce(maxdist);
+    maxdistGlobal = Dm->Comm.maxReduce(maxdist);
     double volume = double(nprocx * nprocy * nprocz) * double(nx - 2) *
                     double(ny - 2) * double(nz - 2);
     double volume_fraction = totalGlobal / volume;
