@@ -172,7 +172,7 @@ void ScaLBL_ColorModel::ReadParams(string filename) {
                        "periodic boundary condition \n");
         }
         domain_db->putScalar<int>("BC", BoundaryCondition);
-    } else if (protocol == "centrifuge" || protocol == "sw_steady") {
+    } else if (protocol == "centrifuge") {
         if (BoundaryCondition != 3) {
             BoundaryCondition = 3;
             if (rank == 0)
@@ -180,7 +180,15 @@ void ScaLBL_ColorModel::ReadParams(string filename) {
                        "pressure boundary condition \n");
         }
         domain_db->putScalar<int>("BC", BoundaryCondition);
-    } else if (protocol == "core flooding") {
+    } else if (protocol == "sw_steady") {
+        if (BoundaryCondition != 3) {
+            BoundaryCondition = 3;
+            if (rank == 0)
+                printf("WARNING: protocol (sw_steady) supports only constant "
+                       "pressure boundary condition \n");
+        }
+        domain_db->putScalar<int>("BC", BoundaryCondition);
+	} else if (protocol == "core flooding") {
         if (rank == 0)
             printf("Using core flooding protocol \n");
         if (BoundaryCondition != 4) {
