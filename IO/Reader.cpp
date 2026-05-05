@@ -5,6 +5,7 @@
 #include "IO/MeshDatabase.h"
 #include "IO/silo.h"
 #include "common/Utilities.h"
+#include "IO/silo.h"
 
 #include <ProfilerApp.h>
 #include <cstdio>

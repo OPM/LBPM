@@ -48,7 +48,7 @@ ADD_LBPM_EXECUTABLE( TestIonModel )
 ADD_LBPM_EXECUTABLE( TestNernstPlanck )
 ADD_LBPM_EXECUTABLE( TestPNP_Stokes )
 ADD_LBPM_EXECUTABLE( TestMixedGrad )
-
+ADD_LBPM_EXECUTABLE( fmm_micp_drainage )
 
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cylindertest ${CMAKE_CURRENT_BINARY_DIR}/cylindertest COPYONLY )
 
@@ -84,7 +84,7 @@ ADD_LBPM_TEST_1_2_4( TestBlobIdentify )
 #ADD_LBPM_TEST_PARALLEL( TestTwoPhase 8 )
 #ADD_LBPM_TEST_PARALLEL( TestBlobAnalyze 8 )
 ADD_LBPM_TEST_PARALLEL( TestSegDist 8 )
-ADD_LBPM_TEST_PARALLEL( TestCommD3Q19 8 )
+ADD_LBPM_TEST_PARALLEL( TestCommD3Q19 8 test.db)
 ADD_LBPM_TEST_1_2_4( testCommunication )
 ADD_LBPM_TEST( TestWriter )
 ADD_LBPM_TEST( TestDatabase )

@@ -24,7 +24,7 @@ enum class VariableType {
 };
 enum class DataType { Double, Float, Int, Null };
 enum class MeshType { PointMesh, SurfaceMesh, VolumeMesh, Unknown };
-enum class FileFormat { OLD, NEW, NEW_SINGLE, SILO, HDF5 };
+enum class FileFormat { OLD, NEW, NEW_SINGLE, SILO, HDF5 , VTK};
 
 
 //! Convert enums to/from strings (more future-proof than static_cast<int>)

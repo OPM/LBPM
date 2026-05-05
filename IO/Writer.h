@@ -38,7 +38,7 @@ void initialize(
  * @param[in] comm          The comm to use for writing (usually MPI_COMM_WORLD or a dup thereof)
  */
 void writeData( const std::string &subdir, const std::vector<IO::MeshDataStruct> &meshData,
-    const Utilities::MPI &comm );
+    const Utilities::MPI &comm , int timestep = -1);
 
 
 /*!
@@ -48,12 +48,14 @@ void writeData( const std::string &subdir, const std::vector<IO::MeshDataStruct>
  * @param[in] meshData      The data to write
  * @param[in] comm          The comm to use for writing (usually MPI_COMM_WORLD or a dup thereof)
  */
+
+
 inline void writeData(
     int timestep, const std::vector<IO::MeshDataStruct> &meshData, const Utilities::MPI &comm )
 {
     char subdir[100];
     sprintf( subdir, "vis%03i", timestep );
-    writeData( subdir, meshData, comm );
+    writeData( subdir, meshData, comm , timestep);
 }
 
 

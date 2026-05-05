@@ -1593,6 +1593,55 @@ __global__  void dvc_ScaLBL_D3Q19_Momentum(double *dist, double *vel, int N)
 	}
 }
 
+__global__  void dvc_ScaLBL_D3Q19_Momentum_2nd_order(double *dist, double *vel, int N, double Fx, double Fy, double Fz)
+{
+	int n;
+	// distributions
+	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
+	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
+	double rho,vx,vy,vz;
+
+	int S = N/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
+		if (n<N){
+
+			f2 = dist[2*N+n];
+			f4 = dist[4*N+n];
+			f6 = dist[6*N+n];
+			f8 = dist[8*N+n];
+			f10 = dist[10*N+n];
+			f12 = dist[12*N+n];
+			f14 = dist[14*N+n];
+			f16 = dist[16*N+n];
+			f18 = dist[18*N+n];
+			//........................................................................
+			f0 = dist[n];
+			f1 = dist[N+n];
+			f3 = dist[3*N+n];
+			f5 = dist[5*N+n];
+			f7 = dist[7*N+n];
+			f9 = dist[9*N+n];
+			f11 = dist[11*N+n];
+			f13 = dist[13*N+n];
+			f15 = dist[15*N+n];
+			f17 = dist[17*N+n];			
+
+			//.................Compute the velocity...................................
+			rho = f0 + f1 + f2 + f3 + f4 + f5 + f6 + f7 + f8 + f9 + f10 + f11 + f12 + f13 + f14 + f15 + f16 + f17 +  f18;
+			vx = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
+			vy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
+			vz = f5-f6+f11-f12-f13+f14+f15-f16-f17+f18;
+			//..................Write the velocity.....................................
+			vel[n] = vx/rho - Fx*0.5;
+			vel[N + n] = vy/rho - Fy*0.5;
+			vel[2 * N + n] = vz/rho - Fz*0.5;
+			//........................................................................
+		}
+	}
+}
+
 __global__  void dvc_ScaLBL_D3Q19_Pressure(const double *dist, double *Pressure, int N)
 {
 	int n;
@@ -2433,6 +2482,17 @@ extern "C" void ScaLBL_D3Q19_Momentum(double *dist, double *vel, int Np){
 		printf("CUDA error in ScaLBL_D3Q19_Velocity: %s \n",cudaGetErrorString(err));
 	}
 }
+
+extern "C" void ScaLBL_D3Q19_Momentum_2nd_order(double *dist, double *vel, int Np, double Fx, double Fy, double Fz){
+
+	dvc_ScaLBL_D3Q19_Momentum_2nd_order<<<NBLOCKS,NTHREADS >>>(dist, vel, Np, Fx, Fy, Fz);
+
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_Velocity_2nd_order: %s \n",cudaGetErrorString(err));
+	}
+}
+
 
 extern "C" void ScaLBL_D3Q19_Pressure(double *fq, double *Pressure, int Np){
 	dvc_ScaLBL_D3Q19_Pressure<<< NBLOCKS,NTHREADS >>>(fq, Pressure, Np);

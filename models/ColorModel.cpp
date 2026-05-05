@@ -32,7 +32,7 @@ ScaLBL_ColorModel::ScaLBL_ColorModel(int RANK, int NP,
       tauB(0), rhoA(0), rhoB(0), alpha(0), beta(0), Fx(0), Fy(0), Fz(0),
       flux(0), din(0), dout(0), inletA(0), inletB(0), outletA(0), outletB(0),
       Nx(0), Ny(0), Nz(0), N(0), Np(0), nprocx(0), nprocy(0), nprocz(0),
-      BoundaryCondition(0), Lx(0), Ly(0), Lz(0), id(nullptr),
+      BoundaryCondition(0), Lx(0), Ly(0), Lz(0), id(nullptr), NeighborSolid(nullptr),
       NeighborList(nullptr), dvcMap(nullptr), fq(nullptr), Aq(nullptr),
       Bq(nullptr), Den(nullptr), Phi(nullptr), ColorGrad(nullptr),
       Velocity(nullptr), Pressure(nullptr), comm(COMM) {
@@ -111,6 +111,9 @@ void ScaLBL_ColorModel::ReadParams(string filename) {
     if (color_db->keyExists("flux")) {
         flux = color_db->getScalar<double>("flux");
     }
+    if (color_db->keyExists("timestep")) {
+        timestep = color_db->getScalar<int>("timestep");
+    }
     inletA = 1.f;
     inletB = 0.f;
     outletA = 0.f;
@@ -180,7 +183,15 @@ void ScaLBL_ColorModel::ReadParams(string filename) {
                        "pressure boundary condition \n");
         }
         domain_db->putScalar<int>("BC", BoundaryCondition);
-    } else if (protocol == "core flooding") {
+    } else if (protocol == "sw_steady") {
+        if (BoundaryCondition != 3) {
+            BoundaryCondition = 3;
+            if (rank == 0)
+                printf("WARNING: protocol (sw_steady) supports only constant "
+                       "pressure boundary condition \n");
+        }
+        domain_db->putScalar<int>("BC", BoundaryCondition);
+	} else if (protocol == "core flooding") {
         if (rank == 0)
             printf("Using core flooding protocol \n");
         if (BoundaryCondition != 4) {
@@ -448,6 +459,8 @@ void ScaLBL_ColorModel::Create() {
     ScaLBL_AllocateDeviceMemory((void **)&Pressure, sizeof(double) * Np);
     ScaLBL_AllocateDeviceMemory((void **)&Velocity, 3 * sizeof(double) * Np);
     ScaLBL_AllocateDeviceMemory((void **)&ColorGrad, 3 * sizeof(double) * Np);
+    ScaLBL_AllocateDeviceMemory((void **)&NeighborSolid, sizeof(unsigned int) * Np);
+    
     //...........................................................................
     // Update GPU data structures
     if (rank == 0)
@@ -503,6 +516,43 @@ void ScaLBL_ColorModel::Create() {
     if (rank == 0)
       printf("Model created \n");
     delete[] PhaseLabel;
+
+    unsigned int *TmpSolid = new unsigned int[Np];
+
+    for (int k = 1; k < Nz - 1; k++) {
+        for (int j = 1; j < Ny - 1; j++) {
+            for (int i = 1; i < Nx - 1; i++) {
+                int idx = Map(i, j, k);
+                unsigned int data = 0;
+                if (!(idx < 0)) {
+                    if ((Map(i - 1 , j, k) == -1) ) data |= (1u << 1);
+                    if ((Map(i + 1 , j, k) == -1) ) data |= (1u << 2);
+                    if ((Map(i , j - 1, k) == -1) ) data |= (1u << 3);
+                    if ((Map(i , j + 1, k) == -1) ) data |= (1u << 4);
+                    if ((Map(i , j, k - 1) == -1) ) data |= (1u << 5);
+                    if ((Map(i , j, k + 1) == -1) ) data |= (1u << 6);
+                    if ((Map(i - 1 , j - 1, k) == -1) ) data |= (1u << 7);
+                    if ((Map(i + 1 , j + 1, k) == -1) ) data |= (1u << 8);
+                    if ((Map(i - 1 , j + 1, k) == -1) ) data |= (1u << 9);
+                    if ((Map(i + 1,  j - 1, k) == -1) ) data |= (1u << 10);
+                    if ((Map(i - 1 , j, k - 1) == -1) ) data |= (1u << 11);
+                    if ((Map(i + 1 , j, k + 1) == -1) ) data |= (1u << 12);
+                    if ((Map(i - 1 , j, k + 1) == -1) ) data |= (1u << 13);
+                    if ((Map(i + 1 , j, k - 1) == -1) ) data |= (1u << 14);
+                    if ((Map(i , j - 1, k - 1) == -1) ) data |= (1u << 15);
+                    if ((Map(i , j + 1, k + 1) == -1) ) data |= (1u << 16);
+                    if ((Map(i , j - 1, k + 1) == -1) ) data |= (1u << 17);
+                    if ((Map(i , j + 1, k - 1) == -1) ) data |= (1u << 18);
+                    TmpSolid[idx] = data;
+                }
+            }
+        }
+    }
+
+    ScaLBL_CopyToDevice(NeighborSolid, TmpSolid, sizeof(unsigned int) * Np);
+    ScaLBL_Comm->Barrier();
+    delete[] TmpSolid;
+
 }
 
 /********************************************************
@@ -630,7 +680,6 @@ double ScaLBL_ColorModel::Run(int returntime) {
     bool RESCALE_FORCE = false;
     bool SET_CAPILLARY_NUMBER = false;
     bool TRIGGER_FORCE_RESCALE = false;
-    double tolerance = 0.01;
     auto WettingConvention = color_db->getWithDefault<std::string>( "WettingConvention", "none" );
     auto current_db = db->cloneDatabase();
     auto flow_db = db->getDatabase("FlowAdaptor");
@@ -656,9 +705,8 @@ double ScaLBL_ColorModel::Run(int returntime) {
             color_db->getScalar<int>("rescale_force_after_timestep");
         RESCALE_FORCE = true;
     }
-    if (analysis_db->keyExists("tolerance")) {
-        tolerance = analysis_db->getScalar<double>("tolerance");
-    }
+    double tolerance = analysis_db->getWithDefault<double>("tolerance", 1e-5);
+    int analysis_interval = analysis_db->getWithDefault<int>("analysis_interval", 1000);
     
     runAnalysis analysis(current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular,
                          Map);
@@ -690,7 +738,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
         ScaLBL_Comm_Regular->SendHalo(Phi);
 
         ScaLBL_D3Q19_AAodd_Color(
-            NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB,
+            NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, NeighborSolid, Velocity, rhoA, rhoB,
             tauA, tauB, alpha, beta, Fx, Fy, Fz, Nx, Nx * Ny,
             ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         ScaLBL_Comm_Regular->RecvHalo(Phi);
@@ -709,7 +757,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
             ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
             ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
         }
-        ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,
+        ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, NeighborSolid,
                                  Velocity, rhoA, rhoB, tauA, tauB, alpha, beta,
                                  Fx, Fy, Fz, Nx, Nx * Ny, 0,
                                  ScaLBL_Comm->LastExterior(), Np);
@@ -735,7 +783,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
             ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
         }
         ScaLBL_Comm_Regular->SendHalo(Phi);
-        ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA,
+        ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, NeighborSolid, Velocity, rhoA,
                                   rhoB, tauA, tauB, alpha, beta, Fx, Fy, Fz, Nx,
                                   Nx * Ny, ScaLBL_Comm->FirstInterior(),
                                   ScaLBL_Comm->LastInterior(), Np);
@@ -754,7 +802,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
             ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
             ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
         }
-        ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA,
+        ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, NeighborSolid, Velocity, rhoA,
                                   rhoB, tauA, tauB, alpha, beta, Fx, Fy, Fz, Nx,
                                   Nx * Ny, 0, ScaLBL_Comm->LastExterior(), Np);
         ScaLBL_Comm->Barrier();
@@ -764,7 +812,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
             Den); // allow initial ramp-up to get closer to steady state
 
         CURRENT_TIMESTEP += 2;
-        if (CURRENT_TIMESTEP > MIN_STEADY_TIMESTEPS && BoundaryCondition == 0) {
+        if (CURRENT_TIMESTEP % analysis_interval == 0 && CURRENT_TIMESTEP > MIN_STEADY_TIMESTEPS && BoundaryCondition == 0) {
             analysis.finish();
 
             double volB = Averages->gwb.V;
@@ -801,7 +849,7 @@ double ScaLBL_ColorModel::Run(int returntime) {
                 fabs(muA * flow_rate_A + muB * flow_rate_B) / (5.796 * alpha);
 
             bool isSteady = false;
-            if ((fabs((Ca - Ca_previous) / Ca) < tolerance &&
+            if ((fabs((Ca - Ca_previous) / analysis_interval / Ca) < tolerance &&
                  CURRENT_TIMESTEP > MIN_STEADY_TIMESTEPS))
                 isSteady = true;
             if (CURRENT_TIMESTEP >= MAX_STEADY_TIMESTEPS)
@@ -1071,7 +1119,12 @@ double ScaLBL_ColorModel::Run(int returntime) {
                         printf("Ca = %f, (previous = %f) \n", Ca, Ca_previous);
                     }
                 }
+
+                break; // steady-state achieved, exit.
             }
+
+            // save for convergence checks
+            Ca_previous = Ca;
         }
     }
     analysis.finish();
@@ -1100,11 +1153,9 @@ double ScaLBL_ColorModel::Run(int returntime) {
 void ScaLBL_ColorModel::Run() {
     int nprocs = nprocx * nprocy * nprocz;
     const RankInfoStruct rank_info(rank, nprocx, nprocy, nprocz);
-    int analysis_interval =
-        1000; // number of timesteps in between in situ analysis
-    if (analysis_db->keyExists("analysis_interval")) {
-        analysis_interval = analysis_db->getScalar<int>("analysis_interval");
-    }
+
+    int analysis_interval = analysis_db->getWithDefault<int>("analysis_interval", 1000);
+    double tolerance = analysis_db->getWithDefault<double>("tolerance", 0.0);
 
     //************ MAIN ITERATION LOOP ***************************************/
     comm.barrier();
@@ -1116,7 +1167,11 @@ void ScaLBL_ColorModel::Run() {
                          Map);
     //analysis.createThreads( analysis_method, 4 );
     auto t1 = std::chrono::system_clock::now();
-    while (timestep < timestepMax) {
+
+    double delta_sw = 1.0;
+    double sw_prev = -1.0;
+
+    while (timestep < timestepMax && delta_sw > tolerance) {
         PROFILE_START("Update");
 
         // *************ODD TIMESTEP*************
@@ -1142,7 +1197,7 @@ void ScaLBL_ColorModel::Run() {
         ScaLBL_Comm_Regular->SendHalo(Phi);
 
         ScaLBL_D3Q19_AAodd_Color(
-            NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB,
+            NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, NeighborSolid, Velocity, rhoA, rhoB,
             tauA, tauB, alpha, beta, Fx, Fy, Fz, Nx, Nx * Ny,
             ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         ScaLBL_Comm_Regular->RecvHalo(Phi);
@@ -1161,7 +1216,7 @@ void ScaLBL_ColorModel::Run() {
             ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
             ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
         }
-        ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,
+        ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, NeighborSolid,
                                  Velocity, rhoA, rhoB, tauA, tauB, alpha, beta,
                                  Fx, Fy, Fz, Nx, Nx * Ny, 0,
                                  ScaLBL_Comm->LastExterior(), Np);
@@ -1187,7 +1242,7 @@ void ScaLBL_ColorModel::Run() {
             ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
         }
         ScaLBL_Comm_Regular->SendHalo(Phi);
-        ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA,
+        ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, NeighborSolid, Velocity, rhoA,
                                   rhoB, tauA, tauB, alpha, beta, Fx, Fy, Fz, Nx,
                                   Nx * Ny, ScaLBL_Comm->FirstInterior(),
                                   ScaLBL_Comm->LastInterior(), Np);
@@ -1206,20 +1261,30 @@ void ScaLBL_ColorModel::Run() {
             ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
             ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
         }
-        ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA,
+        ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi,  NeighborSolid, Velocity, rhoA,
                                   rhoB, tauA, tauB, alpha, beta, Fx, Fy, Fz, Nx,
                                   Nx * Ny, 0, ScaLBL_Comm->LastExterior(), Np);
         ScaLBL_Comm->Barrier();
         //************************************************************************
         PROFILE_STOP("Update");
 
-        if (rank == 0 && timestep % analysis_interval == 0 &&
-            BoundaryCondition == 4) {
-            printf("%i %f \n", timestep, din);
-        }
         // Run the analysis
         analysis.basic(timestep, current_db, *Averages, Phi, Pressure, Velocity,
                        fq, Den);
+
+        if (timestep % analysis_interval == 0){
+            analysis.finish();
+
+            double volA = Averages->gnb.V / Dm->Volume;
+            double volB = Averages->gwb.V / Dm->Volume;
+            double sw = volB / (volA + volB);
+
+            delta_sw = fabs(sw - sw_prev) / analysis_interval / sw;
+            if (rank == 0)
+                printf("t: %d sw: %0.5e dSw/dt: %.5e\n", timestep, sw, delta_sw);
+
+            sw_prev = sw;
+        }
     }
     analysis.finish();
     PROFILE_STOP("Loop");
