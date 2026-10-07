@@ -329,7 +329,7 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(
                     int n = k * Nx * Ny + j * Nx + i;
                     POROSITY = Porosity_host[n];
                     PERMEABILITY = Permeability_host[n];
-                    if (POROSITY <= 0.0) {
+                    if ((POROSITY <= 0.0) || (POROSITY > 1.0)) {
                         ERROR("Error: Porosity for grey voxels must be 0.0 < "
                               "Porosity <= 1.0 !\n");
                     } else if (PERMEABILITY <= 0.0) {
@@ -337,7 +337,8 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(
                               "0.0 ! \n");
                     } else {
                         Porosity[idx] = POROSITY;
-                        Permeability[idx] = PERMEABILITY;
+                        Permeability[idx] =
+                            PERMEABILITY / Dm->voxel_length / Dm->voxel_length;
                         GreyPorosity_loc += POROSITY;
                     }
                 }
