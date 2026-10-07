@@ -252,8 +252,13 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,
                                                 Dm->voxel_length /
                                                 Dm->voxel_length;
                             label_count[idx_label] += 1.0;
+                            label_found = true;
                             break;
                         }
+                    }
+                    if (!label_found) {
+                        ERROR("Error: Voxel value not found in ComponentLabels "
+                              "list!\n");
                     }
                 }
             }
