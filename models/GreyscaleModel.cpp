@@ -755,7 +755,9 @@ void ScaLBL_GreyscaleModel::Run() {
             double absperm = h * h * mu * GreyPorosity * flow_rate / force_mag;
 
             if (rank == 0) {
-                printf("     AbsPerm = %.5g [micron^2]\n", absperm);
+                printf("     timestep %d - error %.0e:"
+                       "AbsPerm = %.5g [um^2] = %.5g [mD^2]\n",
+                       timestep, error, absperm, absperm / 0.0009869233);
                 bool WriteHeader = false;
                 FILE *log_file = fopen("Permeability.csv", "r");
                 if (log_file != NULL)
