@@ -30,7 +30,7 @@ ScaLBL_GreyscaleModel::ScaLBL_GreyscaleModel(int RANK, int NP,
       tau_eff(0), Den(0), Fx(0), Fy(0), Fz(0), flux(0), din(0), dout(0),
       GreyPorosity(0), Nx(0), Ny(0), Nz(0), N(0), Np(0), nprocx(0), nprocy(0),
       nprocz(0), BoundaryCondition(0), Lx(0), Ly(0), Lz(0), comm(COMM),
-      Forchheimer(0) {
+      Forchheimer(0), viscosity_ratio(0) {
     SignDist.resize(Nx, Ny, Nz);
     SignDist.fill(0);
 }
@@ -47,7 +47,8 @@ void ScaLBL_GreyscaleModel::ReadParams(string filename) {
     // set defaults
     timestepMax = 100000;
     tau = 1.0;
-    tau_eff = tau;
+    viscosity_ratio = 1.0;
+    tau_eff = viscosity_ratio * (tau - 0.5) + 0.5;
     Den = 1.0; //constant density
     tolerance = 0.01;
     Fx = Fy = Fz = 0.0;
@@ -55,7 +56,7 @@ void ScaLBL_GreyscaleModel::ReadParams(string filename) {
     din = dout = 1.0;
     flux = 0.0;
     dp = 10.0;         //unit of 'dp': voxel
-    CollisionType = 1; //1: IMRT; 2: BGK; 3: MRT
+    CollisionType = 3; //1: IMRT; 2: BGK; 3: MRT
     Forchheimer = false;
 
     // ---------------------- Greyscale Model parameters -----------------------//
@@ -65,7 +66,16 @@ void ScaLBL_GreyscaleModel::ReadParams(string filename) {
     if (greyscale_db->keyExists("tau")) {
         tau = greyscale_db->getScalar<double>("tau");
     }
-    tau_eff = greyscale_db->getWithDefault<double>("tau_eff", tau);
+    if (greyscale_db->keyExists("ViscosityRatio")) {
+        viscosity_ratio = greyscale_db->getScalar<double>("ViscosityRatio");
+    }
+    tau_eff = greyscale_db->getWithDefault<double>(
+        "tau_eff", viscosity_ratio * (tau - 0.5) + 0.5);
+    if (rank == 0) {
+        printf("Viscosity Ratio: %.5g\n", viscosity_ratio);
+        printf("tau: %.5g\n", tau);
+        printf("Effective tau: %.5g\n", tau_eff);
+    }
     if (greyscale_db->keyExists("Den")) {
         Den = greyscale_db->getScalar<double>("Den");
     }
@@ -209,8 +219,6 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,
                                                   double *Permeability) {
     size_t NLABELS = 0;
     signed char VALUE = 0;
-    double POROSITY = 0.f;
-    double PERMEABILITY = 0.f;
 
     auto LabelList = greyscale_db->getVector<int>("ComponentLabels");
     auto PorosityList = greyscale_db->getVector<double>("PorosityList");
@@ -230,7 +238,8 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,
                   "Porosity <= 1.0 !\n");
         }
         if (PermeabilityList[idx_label] <= 0.0) {
-            ERROR("Error: Permeability for grey voxel must be > 0.0 ! \n");
+            ERROR("Error: Permeability for grey voxel must be > "
+                  "0.0 ! \n");
         }
     }
 
@@ -261,6 +270,7 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,
                             break;
                         }
                     }
+
                     if (!label_found) {
                         ERROR("Error: Voxel value not found in ComponentLabels "
                               "list!\n");
@@ -274,12 +284,12 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,
     for (int i = 0; i < Nx * Ny * Nz; i++)
         Dm->id[i] = Mask->id[i];
 
-    for (size_t idx_label = 0; idx_label < NLABELS; idx_label++)
-        label_count_global[idx_label] =
-            Dm->Comm.sumReduce(label_count[idx_label]);
+    for (size_t idx = 0; idx < NLABELS; idx++)
+        label_count_global[idx] = Dm->Comm.sumReduce(label_count[idx]);
 
     //Initialize a weighted porosity after considering grey voxels
     GreyPorosity = 0.0;
+
     for (unsigned int idx_label = 0; idx_label < NLABELS; idx_label++) {
         double volume_fraction =
             double(label_count_global[idx_label]) /
@@ -287,16 +297,22 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,
         GreyPorosity += volume_fraction * PorosityList[idx_label];
     }
 
+    double POROSITY = 0.f;
+    double PERMEABILITY = 0.f;
+
     if (rank == 0) {
         printf("Image resolution: %.5g [um/voxel]\n", Dm->voxel_length);
         printf("Number of component labels: %lu \n", NLABELS);
+
         for (unsigned int idx_label = 0; idx_label < NLABELS; idx_label++) {
             VALUE = LabelList[idx_label];
             POROSITY = PorosityList[idx_label];
             PERMEABILITY = PermeabilityList[idx_label];
+
             double volume_fraction =
                 double(label_count_global[idx_label]) /
                 double((Nx - 2) * (Ny - 2) * (Nz - 2) * nprocs);
+
             printf("   label=%d: porosity=%.3g, permeability=%.3g [um^2] "
                    "(=%.3g [voxel^2]), volume fraction=%.3g\n",
                    VALUE, POROSITY, PERMEABILITY,
@@ -315,26 +331,31 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(
     double *Porosity, double *Permeability,
     const vector<std::string> &File_poro,
     const vector<std::string> &File_perm) {
-    std::vector<double> Porosity_host(N, 0.0);
-    std::vector<double> Permeability_host(N, 0.0);
+
     double POROSITY = 0.f;
     double PERMEABILITY = 0.f;
 
+    //Initialize a weighted porosity after considering grey voxels
     double GreyPorosity_loc = 0.0;
     GreyPorosity = 0.0;
 
-    Mask->ReadFromFile(File_poro[0], File_poro[1], Porosity_host);
-    Mask->ReadFromFile(File_perm[0], File_perm[1], Permeability_host);
+    std::vector<double> Porosity_host(N, 0.0);
+    std::vector<double> Permeability_host(N, 0.0);
+
+    Mask->ReadFromFile(File_poro[0], File_poro[1], Porosity_host.data());
+    Mask->ReadFromFile(File_perm[0], File_perm[1], Permeability_host.data());
 
     for (int k = 0; k < Nz; k++) {
         for (int j = 0; j < Ny; j++) {
             for (int i = 0; i < Nx; i++) {
                 int idx = Map(i, j, k);
-                if (!(idx < 0)) {
+
+                if (idx >= 0) {
                     int n = k * Nx * Ny + j * Nx + i;
                     POROSITY = Porosity_host[n];
                     PERMEABILITY = Permeability_host[n];
-                    if ((POROSITY <= 0.0) || (POROSITY > 1.0)) {
+
+                    if (POROSITY <= 0.0 || POROSITY > 1.0) {
                         ERROR("Error: Porosity for grey voxels must be 0.0 < "
                               "Porosity <= 1.0 !\n");
                     } else if (PERMEABILITY <= 0.0) {
@@ -342,15 +363,19 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(
                               "0.0 ! \n");
                     } else {
                         Porosity[idx] = POROSITY;
+
                         Permeability[idx] =
                             PERMEABILITY / Dm->voxel_length / Dm->voxel_length;
+
                         GreyPorosity_loc += POROSITY;
                     }
                 }
             }
         }
     }
+
     GreyPorosity = Dm->Comm.sumReduce(GreyPorosity_loc);
+
     GreyPorosity =
         GreyPorosity / double((Nx - 2) * (Ny - 2) * (Nz - 2) * nprocs);
 
@@ -583,7 +608,7 @@ void ScaLBL_GreyscaleModel::Run() {
             ScaLBL_D3Q19_AAodd_Greyscale_IMRT(
                 NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx,
                 rlx_eff, Fx, Fy, Fz, Porosity, Permeability, Velocity, Den,
-                Pressure_dvc);
+                Pressure_dvc, Forchheimer);
             break;
         case 2:
             ScaLBL_D3Q19_AAodd_Greyscale(
@@ -595,13 +620,13 @@ void ScaLBL_GreyscaleModel::Run() {
             ScaLBL_D3Q19_AAodd_Greyscale_MRT(
                 NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx,
                 rlx_eff, Fx, Fy, Fz, Porosity, Permeability, Velocity, Den,
-                Pressure_dvc);
+                Pressure_dvc, Forchheimer);
             break;
         default:
             ScaLBL_D3Q19_AAodd_Greyscale_IMRT(
                 NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx,
                 rlx_eff, Fx, Fy, Fz, Porosity, Permeability, Velocity, Den,
-                Pressure_dvc);
+                Pressure_dvc, Forchheimer);
             break;
         }
         ScaLBL_DeviceBarrier();
@@ -860,7 +885,6 @@ void ScaLBL_GreyscaleModel::VelocityField() {
 
     std::string format = vis_db->getWithDefault<string>("format", "silo");
     IO::initialize("", format, false);
-
     // Create the MeshDataStruct
     visData.resize(1);
     visData[0].meshName = "domain";

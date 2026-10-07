@@ -60,6 +60,7 @@ public:
     double dp; //solid particle diameter, unit in voxel
     double GreyPorosity;
     bool Forchheimer;
+    double viscosity_ratio;
 
     int Nx, Ny, Nz, N, Np;
     int rank, nprocx, nprocy, nprocz, nprocs;
