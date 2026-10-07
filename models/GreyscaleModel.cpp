@@ -230,13 +230,8 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,
     }
 
     // Assign the labels
-    double *label_count;
-    double *label_count_global;
-    label_count = new double[NLABELS];
-    label_count_global = new double[NLABELS];
-
-    for (size_t idx_label = 0; idx_label < NLABELS; idx_label++)
-        label_count[idx_label] = 0;
+    std::vector<double> label_count(NLABELS, 0.0);
+    std::vector<double> label_count_global(NLABELS, 0.0);
 
     for (int k = 0; k < Nz; k++) {
         for (int j = 0; j < Ny; j++) {
@@ -271,6 +266,7 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,
     for (size_t idx_label = 0; idx_label < NLABELS; idx_label++)
         label_count_global[idx_label] =
             Dm->Comm.sumReduce(label_count[idx_label]);
+
     //Initialize a weighted porosity after considering grey voxels
     GreyPorosity = 0.0;
     for (unsigned int idx_label = 0; idx_label < NLABELS; idx_label++) {
