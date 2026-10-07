@@ -212,9 +212,22 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,
     auto PermeabilityList = greyscale_db->getVector<double>("PermeabilityList");
 
     NLABELS = LabelList.size();
-    if (NLABELS != PorosityList.size()) {
-        ERROR("Error: ComponentLabels and PorosityList must be the same "
-              "length! \n");
+    if ((NLABELS != PorosityList.size()) ||
+        (NLABELS != PermeabilityList.size())) {
+        ERROR("Error: ComponentLabels, PorosityList and PermeabilityList "
+              "must be the same length! \n");
+    }
+
+    for (size_t idx_label = 0; idx_label < NLABELS; idx_label++) {
+        if ((PorosityList[idx_label] <= 0.0) ||
+            (PorosityList[idx_label] > 1.0)) {
+            ERROR("Error: Porosity for grey voxels must be 0.0 < "
+                  "Porosity <= 1.0 !\n");
+        }
+        if (PermeabilityList[idx_label] <= 0.0) {
+            ERROR("Error: Permeability for grey voxel must be > "
+                  "0.0 ! \n");
+        }
     }
 
     // Assign the labels
@@ -243,21 +256,13 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,
                 }
                 int idx = Map(i, j, k);
                 if (!(idx < 0)) {
-                    if (POROSITY <= 0.0) {
-                        ERROR("Error: Porosity for grey voxels must be 0.0 < "
-                              "Porosity <= 1.0 !\n");
-                    } else {
-                        Porosity[idx] = POROSITY;
-                    }
+
+                    Porosity[idx] = POROSITY;
                 }
             }
         }
     }
 
-    if (NLABELS != PermeabilityList.size()) {
-        ERROR("Error: ComponentLabels and PermeabilityList must be the same "
-              "length! \n");
-    }
     for (int k = 0; k < Nz; k++) {
         for (int j = 0; j < Ny; j++) {
             for (int i = 0; i < Nx; i++) {
@@ -274,13 +279,9 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,
                 }
                 int idx = Map(i, j, k);
                 if (!(idx < 0)) {
-                    if (PERMEABILITY <= 0.0) {
-                        ERROR("Error: Permeability for grey voxel must be > "
-                              "0.0 ! \n");
-                    } else {
-                        Permeability[idx] =
-                            PERMEABILITY / Dm->voxel_length / Dm->voxel_length;
-                    }
+
+                    Permeability[idx] =
+                        PERMEABILITY / Dm->voxel_length / Dm->voxel_length;
                 }
             }
         }
