@@ -238,22 +238,23 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,
             for (int i = 0; i < Nx; i++) {
                 int n = k * Nx * Ny + j * Nx + i;
                 VALUE = id[n];
-                // Assign the affinity from the paired list
-                for (size_t idx_label = 0; idx_label < NLABELS; idx_label++) {
-                    //printf("idx_label=%i, value=%i, %i, \n",idx_label, VALUE,LabelList[idx_label]);
-                    if (VALUE == LabelList[idx_label]) {
-                        POROSITY = PorosityList[idx_label];
-                        PERMEABILITY = PermeabilityList[idx_label];
-                        label_count[idx_label] += 1.0;
-                        idx_label = NLABELS;
-                        //Mask->id[n] = 0; // set mask to zero since this is an immobile component
-                    }
-                }
                 int idx = Map(i, j, k);
-                if (!(idx < 0)) {
-                    Porosity[idx] = POROSITY;
-                    Permeability[idx] =
-                        PERMEABILITY / Dm->voxel_length / Dm->voxel_length;
+
+                if (idx >= 0) {
+                    // Assign the affinity from the paired list
+                    bool label_found = false;
+
+                    for (size_t idx_label = 0; idx_label < NLABELS;
+                         idx_label++) {
+                        if (VALUE == LabelList[idx_label]) {
+                            Porosity[idx] = PorosityList[idx_label];
+                            Permeability[idx] = PermeabilityList[idx_label] /
+                                                Dm->voxel_length /
+                                                Dm->voxel_length;
+                            label_count[idx_label] += 1.0;
+                            break;
+                        }
+                    }
                 }
             }
         }
