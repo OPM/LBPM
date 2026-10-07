@@ -188,7 +188,9 @@ extern "C" void ScaLBL_D3Q19_Init(double *Dist, int Np);
 */
 extern "C" void ScaLBL_D3Q19_Momentum(double *dist, double *vel, int Np);
 
-extern "C" void ScaLBL_D3Q19_Momentum_2nd_order(double *dist, double *vel, int Np, double Fx, double Fy, double Fz);
+extern "C" void ScaLBL_D3Q19_Momentum_2nd_order(double *dist, double *vel,
+                                                int Np, double Fx, double Fy,
+                                                double Fz);
 
 /**
 * \brief compute pressure from D3Q19 distribution
@@ -628,10 +630,10 @@ extern "C" void ScaLBL_D3Q19_AAodd_MRT(int *neighborList, double *dist,
 * @param Np - size of local sub-domain (derived from Domain structure)
 */
 extern "C" void ScaLBL_D3Q19_AAeven_Color(
-    int *Map, double *dist, double *Aq, double *Bq, double *Den, double *Phi, unsigned int *NeighborSolid,
-    double *Vel, double rhoA, double rhoB, double tauA, double tauB,
-    double alpha, double beta, double Fx, double Fy, double Fz, int strideY,
-    int strideZ, int start, int finish, int Np);
+    int *Map, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
+    unsigned int *NeighborSolid, double *Vel, double rhoA, double rhoB,
+    double tauA, double tauB, double alpha, double beta, double Fx, double Fy,
+    double Fz, int strideY, int strideZ, int start, int finish, int Np);
 
 /**
 * \brief Color model collision based on AA even access pattern for D3Q19 
@@ -660,9 +662,10 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(
 */
 extern "C" void ScaLBL_D3Q19_AAodd_Color(
     int *NeighborList, int *Map, double *dist, double *Aq, double *Bq,
-    double *Den, double *Phi, unsigned int *NeighborSolid, double *Vel, double rhoA, double rhoB,
-    double tauA, double tauB, double alpha, double beta, double Fx, double Fy,
-    double Fz, int strideY, int strideZ, int start, int finish, int Np);
+    double *Den, double *Phi, unsigned int *NeighborSolid, double *Vel,
+    double rhoA, double rhoB, double tauA, double tauB, double alpha,
+    double beta, double Fx, double Fy, double Fz, int strideY, int strideZ,
+    int start, int finish, int Np);
 
 /**
 * \brief Compute phase field based on AA odd access pattern for D3Q19 
