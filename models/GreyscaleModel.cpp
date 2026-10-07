@@ -310,16 +310,13 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(
     double *Porosity, double *Permeability,
     const vector<std::string> &File_poro,
     const vector<std::string> &File_perm) {
-    double *Porosity_host, *Permeability_host;
-    Porosity_host = new double[N];
-    Permeability_host = new double[N];
+    std::vector<double> Porosity_host(N, 0.0);
+    std::vector<double> Permeability_host(N, 0.0);
     double POROSITY = 0.f;
     double PERMEABILITY = 0.f;
-    //Initialize a weighted porosity after considering grey voxels
+
     double GreyPorosity_loc = 0.0;
     GreyPorosity = 0.0;
-    //double label_count_loc = 0.0;
-    //double label_count_glb = 0.0;
 
     Mask->ReadFromFile(File_poro[0], File_poro[1], Porosity_host);
     Mask->ReadFromFile(File_perm[0], File_perm[1], Permeability_host);
@@ -342,7 +339,6 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(
                         Porosity[idx] = POROSITY;
                         Permeability[idx] = PERMEABILITY;
                         GreyPorosity_loc += POROSITY;
-                        //label_count_loc += 1.0;
                     }
                 }
             }
@@ -358,8 +354,6 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(
                "is %.3g\n",
                GreyPorosity);
     }
-    delete[] Porosity_host;
-    delete[] Permeability_host;
 }
 
 void ScaLBL_GreyscaleModel::Create() {
