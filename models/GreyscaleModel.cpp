@@ -225,8 +225,7 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,
                   "Porosity <= 1.0 !\n");
         }
         if (PermeabilityList[idx_label] <= 0.0) {
-            ERROR("Error: Permeability for grey voxel must be > "
-                  "0.0 ! \n");
+            ERROR("Error: Permeability for grey voxel must be > 0.0 ! \n");
         }
     }
 
@@ -249,6 +248,7 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,
                     //printf("idx_label=%i, value=%i, %i, \n",idx_label, VALUE,LabelList[idx_label]);
                     if (VALUE == LabelList[idx_label]) {
                         POROSITY = PorosityList[idx_label];
+                        PERMEABILITY = PermeabilityList[idx_label];
                         label_count[idx_label] += 1.0;
                         idx_label = NLABELS;
                         //Mask->id[n] = 0; // set mask to zero since this is an immobile component
@@ -256,30 +256,7 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,
                 }
                 int idx = Map(i, j, k);
                 if (!(idx < 0)) {
-
                     Porosity[idx] = POROSITY;
-                }
-            }
-        }
-    }
-
-    for (int k = 0; k < Nz; k++) {
-        for (int j = 0; j < Ny; j++) {
-            for (int i = 0; i < Nx; i++) {
-                int n = k * Nx * Ny + j * Nx + i;
-                VALUE = id[n];
-                // Assign the affinity from the paired list
-                for (size_t idx_label = 0; idx_label < NLABELS; idx_label++) {
-                    //printf("idx_label=%i, value=%i, %i, \n",idx_label, VALUE,LabelList[idx_label]);
-                    if (VALUE == LabelList[idx_label]) {
-                        PERMEABILITY = PermeabilityList[idx_label];
-                        idx_label = NLABELS;
-                        //Mask->id[n] = 0; // set mask to zero since this is an immobile component
-                    }
-                }
-                int idx = Map(i, j, k);
-                if (!(idx < 0)) {
-
                     Permeability[idx] =
                         PERMEABILITY / Dm->voxel_length / Dm->voxel_length;
                 }
