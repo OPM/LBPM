@@ -11,6 +11,7 @@
 #include "analysis/TwoPhase.h"
 #include "common/MPI.h"
 #include "models/MRTModel.h"
+#include "analysis/rev_analysis.h"
 //#define WRITE_SURFACES
 
 /*
@@ -41,14 +42,19 @@ int main(int argc, char **argv)
 		comm.barrier();
 		
 		ScaLBL_MRTModel MRT(rank,nprocs,comm);
+		ScaLBL_REV REV(rank,nprocs,comm);
 		auto filename = argv[1];
 		MRT.ReadParams(filename);
+		REV.ReadParams(filename);
 		MRT.SetDomain();    // this reads in the domain 
 		MRT.ReadInput();
 		MRT.Create();       // creating the model will create data structure to match the pore structure and allocate variables
 		MRT.Initialize();   // initializing the model will set initial conditions for variables
 		MRT.Run();	 
 		MRT.VelocityField();
+		REV.DetRevAnalysis(MRT);
+		REV.StatRevAnalysis(MRT);
+		REV.sub_domain_select(MRT);
 		cout << flush;
 	}
     Utilities::shutdown();
