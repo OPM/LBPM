@@ -124,13 +124,9 @@ int main(int argc, char **argv)
             } else {
                 int pad = 1; 
                 
-                int global_nx = domain_db->getVector<int>("N")[0];
-                int global_ny = domain_db->getVector<int>("N")[1];
-                int global_nz = domain_db->getVector<int>("N")[2];
-                
-                int nx_p = global_nx + 2 * pad;
-                int ny_p = global_ny + 2 * pad;
-                int nz_p = global_nz + 2 * pad;
+                int nx_p = (nx - 2) + 2 * pad;
+                int ny_p = (ny - 2) + 2 * pad;
+                int nz_p = (nz - 2) + 2 * pad;
 
                 std::shared_ptr<Domain> DmPad(new Domain(nx_p, ny_p, nz_p, rank, 1, 1, 1, (double)nx_p, (double)ny_p, (double)nz_p, 0));
                 
@@ -266,13 +262,9 @@ int main(int argc, char **argv)
             } else {
                 int pad = 1; 
                 
-                int global_nx = domain_db->getVector<int>("N")[0];
-                int global_ny = domain_db->getVector<int>("N")[1];
-                int global_nz = domain_db->getVector<int>("N")[2];
-                
-                int nx_p = global_nx + 2 * pad;
-                int ny_p = global_ny + 2 * pad;
-                int nz_p = global_nz + 2 * pad;
+                int nx_p = (nx - 2) + 2 * pad;
+                int ny_p = (ny - 2) + 2 * pad;
+                int nz_p = (nz - 2) + 2 * pad;
 
                 std::shared_ptr<Domain> DmPad(new Domain(nx_p, ny_p, nz_p, rank, 1, 1, 1, (double)nx_p, (double)ny_p, (double)nz_p, 0));
                 
