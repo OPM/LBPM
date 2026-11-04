@@ -40,6 +40,9 @@ int main(int argc, char **argv)
         auto BC = domain_db->getScalar<int>( "BC" );
         
         std::string protocol = domain_db->getScalar<std::string>( "protocol" );
+        if (protocol != "pore" && protocol != "grain") {
+            ERROR("Unknown protocol '" + protocol + "'. Expected 'pore' or 'grain'.");
+        }
 
         bool periodic = (BC == 0);
 
@@ -341,8 +344,6 @@ int main(int argc, char **argv)
                 }
                 if (rank == 0) printf("Cropped FinalMap back to original size.\n");
             }
-        } else {
-            if (rank == 0) printf("ERROR: Unknown protocol '%s'.\n", protocol.c_str());
         }
 
         for (int k = 0; k < nz; k++){
