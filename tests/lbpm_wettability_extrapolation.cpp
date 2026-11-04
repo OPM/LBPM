@@ -95,10 +95,12 @@ int main(int argc, char **argv)
                         id_solid(i, j, k) = 1; 
                     } else {
                         id_solid(i, j, k) = 0;
-                        if (Mask->id[n] < 0 &&
-                            (!periodic || (i > 0 && i < nx - 1 &&
-                                           j > 0 && j < ny - 1 &&
-                                           k > 0 && k < nz - 1))) {
+                        const bool isPhysicalVoxel =
+                            i > 0 && i < nx - 1 &&
+                            j > 0 && j < ny - 1 &&
+                            k > 0 && k < nz - 1;
+
+                        if (Mask->id[n] < 0 && isPhysicalVoxel) {
                             Q.push(n);
                             FinalMap(i, j, k) = (double)Mask->id[n];
                         }
@@ -200,7 +202,9 @@ int main(int argc, char **argv)
                                 nj = wrapPhysical(nj, ny);
                                 nk = wrapPhysical(nk, nz);
                             } else {
-                                if (ni < 0 || ni >= nx || nj < 0 || nj >= ny || nk < 0 || nk >= nz)
+                                if (ni <= 0 || ni >= nx - 1 ||
+                                    nj <= 0 || nj >= ny - 1 ||
+                                    nk <= 0 || nk >= nz - 1)
                                     continue;
                             }
 
