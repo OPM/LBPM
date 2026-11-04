@@ -21,6 +21,16 @@
 
 using namespace std;
 
+static int wrapPhysical(int index, int extentWithHalo)
+{
+    const int lastPhysical = extentWithHalo - 2;
+    if (index == 0)
+        return lastPhysical;
+    if (index == extentWithHalo - 1)
+        return 1;
+    return index;
+}
+
 int main(int argc, char **argv)
 {
     Utilities::startup( argc, argv );
@@ -85,7 +95,10 @@ int main(int argc, char **argv)
                         id_solid(i, j, k) = 1; 
                     } else {
                         id_solid(i, j, k) = 0;
-                        if (Mask->id[n] < 0) {
+                        if (Mask->id[n] < 0 &&
+                            (!periodic || (i > 0 && i < nx - 1 &&
+                                           j > 0 && j < ny - 1 &&
+                                           k > 0 && k < nz - 1))) {
                             Q.push(n);
                             FinalMap(i, j, k) = (double)Mask->id[n];
                         }
@@ -187,9 +200,9 @@ int main(int argc, char **argv)
                             int nk = k + dk;
 
                             if (periodic) {
-                                ni = ((ni % nx) + nx) % nx;
-                                nj = ((nj % ny) + ny) % ny;
-                                nk = ((nk % nz) + nz) % nz;
+                                ni = wrapPhysical(ni, nx);
+                                nj = wrapPhysical(nj, ny);
+                                nk = wrapPhysical(nk, nz);
                             } else {
                                 if (ni < 0 || ni >= nx || nj < 0 || nj >= ny || nk < 0 || nk >= nz)
                                     continue;
@@ -236,9 +249,9 @@ int main(int argc, char **argv)
                             for (int di = -1; di <= 1; di++) {
                                 if (di == 0 && dj == 0 && dk == 0) continue;
 
-                                    int ni = ((i + di) % nx + nx) % nx;
-                                    int nj = ((j + dj) % ny + ny) % ny;
-                                    int nk = ((k + dk) % nz + nz) % nz;
+                                int ni = wrapPhysical(i + di, nx);
+                                int nj = wrapPhysical(j + dj, ny);
+                                int nk = wrapPhysical(k + dk, nz);
 
                                 if (SignDist(ni, nj, nk) < 0 && FinalMap(ni, nj, nk) == 0.0) {
                                     FinalMap(ni, nj, nk) = current_val;
